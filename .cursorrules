@@ -1,0 +1,76 @@
+# Framework Real Estate Solutions Project Rules
+
+## Project Overview
+This is a real estate solutions project focused on providing framework-based tools and services for real estate professionals.
+
+## Code Style Guidelines
+
+### General Principles
+- Write clean, readable, and maintainable code
+- Follow established patterns in the codebase
+- Prefer clarity over cleverness
+- Keep functions small and focused on a single responsibility
+
+### Naming Conventions
+- Use descriptive variable and function names
+- Classes: PascalCase (e.g., PropertyListing, UserAccount)
+- Functions/Methods: camelCase (e.g., calculateMortgage, getPropertyDetails)
+- Constants: UPPER_SNAKE_CASE (e.g., MAX_LISTING_PRICE, DEFAULT_COMMISSION_RATE)
+- Files: kebab-case for general files, PascalCase for component files
+
+### Code Organization
+- Group related functionality into modules
+- Keep business logic separate from presentation logic
+- Use clear folder structure (e.g., /components, /services, /utils, /models)
+- Place tests alongside the code they test
+
+### Best Practices
+- Always validate user input
+- Handle errors gracefully with proper error messages
+- Use environment variables for configuration
+- Never commit sensitive data (API keys, passwords, etc.)
+- Write self-documenting code, add comments only when necessary
+- Implement proper data validation for property listings and user data
+
+### Real Estate Domain Specifics
+- Use standard real estate terminology (MLS, listing, showing, escrow, etc.)
+- Validate property data according to industry standards
+- Ensure compliance with fair housing regulations in any user-facing content
+- Handle monetary values with appropriate precision (use decimal types, not floats)
+- Include proper date/time handling for showings and deadlines
+
+### Testing
+- Write tests for critical business logic
+- Test edge cases, especially for financial calculations
+- Ensure data validation is thoroughly tested
+- Mock external services (MLS APIs, payment processors, etc.)
+
+### Security
+- Sanitize all user inputs
+- Implement proper authentication and authorization
+- Encrypt sensitive data at rest and in transit
+- Follow OWASP guidelines for web applications
+- Ensure PII (Personally Identifiable Information) is properly protected
+
+### Performance
+- Optimize database queries for property searches
+- Implement caching for frequently accessed data
+- Use pagination for large result sets
+- Lazy load images and non-critical resources
+
+### Documentation
+- Document API endpoints with clear examples
+- Include setup instructions in README
+- Document any real estate specific calculations or business rules
+- Keep documentation up to date with code changes
+
+## Git Workflow
+- Use meaningful commit messages
+- Create feature branches for new development
+- Keep commits focused and atomic
+- Review code before merging
+
+## Dependencies
+- Regularly update dependencies for security patches
+- Document why each dependency is needed
+- Prefer well-maintained packages with good community support
