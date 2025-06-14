@@ -46,7 +46,23 @@ async function searchPropertiesZillow(params) {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
+            if (response.status === 401) {
+                console.error('API authentication required - Vercel protection is enabled');
+                const apiStatus = document.getElementById('apiStatus');
+                if (apiStatus) {
+                    apiStatus.textContent = '⚠ API Protected - See Console for Fix';
+                    apiStatus.className = 'api-status disconnected';
+                }
+                console.log('%c⚠ Vercel Authentication Enabled', 'color: orange; font-size: 16px; font-weight: bold;');
+                console.log('%cTo fix this:', 'color: blue; font-size: 14px;');
+                console.log('%c1. Go to https://vercel.com/dashboard', 'color: green; font-size: 12px;');
+                console.log('%c2. Select your project (framework-api)', 'color: green; font-size: 12px;');
+                console.log('%c3. Go to Settings → General', 'color: green; font-size: 12px;');
+                console.log('%c4. Disable "Vercel Authentication" or "Deployment Protection"', 'color: green; font-size: 12px;');
+                console.log('%c5. Redeploy the project', 'color: green; font-size: 12px;');
+                throw new Error('API requires authentication. Using mock data instead.');
+            }
+            const errorData = await response.json().catch(() => ({}));
             if (response.status === 403) {
                 console.error('API rate limit exceeded');
                 throw new Error(errorData.message || 'API rate limit exceeded. Using mock data instead.');
