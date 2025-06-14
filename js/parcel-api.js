@@ -90,12 +90,26 @@ class ParcelAPIService {
         if (cached) return cached;
 
         try {
-            const { data, error } = await this.client
+            // Use exact match first for better performance
+            let { data, error } = await this.client
                 .from('parcels')
                 .select('*')
-                .ilike('address', normalizedAddress)
+                .eq('address', normalizedAddress)
                 .limit(1)
-                .single();
+                .maybeSingle();
+
+            // If no exact match, try with ILIKE
+            if (!data && !error) {
+                const result = await this.client
+                    .from('parcels')
+                    .select('*')
+                    .ilike('address', `${normalizedAddress}%`)
+                    .limit(1)
+                    .maybeSingle();
+                
+                data = result.data;
+                error = result.error;
+            }
 
             if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
                 console.error('Error fetching parcel by address:', error);
