@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Find investment properties in Detroit that match Framework's criteria - $50K-$100K acquisition, max $10K rehab">
+    <title>Property Finder - Framework Real Estate Solutions</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/property-finder.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="images/logo.svg" alt="Framework" class="logo-img">
+            </a>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="affordable-housing.html" class="nav-link">Properties</a>
+                <a href="property-finder.html" class="nav-link active">Deal Finder</a>
+                <a href="index.html#contact" class="nav-link">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Property Finder Hero -->
+    <section class="finder-hero">
+        <div class="container">
+            <h1 class="page-title">Smart Property Finder</h1>
+            <p class="page-subtitle">Find Detroit properties that match our investment criteria</p>
+        </div>
+    </section>
+
+    <!-- Criteria Section -->
+    <section class="criteria-section">
+        <div class="container">
+            <div class="criteria-card">
+                <h2>Our Investment Criteria</h2>
+                <div class="criteria-grid">
+                    <div class="criteria-item">
+                        <span class="criteria-label">Acquisition Range</span>
+                        <span class="criteria-value">$50,000 - $100,000</span>
+                    </div>
+                    <div class="criteria-item">
+                        <span class="criteria-label">Max Rehabilitation</span>
+                        <span class="criteria-value">$10,000</span>
+                    </div>
+                    <div class="criteria-item">
+                        <span class="criteria-label">Target Areas</span>
+                        <span class="criteria-value">Detroit Neighborhoods</span>
+                    </div>
+                    <div class="criteria-item">
+                        <span class="criteria-label">Property Types</span>
+                        <span class="criteria-value">Single Family Homes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-card">
+                <h3>Property Search</h3>
+                <form id="propertySearchForm" class="search-form">
+                    <div class="search-grid">
+                        <div class="form-group">
+                            <label for="zipCode">ZIP Code</label>
+                            <input type="text" id="zipCode" name="zipCode" placeholder="48201" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="maxPrice">Max Price</label>
+                            <input type="number" id="maxPrice" name="maxPrice" placeholder="100000" value="100000">
+                        </div>
+                        <div class="form-group">
+                            <label for="minBeds">Min Bedrooms</label>
+                            <select id="minBeds" name="minBeds">
+                                <option value="">Any</option>
+                                <option value="1">1+</option>
+                                <option value="2">2+</option>
+                                <option value="3" selected>3+</option>
+                                <option value="4">4+</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="propertyType">Property Type</label>
+                            <select id="propertyType" name="propertyType">
+                                <option value="single-family" selected>Single Family</option>
+                                <option value="multi-family">Multi Family</option>
+                                <option value="condo">Condo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-search">Search Properties</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section" id="resultsSection" style="display: none;">
+        <div class="container">
+            <div class="results-header">
+                <h3>Available Properties</h3>
+                <p class="results-count"><span id="resultCount">0</span> properties found</p>
+            </div>
+            <div id="resultsContainer" class="results-grid">
+                <!-- Results will be dynamically inserted here -->
+            </div>
+            <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Searching for properties...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analysis Tools Section -->
+    <section class="tools-section">
+        <div class="container">
+            <h2 class="section-title text-center">Investment Analysis Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h3>Quick ROI Calculator</h3>
+                    <form id="roiCalculator" class="calculator-form">
+                        <div class="calc-input">
+                            <label>Purchase Price</label>
+                            <input type="number" id="purchasePrice" placeholder="75000">
+                        </div>
+                        <div class="calc-input">
+                            <label>Rehab Cost</label>
+                            <input type="number" id="rehabCost" placeholder="10000">
+                        </div>
+                        <div class="calc-input">
+                            <label>Monthly Rent</label>
+                            <input type="number" id="monthlyRent" placeholder="1329">
+                        </div>
+                        <button type="submit" class="btn btn-secondary">Calculate ROI</button>
+                        <div id="roiResult" class="calc-result" style="display: none;">
+                            <p>Annual ROI: <span id="roiPercent">0%</span></p>
+                            <p>Monthly Cash Flow: <span id="cashFlow">$0</span></p>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="tool-card">
+                    <h3>Section 8 Rent Limits</h3>
+                    <div class="rent-limits">
+                        <div class="rent-item">
+                            <span>Studio:</span>
+                            <strong>$715/month</strong>
+                        </div>
+                        <div class="rent-item">
+                            <span>1 Bedroom:</span>
+                            <strong>$858/month</strong>
+                        </div>
+                        <div class="rent-item">
+                            <span>2 Bedroom:</span>
+                            <strong>$1,024/month</strong>
+                        </div>
+                        <div class="rent-item">
+                            <span>3 Bedroom:</span>
+                            <strong>$1,329/month</strong>
+                        </div>
+                        <div class="rent-item">
+                            <span>4 Bedroom:</span>
+                            <strong>$1,628/month</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-modern">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="images/logo.svg" alt="Framework" class="footer-logo">
+                    <p>Creating exceptional living spaces in Detroit</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">Home</a>
+                    <a href="affordable-housing.html">Properties</a>
+                    <a href="property-finder.html">Deal Finder</a>
+                    <a href="index.html#contact">Contact</a>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2024 Framework Real Estate Solutions. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/property-finder.js"></script>
+</body>
+</html>

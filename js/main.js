@@ -19,7 +19,7 @@ document.querySelectorAll('.property-inquire').forEach(button => {
     button.addEventListener('click', function() {
         const propertyAddress = this.getAttribute('data-property');
         const message = `Hi, I'm interested in scheduling a viewing for the property at ${propertyAddress}. Could you please provide more information about availability?`;
-        const whatsappUrl = `https://wa.me/13134517107?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/+13134517107?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     });
 });
@@ -60,10 +60,6 @@ document.getElementById('privacyLink')?.addEventListener('click', function(e) {
     alert('Privacy Policy page would be displayed here. This would typically link to a separate page with full privacy policy details.');
 });
 
-document.getElementById('fairHousingLink')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    alert('Fair Housing information would be displayed here. This would typically link to a page explaining Fair Housing Act compliance and equal opportunity housing policies.');
-});
 
 // Add loading state for images
 document.addEventListener('DOMContentLoaded', function() {

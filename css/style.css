@@ -296,6 +296,30 @@ p {
     margin-bottom: var(--spacing-sm);
 }
 
+/* Deal Finder CTA Section */
+.deal-finder-cta {
+    padding: var(--spacing-xxl) 0;
+    background-color: var(--primary-black);
+    color: var(--pure-white);
+}
+
+.cta-content {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.cta-content .section-title {
+    color: var(--pure-white);
+}
+
+.cta-text {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--light-gray);
+    margin-bottom: var(--spacing-xl);
+}
+
 /* Services Section */
 .services-section {
     padding: var(--spacing-xxl) 0;

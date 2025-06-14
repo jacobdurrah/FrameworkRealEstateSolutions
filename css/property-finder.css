@@ -1,0 +1,340 @@
+/* Property Finder Specific Styles */
+
+/* Hero Section */
+.finder-hero {
+    padding: calc(80px + var(--spacing-xl)) 0 var(--spacing-xl);
+    background-color: var(--off-white);
+    text-align: center;
+}
+
+/* Criteria Section */
+.criteria-section {
+    padding: var(--spacing-xl) 0;
+    background-color: var(--pure-white);
+}
+
+.criteria-card {
+    background-color: var(--primary-black);
+    color: var(--pure-white);
+    padding: var(--spacing-xl);
+    border-radius: 8px;
+    margin-bottom: var(--spacing-xl);
+}
+
+.criteria-card h2 {
+    color: var(--pure-white);
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.5rem;
+}
+
+.criteria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.criteria-item {
+    text-align: center;
+}
+
+.criteria-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--light-gray);
+    margin-bottom: var(--spacing-xs);
+}
+
+.criteria-value {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
+/* Search Section */
+.search-section {
+    padding: var(--spacing-xl) 0;
+    background-color: var(--off-white);
+}
+
+.search-card {
+    background-color: var(--pure-white);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+}
+
+.search-card h3 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+    color: var(--dark-gray);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--light-gray);
+    border-radius: 4px;
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    background-color: var(--pure-white);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-black);
+}
+
+.btn-search {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1rem;
+}
+
+/* Results Section */
+.results-section {
+    padding: var(--spacing-xl) 0 var(--spacing-xxl);
+    background-color: var(--pure-white);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.results-count {
+    color: var(--dark-gray);
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.property-result-card {
+    background-color: var(--pure-white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.property-result-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.property-result-image {
+    width: 100%;
+    height: 200px;
+    background-color: var(--off-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--medium-gray);
+}
+
+.property-result-details {
+    padding: var(--spacing-md);
+}
+
+.property-result-address {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+}
+
+.property-result-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-green);
+    margin-bottom: var(--spacing-sm);
+}
+
+.property-result-info {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.875rem;
+    color: var(--dark-gray);
+}
+
+.property-result-analysis {
+    background-color: var(--off-white);
+    padding: var(--spacing-sm);
+    border-radius: 4px;
+    margin-bottom: var(--spacing-md);
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.analysis-label {
+    color: var(--dark-gray);
+}
+
+.analysis-value {
+    font-weight: 500;
+}
+
+.property-result-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.property-result-actions .btn {
+    flex: 1;
+    padding: var(--spacing-sm);
+    font-size: 0.875rem;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    text-align: center;
+    padding: var(--spacing-xxl);
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--light-gray);
+    border-top-color: var(--primary-black);
+    border-radius: 50%;
+    margin: 0 auto var(--spacing-md);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Tools Section */
+.tools-section {
+    padding: var(--spacing-xxl) 0;
+    background-color: var(--off-white);
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.tool-card {
+    background-color: var(--pure-white);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+}
+
+.tool-card h3 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.calculator-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.calc-input {
+    display: flex;
+    flex-direction: column;
+}
+
+.calc-input label {
+    font-size: 0.875rem;
+    color: var(--dark-gray);
+    margin-bottom: var(--spacing-xs);
+}
+
+.calc-input input {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--light-gray);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.calc-result {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background-color: var(--off-white);
+    border-radius: 4px;
+}
+
+.calc-result p {
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    justify-content: space-between;
+}
+
+.calc-result span {
+    font-weight: 600;
+    color: var(--accent-green);
+}
+
+/* Rent Limits */
+.rent-limits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.rent-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+    background-color: var(--off-white);
+    border-radius: 4px;
+}
+
+.rent-item strong {
+    color: var(--accent-green);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .search-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tools-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .property-result-actions {
+        flex-direction: column;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+}
