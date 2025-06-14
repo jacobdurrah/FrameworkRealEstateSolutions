@@ -1,7 +1,7 @@
 // Property Finder JavaScript
 
-// Store for pre-loaded parcel data
-let preloadedParcelData = {};
+// Remove preloaded data - we'll use API directly
+// let preloadedParcelData = {};
 
 // Mock property data for demonstration
 // Based on real Detroit investment properties
@@ -147,39 +147,7 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', async 
     }
 });
 
-// Pre-load parcel data for mock properties
-async function preloadParcelData() {
-    console.group('preloadParcelData function');
-    console.log('APP_CONFIG exists:', !!window.APP_CONFIG);
-    console.log('ENABLE_PARCEL_DATA:', window.APP_CONFIG?.FEATURES?.ENABLE_PARCEL_DATA);
-    console.log('parcelAPIService exists:', !!window.parcelAPIService);
-    console.log('parcelAPIService.isReady():', window.parcelAPIService?.isReady());
-    
-    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
-        window.parcelAPIService && window.parcelAPIService.isReady()) {
-        
-        const addresses = mockProperties.map(p => p.address);
-        console.log('Pre-loading parcel data for addresses:', addresses);
-        
-        try {
-            preloadedParcelData = await window.parcelAPIService.batchLoadParcels(addresses);
-            console.log('Pre-loaded parcel data successfully:');
-            console.log('- Number of properties:', Object.keys(preloadedParcelData).length);
-            console.log('- Keys:', Object.keys(preloadedParcelData));
-            
-            // Log sample data
-            const firstKey = Object.keys(preloadedParcelData)[0];
-            if (firstKey) {
-                console.log('Sample data for', firstKey + ':', preloadedParcelData[firstKey]);
-            }
-        } catch (error) {
-            console.error('Error pre-loading parcel data:', error);
-        }
-    } else {
-        console.log('Skipping parcel data preload - conditions not met');
-    }
-    console.groupEnd();
-}
+// Removed preloadParcelData function - using API directly instead
 
 // Search properties based on criteria
 function searchProperties(criteria) {
@@ -240,12 +208,51 @@ async function displayResults(properties) {
         window.parcelAPIService && window.parcelAPIService.isReady()) {
         
         console.log('Loading parcel data for search results...');
-        const addresses = properties.map(p => p.address);
+        
+        // Extract street addresses from full addresses
+        // Convert "4408 Crane St, Detroit, MI 48214" to "4408 CRANE"
+        const streetAddresses = properties.map(p => {
+            const fullAddress = p.address;
+            const parts = fullAddress.split(',');
+            const streetPart = parts[0].trim().toUpperCase();
+            
+            // Remove common suffixes
+            const cleanStreet = streetPart
+                .replace(/\bSTREET\b/g, '')
+                .replace(/\bST\b/g, '')
+                .replace(/\bAVENUE\b/g, '')
+                .replace(/\bAVE\b/g, '')
+                .replace(/\bDRIVE\b/g, '')
+                .replace(/\bDR\b/g, '')
+                .replace(/\bROAD\b/g, '')
+                .replace(/\bRD\b/g, '')
+                .replace(/\bBOULEVARD\b/g, '')
+                .replace(/\bBLVD\b/g, '')
+                .replace(/\bCOURT\b/g, '')
+                .replace(/\bCT\b/g, '')
+                .replace(/\bPLACE\b/g, '')
+                .replace(/\bPL\b/g, '')
+                .replace(/\bLANE\b/g, '')
+                .replace(/\bLN\b/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+                
+            console.log(`Converted "${fullAddress}" to "${cleanStreet}"`);
+            return cleanStreet;
+        });
         
         try {
-            // Use batch loading for efficiency
-            parcelDataMap = await window.parcelAPIService.batchLoadParcels(addresses);
-            console.log(`Loaded parcel data for ${Object.keys(parcelDataMap).length} of ${addresses.length} properties`);
+            // Use batch loading with cleaned addresses
+            const parcelResults = await window.parcelAPIService.batchLoadParcels(streetAddresses);
+            console.log(`Loaded parcel data for ${Object.keys(parcelResults).length} of ${streetAddresses.length} properties`);
+            
+            // Map results back to original addresses
+            properties.forEach((property, index) => {
+                const streetAddress = streetAddresses[index];
+                if (parcelResults[streetAddress]) {
+                    parcelDataMap[property.address] = parcelResults[streetAddress];
+                }
+            });
         } catch (error) {
             console.error('Error loading parcel data:', error);
         }
@@ -271,13 +278,12 @@ function createPropertyCard(property, parcelData = null) {
     const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
     const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
     
-    // Use provided parcel data or check pre-loaded data
-    const parcelInfo = parcelData || preloadedParcelData[property.address] || null;
+    // Use provided parcel data
+    const parcelInfo = parcelData || null;
     
     // Enhanced debug logging
     console.group(`Creating card for ${property.address}`);
     console.log('Property object:', property);
-    console.log('Preloaded parcel data keys:', Object.keys(preloadedParcelData));
     console.log('Parcel info found:', parcelInfo ? 'YES' : 'NO');
     if (parcelInfo) {
         console.log('Parcel data:', parcelInfo);
@@ -474,19 +480,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // Pre-load parcel data for mock properties
-            console.log('Starting parcel data preload...');
-            await preloadParcelData();
-            
-            // Test some lookups
-            console.group('Testing parcel lookups');
+            // Test direct lookups
+            console.group('Testing direct parcel lookups');
             const testAddresses = ['442 CHANDLER', '444 HORTON', '420 E FERRY'];
             for (const addr of testAddresses) {
-                const data = preloadedParcelData[addr];
-                if (data) {
-                    console.log(`✓ ${addr}:`, data.owner.fullName, '-', data.neighborhood);
-                } else {
-                    console.log(`✗ ${addr}: No data found`);
+                try {
+                    const data = await window.parcelAPIService.getParcelByAddress(addr);
+                    if (data) {
+                        console.log(`✓ ${addr}:`, data.owner.fullName, '-', data.neighborhood);
+                    } else {
+                        console.log(`✗ ${addr}: No data found`);
+                    }
+                } catch (error) {
+                    console.log(`✗ ${addr}: Error -`, error.message);
                 }
             }
             console.groupEnd();
