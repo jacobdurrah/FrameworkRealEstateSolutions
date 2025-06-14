@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcel Data Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .loading {
+            color: blue;
+        }
+        .results {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Parcel Data Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Configuration Check</h2>
+        <button onclick="checkConfig()">Check Configuration</button>
+        <div id="configResults" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Service Initialization</h2>
+        <button onclick="checkService()">Check Parcel Service</button>
+        <div id="serviceResults" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Address Lookup</h2>
+        <input type="text" id="testAddress" value="442 CHANDLER" placeholder="Enter address">
+        <button onclick="testAddressLookup()">Test Lookup</button>
+        <div id="lookupResults" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Mock Properties Batch Test</h2>
+        <button onclick="testBatchLoad()">Test Batch Load</button>
+        <div id="batchResults" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. UI Integration Test</h2>
+        <button onclick="testUIIntegration()">Test UI Display</button>
+        <div id="uiResults" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. Console Output</h2>
+        <button onclick="clearConsole()">Clear Console</button>
+        <div id="consoleOutput" class="results" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="js/app-config.js"></script>
+    <script src="js/parcel-api.js"></script>
+    
+    <script>
+        // Capture console logs
+        const consoleOutput = document.getElementById('consoleOutput');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            appendToConsole('LOG', args.join(' '), 'success');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            appendToConsole('ERROR', args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            appendToConsole('WARN', args.join(' '), 'loading');
+        };
+        
+        function appendToConsole(type, message, className) {
+            const entry = document.createElement('div');
+            entry.className = className;
+            entry.textContent = `[${type}] ${new Date().toLocaleTimeString()}: ${message}`;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+        
+        // Test functions
+        async function checkConfig() {
+            const results = document.getElementById('configResults');
+            results.innerHTML = 'Checking configuration...';
+            
+            try {
+                const config = window.APP_CONFIG;
+                let html = '<h3>Configuration Status:</h3>';
+                html += `<p>APP_CONFIG exists: ${config ? '✓' : '✗'}</p>`;
+                
+                if (config) {
+                    html += `<p>SUPABASE_URL: ${config.SUPABASE_URL ? '✓ ' + config.SUPABASE_URL : '✗ Not set'}</p>`;
+                    html += `<p>SUPABASE_ANON_KEY: ${config.SUPABASE_ANON_KEY ? '✓ Key present' : '✗ Not set'}</p>`;
+                    html += `<p>ENABLE_PARCEL_DATA: ${config.FEATURES.ENABLE_PARCEL_DATA ? '✓ Enabled' : '✗ Disabled'}</p>`;
+                }
+                
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function checkService() {
+            const results = document.getElementById('serviceResults');
+            results.innerHTML = 'Checking service...';
+            
+            try {
+                let html = '<h3>Service Status:</h3>';
+                const service = window.parcelAPIService;
+                
+                html += `<p>Service exists: ${service ? '✓' : '✗'}</p>`;
+                
+                if (service) {
+                    html += `<p>Service initialized: ${service.initialized ? '✓' : '✗'}</p>`;
+                    html += `<p>Service ready: ${service.isReady() ? '✓' : '✗'}</p>`;
+                    html += `<p>Supabase client: ${service.client ? '✓' : '✗'}</p>`;
+                    
+                    if (!service.isReady() && window.APP_CONFIG) {
+                        html += '<p>Attempting to initialize...</p>';
+                        const success = await service.init(
+                            window.APP_CONFIG.SUPABASE_URL,
+                            window.APP_CONFIG.SUPABASE_ANON_KEY
+                        );
+                        html += `<p>Initialization: ${success ? '✓ Success' : '✗ Failed'}</p>`;
+                    }
+                    
+                    // Test connection
+                    if (service.isReady()) {
+                        const stats = await service.getStats();
+                        if (stats) {
+                            html += `<p>Database connection: ✓ Connected</p>`;
+                            html += `<p>Total parcels: ${stats.totalParcels.toLocaleString()}</p>`;
+                        } else {
+                            html += `<p>Database connection: ✗ Failed</p>`;
+                        }
+                    }
+                }
+                
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testAddressLookup() {
+            const results = document.getElementById('lookupResults');
+            const address = document.getElementById('testAddress').value;
+            
+            if (!address) {
+                results.innerHTML = '<span class="error">Please enter an address</span>';
+                return;
+            }
+            
+            results.innerHTML = `<span class="loading">Looking up "${address}"...</span>`;
+            
+            try {
+                if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+                    throw new Error('Parcel service not ready');
+                }
+                
+                const data = await window.parcelAPIService.getParcelByAddress(address);
+                
+                if (data) {
+                    let html = '<h3>Parcel Data Found:</h3>';
+                    html += '<table>';
+                    html += `<tr><th>Field</th><th>Value</th></tr>`;
+                    html += `<tr><td>Address</td><td>${data.address}</td></tr>`;
+                    html += `<tr><td>Parcel ID</td><td>${data.parcelId}</td></tr>`;
+                    html += `<tr><td>Owner</td><td>${data.owner.fullName}</td></tr>`;
+                    html += `<tr><td>Neighborhood</td><td>${data.neighborhood}</td></tr>`;
+                    html += `<tr><td>Year Built</td><td>${data.yearBuilt}</td></tr>`;
+                    html += `<tr><td>Property Class</td><td>${data.propertyClass}</td></tr>`;
+                    html += `<tr><td>Assessed Value</td><td>$${data.assessedValue.toLocaleString()}</td></tr>`;
+                    html += `<tr><td>Last Sale Price</td><td>$${data.lastSale.price.toLocaleString()}</td></tr>`;
+                    html += '</table>';
+                    
+                    html += '<h4>Full Data (JSON):</h4>';
+                    html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                    results.innerHTML = html;
+                } else {
+                    results.innerHTML = '<span class="error">No data found for this address</span>';
+                }
+            } catch (error) {
+                results.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testBatchLoad() {
+            const results = document.getElementById('batchResults');
+            results.innerHTML = '<span class="loading">Testing batch load...</span>';
+            
+            try {
+                const mockAddresses = [
+                    '442 CHANDLER',
+                    '444 HORTON',
+                    '420 E FERRY',
+                    '246 E EUCLID',
+                    '235 MELBOURNE',
+                    '231 CHANDLER'
+                ];
+                
+                const batchData = await window.parcelAPIService.batchLoadParcels(mockAddresses);
+                
+                let html = '<h3>Batch Load Results:</h3>';
+                html += '<table>';
+                html += '<tr><th>Address</th><th>Found</th><th>Owner</th><th>Neighborhood</th></tr>';
+                
+                for (const address of mockAddresses) {
+                    const data = batchData[address];
+                    if (data) {
+                        html += `<tr>`;
+                        html += `<td>${address}</td>`;
+                        html += `<td class="success">✓</td>`;
+                        html += `<td>${data.owner.fullName}</td>`;
+                        html += `<td>${data.neighborhood}</td>`;
+                        html += `</tr>`;
+                    } else {
+                        html += `<tr>`;
+                        html += `<td>${address}</td>`;
+                        html += `<td class="error">✗</td>`;
+                        html += `<td colspan="2">Not found</td>`;
+                        html += `</tr>`;
+                    }
+                }
+                
+                html += '</table>';
+                results.innerHTML = html;
+                
+                // Store in window for UI test
+                window.testBatchData = batchData;
+                
+            } catch (error) {
+                results.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testUIIntegration() {
+            const results = document.getElementById('uiResults');
+            results.innerHTML = '<span class="loading">Testing UI integration...</span>';
+            
+            try {
+                // Test property data
+                const mockProperty = {
+                    id: 1,
+                    address: '442 CHANDLER',
+                    city: 'Detroit',
+                    state: 'MI',
+                    zip: '48202',
+                    price: 68500,
+                    bedrooms: 3,
+                    bathrooms: 1,
+                    sqft: 2514,
+                    yearBuilt: 1912,
+                    propertyType: 'single-family',
+                    estimatedRehab: 8000,
+                    monthlyRent: 1329
+                };
+                
+                // Get parcel data
+                const parcelData = window.testBatchData && window.testBatchData['442 CHANDLER'];
+                
+                let html = '<h3>UI Display Test:</h3>';
+                
+                if (parcelData) {
+                    html += '<p class="success">✓ Parcel data available</p>';
+                    html += '<h4>What should be displayed:</h4>';
+                    html += '<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0;">';
+                    html += `<strong>${mockProperty.address}</strong>`;
+                    html += ` <span style="background: gold; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${parcelData.neighborhood}</span><br>`;
+                    html += `<small>Owner: ${parcelData.owner.fullName}</small><br>`;
+                    html += `<small>Parcel ID: ${parcelData.parcelId}</small><br>`;
+                    html += `<small>Assessed: $${parcelData.assessedValue.toLocaleString()}</small>`;
+                    html += '</div>';
+                    
+                    // Check CSS
+                    html += '<h4>CSS Classes Check:</h4>';
+                    const cssClasses = [
+                        'property-neighborhood',
+                        'property-owner-info',
+                        'property-parcel-info',
+                        'owner-label',
+                        'parcel-label'
+                    ];
+                    
+                    for (const className of cssClasses) {
+                        const testDiv = document.createElement('div');
+                        testDiv.className = className;
+                        document.body.appendChild(testDiv);
+                        const styles = window.getComputedStyle(testDiv);
+                        const hasStyles = styles.display !== 'none' && styles.visibility !== 'hidden';
+                        html += `<p>${className}: ${hasStyles ? '✓ Styled' : '✗ No styles'}</p>`;
+                        document.body.removeChild(testDiv);
+                    }
+                    
+                } else {
+                    html += '<p class="error">✗ No parcel data available. Run "Test Batch Load" first.</p>';
+                }
+                
+                results.innerHTML = html;
+                
+            } catch (error) {
+                results.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+        
+        // Auto-run config check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkConfig();
+        });
+    </script>
+</body>
+</html>

@@ -149,19 +149,36 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', async 
 
 // Pre-load parcel data for mock properties
 async function preloadParcelData() {
+    console.group('preloadParcelData function');
+    console.log('APP_CONFIG exists:', !!window.APP_CONFIG);
+    console.log('ENABLE_PARCEL_DATA:', window.APP_CONFIG?.FEATURES?.ENABLE_PARCEL_DATA);
+    console.log('parcelAPIService exists:', !!window.parcelAPIService);
+    console.log('parcelAPIService.isReady():', window.parcelAPIService?.isReady());
+    
     if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
         window.parcelAPIService && window.parcelAPIService.isReady()) {
         
         const addresses = mockProperties.map(p => p.address);
-        console.log('Pre-loading parcel data for', addresses.length, 'properties...');
+        console.log('Pre-loading parcel data for addresses:', addresses);
         
         try {
             preloadedParcelData = await window.parcelAPIService.batchLoadParcels(addresses);
-            console.log('Pre-loaded parcel data:', Object.keys(preloadedParcelData).length, 'properties');
+            console.log('Pre-loaded parcel data successfully:');
+            console.log('- Number of properties:', Object.keys(preloadedParcelData).length);
+            console.log('- Keys:', Object.keys(preloadedParcelData));
+            
+            // Log sample data
+            const firstKey = Object.keys(preloadedParcelData)[0];
+            if (firstKey) {
+                console.log('Sample data for', firstKey + ':', preloadedParcelData[firstKey]);
+            }
         } catch (error) {
             console.error('Error pre-loading parcel data:', error);
         }
+    } else {
+        console.log('Skipping parcel data preload - conditions not met');
     }
+    console.groupEnd();
 }
 
 // Search properties based on criteria
@@ -191,6 +208,9 @@ function displayResults(properties) {
     const resultsContainer = document.getElementById('resultsContainer');
     const resultCount = document.getElementById('resultCount');
     const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    // Store for potential refresh
+    window.lastSearchResults = properties;
     
     // Hide loading spinner
     loadingSpinner.style.display = 'none';
@@ -234,6 +254,19 @@ function createPropertyCard(property) {
     
     // Get pre-loaded parcel data
     const parcelInfo = preloadedParcelData[property.address] || null;
+    
+    // Enhanced debug logging
+    console.group(`Creating card for ${property.address}`);
+    console.log('Property object:', property);
+    console.log('Preloaded parcel data keys:', Object.keys(preloadedParcelData));
+    console.log('Parcel info found:', parcelInfo ? 'YES' : 'NO');
+    if (parcelInfo) {
+        console.log('Parcel data:', parcelInfo);
+        console.log('Owner:', parcelInfo.owner.fullName);
+        console.log('Neighborhood:', parcelInfo.neighborhood);
+        console.log('Parcel ID:', parcelInfo.parcelId);
+    }
+    console.groupEnd();
     
     const card = document.createElement('div');
     card.className = 'property-result-card';
@@ -376,6 +409,10 @@ document.getElementById('roiCalculator')?.addEventListener('submit', function(e)
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async function() {
+    console.group('DOMContentLoaded - Property Finder Initialization');
+    console.log('Page URL:', window.location.href);
+    console.log('Script loaded at:', new Date().toISOString());
+    
     // Set default max price
     const maxPriceInput = document.getElementById('maxPrice');
     if (maxPriceInput && !maxPriceInput.value) {
@@ -383,32 +420,80 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Initialize parcel API service if enabled
+    console.log('Checking parcel data configuration...');
+    console.log('APP_CONFIG:', window.APP_CONFIG);
+    console.log('ENABLE_PARCEL_DATA:', window.APP_CONFIG?.FEATURES?.ENABLE_PARCEL_DATA);
+    
     if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA) {
-        if (window.parcelAPIService && !window.parcelAPIService.isReady()) {
-            const success = await window.parcelAPIService.init(
-                window.APP_CONFIG.SUPABASE_URL,
-                window.APP_CONFIG.SUPABASE_ANON_KEY
-            );
-            if (success) {
-                console.log('Parcel API service initialized');
-                // Pre-load parcel data for mock properties
-                await preloadParcelData();
-                
-                // Test some lookups
-                console.log('Testing parcel lookups...');
-                const testAddresses = ['442 CHANDLER', '444 HORTON', '420 E FERRY'];
-                for (const addr of testAddresses) {
-                    const data = preloadedParcelData[addr];
-                    if (data) {
-                        console.log(`✓ ${addr}:`, data.owner.fullName, '-', data.neighborhood);
-                    } else {
-                        console.log(`✗ ${addr}: No data found`);
-                    }
+        console.log('Parcel data is enabled, waiting for service...');
+        
+        // Wait a bit for the service to be available
+        let retries = 0;
+        while (!window.parcelAPIService && retries < 10) {
+            console.log(`Waiting for parcelAPIService... retry ${retries + 1}/10`);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        if (window.parcelAPIService) {
+            console.log('parcelAPIService found!');
+            console.log('Service ready:', window.parcelAPIService.isReady());
+            console.log('Service initialized:', window.parcelAPIService.initialized);
+            console.log('Service client:', !!window.parcelAPIService.client);
+            
+            if (!window.parcelAPIService.isReady()) {
+                console.log('Initializing parcel service...');
+                const success = await window.parcelAPIService.init(
+                    window.APP_CONFIG.SUPABASE_URL,
+                    window.APP_CONFIG.SUPABASE_ANON_KEY
+                );
+                console.log('Initialization result:', success);
+                if (success) {
+                    console.log('Parcel API service initialized successfully');
+                } else {
+                    console.error('Failed to initialize parcel API service');
                 }
             }
+            
+            // Pre-load parcel data for mock properties
+            console.log('Starting parcel data preload...');
+            await preloadParcelData();
+            
+            // Test some lookups
+            console.group('Testing parcel lookups');
+            const testAddresses = ['442 CHANDLER', '444 HORTON', '420 E FERRY'];
+            for (const addr of testAddresses) {
+                const data = preloadedParcelData[addr];
+                if (data) {
+                    console.log(`✓ ${addr}:`, data.owner.fullName, '-', data.neighborhood);
+                } else {
+                    console.log(`✗ ${addr}: No data found`);
+                }
+            }
+            console.groupEnd();
+            
+            // If we have an active search, refresh it to show parcel data
+            const resultsContainer = document.getElementById('resultsContainer');
+            console.log('Results container exists:', !!resultsContainer);
+            console.log('Results container has children:', resultsContainer?.children.length || 0);
+            
+            if (resultsContainer && resultsContainer.children.length > 0) {
+                console.log('Refreshing search results with parcel data...');
+                const currentResults = window.lastSearchResults || mockProperties.slice(0, 6);
+                displayResults(currentResults);
+            }
+        } else {
+            console.warn('Parcel API service not available after waiting');
         }
+    } else {
+        console.log('Parcel data feature is disabled');
     }
+    
+    console.groupEnd();
 });
+
+// Store last search results for refresh
+window.lastSearchResults = null;
 
 // View detailed property information
 async function viewPropertyDetails(address) {

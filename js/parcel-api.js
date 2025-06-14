@@ -258,7 +258,15 @@ class ParcelAPIService {
 
     // Batch load parcel data for multiple addresses
     async batchLoadParcels(addresses) {
-        if (!this.isReady() || !addresses || addresses.length === 0) return {};
+        console.group('batchLoadParcels');
+        console.log('Input addresses:', addresses);
+        console.log('Service ready:', this.isReady());
+        
+        if (!this.isReady() || !addresses || addresses.length === 0) {
+            console.log('Returning empty - service not ready or no addresses');
+            console.groupEnd();
+            return {};
+        }
 
         const results = {};
         
@@ -268,24 +276,34 @@ class ParcelAPIService {
             const normalizedAddress = this.normalizeAddress(address);
             const cached = this.getFromCache(`address:${normalizedAddress}`);
             if (cached) {
+                console.log(`Found in cache: ${address}`);
                 results[address] = cached;
             } else {
                 uncachedAddresses.push(address);
             }
         }
 
+        console.log('Uncached addresses:', uncachedAddresses);
+
         // Load uncached addresses
         if (uncachedAddresses.length > 0) {
             try {
                 // Query for all addresses at once using OR conditions
                 const normalizedAddresses = uncachedAddresses.map(addr => this.normalizeAddress(addr));
+                console.log('Normalized addresses for query:', normalizedAddresses);
                 
+                // Use in() operator for multiple values instead of or with eq
                 const { data, error } = await this.client
                     .from('parcels')
                     .select('*')
-                    .or(normalizedAddresses.map(addr => `address.eq.${addr}`).join(','));
+                    .in('address', normalizedAddresses);
 
+                console.log('Query result - error:', error);
+                console.log('Query result - data count:', data?.length || 0);
+                
                 if (!error && data) {
+                    console.log('Processing', data.length, 'parcels from database');
+                    
                     // Process results
                     for (const parcel of data) {
                         const transformed = this.transformParcelData(parcel);
@@ -293,16 +311,23 @@ class ParcelAPIService {
                             this.normalizeAddress(addr) === this.normalizeAddress(parcel.address)
                         );
                         if (originalAddress) {
+                            console.log(`Matched parcel for ${originalAddress}:`, parcel.owner_full_name);
                             results[originalAddress] = transformed;
                             this.storeInCache(`address:${this.normalizeAddress(originalAddress)}`, transformed);
+                        } else {
+                            console.log(`No match found for parcel address: ${parcel.address}`);
                         }
                     }
+                } else if (error) {
+                    console.error('Supabase query error:', error);
                 }
             } catch (error) {
                 console.error('Error in batch load:', error);
             }
         }
 
+        console.log('Final results:', Object.keys(results));
+        console.groupEnd();
         return results;
     }
 
