@@ -1,0 +1,31 @@
+name: Background Agent
+
+on:
+  schedule:
+    # Runs every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run background agent
+      run: npm run agent
+      env:
+        # Add your environment variables here
+        NODE_ENV: production
+        # Add any API keys or secrets using GitHub Secrets
+        # API_KEY: ${{ secrets.API_KEY }} 
