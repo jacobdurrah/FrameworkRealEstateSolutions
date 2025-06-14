@@ -18,8 +18,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 document.querySelectorAll('.property-inquire').forEach(button => {
     button.addEventListener('click', function() {
         const propertyAddress = this.getAttribute('data-property');
-        const message = `Hi, I'm interested in the property at ${propertyAddress}. Please provide more information.`;
-        const whatsappUrl = `https://wa.me/1313XXXXXXX?text=${encodeURIComponent(message)}`;
+        const message = `Hi, I'm interested in scheduling a viewing for the property at ${propertyAddress}. Could you please provide more information about availability?`;
+        const whatsappUrl = `https://wa.me/13134517107?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     });
 });
@@ -43,7 +43,7 @@ if (contactForm) {
         // For now, we'll create a mailto link
         const subject = 'New Inquiry from Framework Real Estate Website';
         const body = `Name: ${data.name}%0D%0AEmail: ${data.email}%0D%0APhone: ${data.phone || 'Not provided'}%0D%0A%0D%0AMessage:%0D%0A${data.message}`;
-        const mailtoLink = `mailto:info@frameworkdetroit.com?subject=${encodeURIComponent(subject)}&body=${body}`;
+        const mailtoLink = `mailto:info@frameworkrealestatesolutions.com?subject=${encodeURIComponent(subject)}&body=${body}`;
         
         // Open email client
         window.location.href = mailtoLink;
