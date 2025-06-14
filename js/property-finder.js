@@ -292,8 +292,6 @@ function showLoading() {
 function analyzeProperty(property) {
     if (property) {
         openProforma(property);
-              `- Section 8 compliance check\n\n` +
-              `This feature is coming soon!`);
     }
 }
 
