@@ -3,6 +3,61 @@
 ## Project Overview
 This is a real estate solutions project focused on providing framework-based tools and services for real estate professionals.
 
+You are an expert full-stack developer specializing in real estate technology platforms. When building applications, follow these principles:
+
+## FIRST PRIORITY: Directory Structure
+Always start by creating a clear, scalable directory structure before writing any code. Use this structure:
+
+```
+/src
+  /api              # API endpoints and routes
+    /auth           # Authentication endpoints
+    /properties     # Property listing endpoints
+    /users          # User management endpoints
+    /transactions   # Real estate transaction endpoints
+  /components       # Reusable UI components
+    /common         # Shared components (buttons, inputs, etc.)
+    /layout         # Layout components (header, footer, sidebar)
+    /property       # Property-specific components
+    /dashboard      # Dashboard components
+  /services         # Business logic and external integrations
+    /mls            # MLS integration services
+    /payment        # Payment processing
+    /email          # Email notification services
+    /analytics      # Analytics and reporting
+  /models           # Data models and schemas
+    /property       # Property-related models
+    /user           # User and agent models
+    /transaction    # Transaction models
+  /utils            # Utility functions and helpers
+    /validators     # Input validation functions
+    /formatters     # Data formatting utilities
+    /calculations   # Real estate calculations (mortgage, ROI, etc.)
+  /config           # Configuration files
+    /database       # Database configuration
+    /api            # API configuration
+    /constants      # Application constants
+  /middleware       # Express/API middleware
+    /auth           # Authentication middleware
+    /validation     # Request validation middleware
+    /errorHandling  # Error handling middleware
+  /database         # Database migrations and seeds
+    /migrations     # Database migration files
+    /seeds          # Seed data for development
+  /tests            # Test files
+    /unit           # Unit tests
+    /integration    # Integration tests
+    /e2e            # End-to-end tests
+/public             # Static assets
+  /images           # Image assets
+  /styles           # Global styles
+  /scripts          # Client-side scripts
+/docs               # Documentation
+  /api              # API documentation
+  /guides           # User guides
+  /architecture     # Architecture documentation
+```
+
 ## Code Style Guidelines
 
 ### General Principles
@@ -74,3 +129,176 @@ This is a real estate solutions project focused on providing framework-based too
 - Regularly update dependencies for security patches
 - Document why each dependency is needed
 - Prefer well-maintained packages with good community support
+
+## Technology Stack Recommendations
+
+### Frontend
+- React/Next.js for modern, SEO-friendly applications
+- TypeScript for type safety
+- Tailwind CSS for rapid UI development
+- React Query for data fetching and caching
+- Zustand or Redux Toolkit for state management
+
+### Backend
+- Node.js with Express or NestJS
+- PostgreSQL for relational data (properties, users, transactions)
+- Redis for caching and session management
+- JWT for authentication
+- Stripe or similar for payment processing
+
+### Real Estate Specific Tools
+- Mapbox or Google Maps for property mapping
+- Cloudinary for image optimization and storage
+- SendGrid or AWS SES for transactional emails
+- Twilio for SMS notifications
+- PDF generation libraries for contracts/reports
+
+## Common Real Estate Features to Implement
+
+### Core Features
+1. **Property Listings**
+   - Advanced search and filtering
+   - Map-based search
+   - Virtual tours and image galleries
+   - Favorite/save properties
+   - Property comparison tools
+
+2. **User Management**
+   - Role-based access (buyers, sellers, agents, admins)
+   - Agent profiles and ratings
+   - Client portals
+   - Document management
+
+3. **Transaction Management**
+   - Offer submission and tracking
+   - Escrow timeline management
+   - Document signing integration
+   - Commission calculations
+
+4. **Communication**
+   - In-app messaging
+   - Showing scheduler
+   - Email/SMS notifications
+   - Lead capture and CRM
+
+5. **Analytics & Reporting**
+   - Market trends
+   - Property valuation tools
+   - Agent performance metrics
+   - ROI calculators
+
+## API Design Guidelines
+
+### RESTful Endpoints
+```
+GET    /api/properties          # List properties
+GET    /api/properties/:id      # Get single property
+POST   /api/properties          # Create property (agents only)
+PUT    /api/properties/:id      # Update property
+DELETE /api/properties/:id      # Delete property
+
+GET    /api/properties/:id/images       # Get property images
+POST   /api/properties/:id/images       # Upload images
+DELETE /api/properties/:id/images/:imageId  # Delete image
+
+POST   /api/properties/:id/schedule-showing  # Schedule showing
+GET    /api/users/:id/showings              # Get user's showings
+```
+
+### Response Format
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Operation successful",
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100
+  }
+}
+```
+
+## Database Schema Considerations
+
+### Key Tables
+- properties (listings)
+- users (buyers, sellers, agents)
+- property_images
+- showings
+- offers
+- transactions
+- messages
+- saved_searches
+- property_views (analytics)
+
+### Important Fields for Properties
+- MLS number
+- Property type (residential, commercial, land)
+- Status (active, pending, sold)
+- Price history
+- Tax information
+- HOA details
+- Geolocation data
+- Zoning information
+
+## Compliance and Legal Considerations
+
+1. **Fair Housing Act Compliance**
+   - No discriminatory language
+   - Equal opportunity messaging
+   - Accessible design (WCAG compliance)
+
+2. **Data Privacy**
+   - GDPR/CCPA compliance
+   - Clear privacy policies
+   - Data retention policies
+   - Right to deletion
+
+3. **Real Estate Regulations**
+   - State-specific licensing requirements
+   - Disclosure requirements
+   - Advertising regulations
+   - Commission structure compliance
+
+## Error Handling Patterns
+
+```javascript
+// Example error handler for real estate operations
+class PropertyError extends Error {
+  constructor(message, code, statusCode) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+// Usage
+if (!property.isActive) {
+  throw new PropertyError(
+    'This property is no longer available',
+    'PROPERTY_UNAVAILABLE',
+    400
+  );
+}
+```
+
+## Performance Optimization
+
+1. **Image Optimization**
+   - Lazy loading for property images
+   - Multiple image sizes (thumbnail, medium, large)
+   - WebP format support
+   - CDN integration
+
+2. **Search Optimization**
+   - Elasticsearch for complex property searches
+   - Database indexing on common search fields
+   - Query result caching
+   - Pagination and infinite scroll
+
+3. **Map Performance**
+   - Cluster markers for multiple properties
+   - Load properties within viewport only
+   - Cache map tiles
+   - Debounce map movement events
