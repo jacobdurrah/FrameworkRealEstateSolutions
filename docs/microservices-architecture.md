@@ -26,6 +26,7 @@ graph TB
         CONST[Construction Service]
         USER[User Service]
         DOC[Document Service]
+        CONTACTS[Contacts Service]
     end
 
     subgraph "AI Services"
@@ -36,6 +37,7 @@ graph TB
         CV[Computer Vision Service]
         WHATSAPP[WhatsApp Assistant]
         MARKET[Market Monitor Service]
+        AUDIO[Audio Processing Service]
     end
 
     subgraph "Integration Services"
@@ -70,6 +72,7 @@ graph TB
     GATEWAY --> FIN
     GATEWAY --> CONST
     GATEWAY --> DOC
+    GATEWAY --> CONTACTS
     
     PROP --> PG
     PROP --> REDIS
@@ -90,6 +93,12 @@ graph TB
     
     VOICE --> RABBIT
     VAL --> ANALYTICS
+    
+    CONTACTS --> PG
+    CONTACTS --> REDIS
+    CONTACTS --> ELASTIC
+    CONTACTS --> VOICE
+    CONTACTS --> WHATSAPP
     
     KAFKA --> ANALYTICS
     ANALYTICS --> ELASTIC
@@ -354,6 +363,40 @@ events:
   subscribes:
     - audio.uploaded
     - walkthrough.started
+```
+
+### 11. Contacts Service
+```yaml
+service: contacts-service
+port: 3011
+dependencies:
+  - postgresql
+  - redis
+  - elasticsearch
+endpoints:
+  - GET /contacts
+  - GET /contacts/:id
+  - POST /contacts
+  - PUT /contacts/:id
+  - DELETE /contacts/:id
+  - GET /contacts/search
+  - GET /contacts/:id/interactions
+  - POST /contacts/:id/interactions
+  - GET /contacts/:id/properties
+  - POST /contacts/:id/documents
+  - POST /contacts/:id/ai-call
+  - GET /contacts/analytics
+events:
+  publishes:
+    - contact.created
+    - contact.updated
+    - interaction.logged
+    - ai.call.scheduled
+  subscribes:
+    - call.completed
+    - whatsapp.message.received
+    - property.inquiry.received
+    - tenant.application.submitted
 ```
 
 ## Database Schema per Service
@@ -628,6 +671,128 @@ CREATE TABLE pricing_service.cost_history (
     updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Contacts Service Schema
+CREATE SCHEMA contacts_service;
+
+CREATE TABLE contacts_service.contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contact_type VARCHAR(50) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    company_name VARCHAR(200),
+    email VARCHAR(255) UNIQUE,
+    phone_primary VARCHAR(20),
+    phone_secondary VARCHAR(20),
+    whatsapp_number VARCHAR(20),
+    address_line1 VARCHAR(255),
+    address_line2 VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(2),
+    zip_code VARCHAR(10),
+    tags TEXT[],
+    source VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'active',
+    preferred_contact_method VARCHAR(50) DEFAULT 'phone',
+    language_preference VARCHAR(20) DEFAULT 'en',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(255),
+    last_contact_date TIMESTAMP,
+    next_follow_up_date DATE,
+    total_interactions INTEGER DEFAULT 0,
+    ai_communication_consent BOOLEAN DEFAULT FALSE,
+    section_8_approved BOOLEAN DEFAULT FALSE,
+    credit_score_range VARCHAR(50),
+    annual_income_range VARCHAR(50)
+);
+
+CREATE TABLE contacts_service.contact_interactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contact_id UUID REFERENCES contacts_service.contacts(id),
+    interaction_type VARCHAR(50),
+    direction VARCHAR(10),
+    channel VARCHAR(50),
+    subject VARCHAR(255),
+    content TEXT,
+    summary TEXT,
+    sentiment VARCHAR(20),
+    duration_seconds INTEGER,
+    recording_url TEXT,
+    transcription TEXT,
+    ai_agent_id VARCHAR(100),
+    outcome VARCHAR(100),
+    follow_up_required BOOLEAN DEFAULT FALSE,
+    follow_up_date DATE,
+    properties_discussed UUID[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(255)
+);
+
+CREATE TABLE contacts_service.contact_properties (
+    contact_id UUID REFERENCES contacts_service.contacts(id),
+    property_id UUID,
+    relationship_type VARCHAR(50),
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(50),
+    notes TEXT,
+    PRIMARY KEY (contact_id, property_id, relationship_type)
+);
+
+CREATE TABLE contacts_service.contact_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contact_id UUID REFERENCES contacts_service.contacts(id),
+    document_type VARCHAR(100),
+    document_name VARCHAR(255),
+    file_path TEXT,
+    file_size_bytes BIGINT,
+    mime_type VARCHAR(100),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    uploaded_by VARCHAR(255),
+    expiration_date DATE,
+    verified BOOLEAN DEFAULT FALSE,
+    verified_by VARCHAR(255),
+    verified_at TIMESTAMP
+);
+
+CREATE TABLE contacts_service.contact_preferences (
+    contact_id UUID PRIMARY KEY REFERENCES contacts_service.contacts(id),
+    contact_time_preference VARCHAR(50),
+    contact_days_preference VARCHAR(50)[],
+    max_rent_budget DECIMAL(10,2),
+    min_bedrooms INTEGER,
+    max_bedrooms INTEGER,
+    preferred_neighborhoods TEXT[],
+    must_have_features TEXT[],
+    pets BOOLEAN DEFAULT FALSE,
+    pet_types VARCHAR(100),
+    move_in_date DATE,
+    household_size INTEGER,
+    special_requirements TEXT
+);
+
+CREATE TABLE contacts_service.contact_consent (
+    contact_id UUID REFERENCES contacts_service.contacts(id),
+    consent_type VARCHAR(100),
+    consent_given BOOLEAN DEFAULT FALSE,
+    consent_date TIMESTAMP,
+    consent_method VARCHAR(100),
+    ip_address INET,
+    revoked_date TIMESTAMP,
+    PRIMARY KEY (contact_id, consent_type)
+);
+
+-- Indexes for Contacts Service
+CREATE INDEX idx_contacts_email ON contacts_service.contacts(email);
+CREATE INDEX idx_contacts_phone ON contacts_service.contacts(phone_primary);
+CREATE INDEX idx_contacts_type ON contacts_service.contacts(contact_type);
+CREATE INDEX idx_contacts_status ON contacts_service.contacts(status);
+CREATE INDEX idx_contacts_last_contact ON contacts_service.contacts(last_contact_date);
+CREATE INDEX idx_interactions_contact ON contacts_service.contact_interactions(contact_id);
+CREATE INDEX idx_interactions_created ON contacts_service.contact_interactions(created_at);
+CREATE INDEX idx_interactions_ai_agent ON contacts_service.contact_interactions(ai_agent_id);
 ```
 
 ## Service Deployment Configuration

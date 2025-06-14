@@ -1,0 +1,27 @@
+{
+  "contacts": [
+    {
+      "contact_type": "internal_team",
+      "first_name": "Jacob",
+      "last_name": "Durrah",
+      "email": "jacob@frameworkrealestatesolutions.com",
+      "role": "Founder/CEO",
+      "phone_primary": "(313) XXX-XXXX",
+      "preferred_contact_method": "email",
+      "status": "active",
+      "permissions": "admin",
+      "tags": ["leadership", "decision_maker", "technical"],
+      "source": "company_founder",
+      "notes": "Primary contact for all strategic decisions and technical architecture",
+      "ai_communication_consent": true,
+      "created_by": "system",
+      "company_name": "Framework Real Estate Solutions"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2024-01-15",
+    "description": "Initial contacts database seed file for Framework Real Estate Solutions",
+    "instructions": "Import this file when initializing the contacts service database"
+  }
+}

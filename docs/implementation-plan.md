@@ -15,7 +15,8 @@ This document outlines the comprehensive implementation plan for Framework Real 
 9. [Dynamic Business Plan Storage](#dynamic-business-plan-storage)
 10. [AI-Powered Features](#ai-powered-features)
 11. [WhatsApp AI Assistant](#whatsapp-ai-assistant)
-12. [Additional Recommendations](#additional-recommendations)
+12. [Contact Management System](#contact-management-system)
+13. [Additional Recommendations](#additional-recommendations)
 
 ## Technical Architecture
 
@@ -183,6 +184,16 @@ This document outlines the comprehensive implementation plan for Framework Real 
   - PDF generation
   - E-signature integration
   - OCR capabilities
+
+#### 11. Contacts Service
+- **Responsibility**: Comprehensive contact and relationship management
+- **Database**: PostgreSQL + Elasticsearch
+- **Key Features**:
+  - Contact lifecycle tracking
+  - AI-powered communication
+  - Interaction history
+  - Consent management
+  - Property relationship mapping
 
 ## Database Schema
 
@@ -797,6 +808,83 @@ User → WhatsApp → Twilio API → Backend Service → AI Processing → Repor
 - Data encryption in transit and at rest
 - API rate limiting
 - Audit trail for all queries
+
+## Contact Management System
+
+### Overview
+A comprehensive CRM system tailored for real estate operations, enabling tracking of all stakeholders including property owners, tenants, contractors, partners, and government contacts. The system integrates AI-powered communication capabilities for automated outreach and relationship management.
+
+### Key Features
+
+1. **Contact Categories**
+   - Property Owners (sellers, landlords)
+   - Tenants (current, prospective, Section 8 voucher holders)
+   - Contractors & Service Providers
+   - Partners & Stakeholders
+   - Government & Regulatory contacts
+   - Internal Team members
+
+2. **AI Communication Integration**
+   - Automated phone calls via AI agents
+   - WhatsApp conversation tracking
+   - Email campaign automation
+   - SMS notifications
+   - Call recording and transcription
+   - Sentiment analysis on interactions
+
+3. **Contact Lifecycle Management**
+   - Lead → Qualification → Active → Customer → Retention stages
+   - Automated follow-up scheduling
+   - Task assignment and tracking
+   - Document management per contact
+   - Property relationship tracking
+
+4. **Analytics & Reporting**
+   - Contact acquisition metrics
+   - Conversion rate tracking
+   - Engagement scoring
+   - Communication effectiveness
+   - ROI per contact source
+
+### Implementation Approach
+
+**Phase 1 - Basic CRM (Month 1-2)**
+- Contact database with CRUD operations
+- Basic search and filtering
+- Manual interaction logging
+- Document upload capability
+
+**Phase 2 - Communication Integration (Month 3)**
+- WhatsApp integration
+- Email/SMS capabilities
+- Call logging
+- Interaction history tracking
+
+**Phase 3 - AI Integration (Month 4-5)**
+- AI phone agent integration
+- Automated transcription
+- Sentiment analysis
+- Smart follow-up suggestions
+
+**Phase 4 - Advanced Features (Month 6+)**
+- Predictive analytics
+- Lead scoring
+- Automated workflows
+- API access for partners
+
+### Data Security & Compliance
+- GDPR/CCPA compliant data handling
+- Consent management system
+- Encryption for sensitive data
+- Role-based access control
+- Audit trail for all actions
+
+### Integration Points
+- Property Service: Link contacts to properties
+- Deal Service: Track contact involvement in deals
+- Financial Service: Payment history and preferences
+- WhatsApp Assistant: Automated inquiry handling
+- Voice Agent Service: Scheduled AI calls
 
 ## Additional Recommendations
 
