@@ -3,7 +3,7 @@ const CONFIG = {
     // Backend API configuration
     API: {
         // Your Vercel deployment URL
-        PRODUCTION_URL: 'https://framework-realestate-iyd9sncv6-jacob-durrahs-projects.vercel.app/api',
+        PRODUCTION_URL: 'https://framework-realestate-6md8apv3o-jacob-durrahs-projects.vercel.app/api',
         DEVELOPMENT_URL: 'http://localhost:3000/api',
         
         // Determine which URL to use
