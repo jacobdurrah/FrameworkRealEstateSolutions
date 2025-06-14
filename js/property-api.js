@@ -4,7 +4,7 @@
 const ZILLOW_CONFIG = {
     baseUrl: 'https://zillow-com1.p.rapidapi.com',
     headers: {
-        'X-RapidAPI-Key': 'b6e96933b5msh0a4e833d17de153p1ab4d5jsn99e015d5c751',
+        'X-RapidAPI-Key': '435eeaf287msh252959294ebf8abp1d39bbjsnc04db0da6d18',
         'X-RapidAPI-Host': 'zillow-com1.p.rapidapi.com'
     }
 };
@@ -74,6 +74,9 @@ async function searchPropertiesZillow(params) {
             if (response.status === 403) {
                 console.error('API Key Error: The Zillow API key may have exceeded its rate limit or subscription quota.');
                 throw new Error('API rate limit exceeded. Using mock data instead.');
+            } else if (response.status === 429) {
+                console.error('API Rate Limit: Too many requests. Please wait a moment and try again.');
+                throw new Error('Too many requests. Please wait and try again.');
             }
             throw new Error(`Zillow API error: ${response.status}`);
         }
