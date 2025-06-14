@@ -14,6 +14,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/property-finder.css">
+    <link rel="stylesheet" href="css/chatbot.css">
 </head>
 <body>
     <!-- Navigation -->
@@ -36,6 +37,8 @@
         <div class="container">
             <h1 class="page-title">Smart Property Finder</h1>
             <p class="page-subtitle">Find Detroit properties that match our investment criteria</p>
+            <div id="apiStatus" class="api-status"></div>
+            <button id="configureApiBtn" class="btn btn-secondary" style="margin-top: 1rem;">Configure API</button>
         </div>
     </section>
 
@@ -201,8 +204,41 @@
         </div>
     </footer>
 
+    <!-- API Configuration Modal -->
+    <div id="apiModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>API Configuration</h2>
+            <p>Enter your RentCast API key to enable real property searches. Your API key will be stored locally in your browser.</p>
+            
+            <form id="apiConfigForm">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="rentcastKey">RentCast API Key</label>
+                    <input type="password" id="rentcastKey" name="rentcastKey" placeholder="Enter your RentCast API key" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e5e5;">
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">Get your API key from <a href="https://app.rentcast.io/" target="_blank">RentCast Dashboard</a></small>
+                </div>
+                
+                <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeApiModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                </div>
+                
+                <div id="apiConfigStatus" style="margin-top: 1rem; display: none;"></div>
+            </form>
+            
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e5e5;">
+                <h3 style="margin-bottom: 1rem;">Current Configuration</h3>
+                <p id="currentApiStatus" style="color: #666;">Checking API configuration...</p>
+                <button id="clearApiBtn" class="btn btn-outline" style="margin-top: 1rem; display: none;">Clear API Configuration</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <script src="js/config.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/property-api.js"></script>
     <script src="js/property-finder.js"></script>
+    <script src="js/property-chatbot.js"></script>
 </body>
 </html>

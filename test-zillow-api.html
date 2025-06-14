@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Zillow API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #333;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zillow API Test Page</h1>
+    
+    <div class="test-section">
+        <h2>API Status</h2>
+        <div id="apiStatus" class="status">Checking API configuration...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test API Endpoints</h2>
+        
+        <h3>1. Property Extended Search (Main Search)</h3>
+        <button onclick="testPropertySearch()">Test Property Search</button>
+        <button onclick="testSoldProperties()">Test Sold Properties</button>
+        <div id="searchResults" class="results"></div>
+        
+        <h3>2. Search by Coordinates</h3>
+        <button onclick="testRadiusSearch()">Test Radius Search (1 mile)</button>
+        <div id="radiusResults" class="results"></div>
+        
+        <h3>3. Property Details</h3>
+        <input type="text" id="zpidInput" placeholder="Enter ZPID (e.g., 88100740)" style="padding: 8px; margin-right: 10px;">
+        <button onclick="testPropertyDetails()">Get Property Details</button>
+        <div id="detailsResults" class="results"></div>
+        
+        <h3>4. Similar Sales</h3>
+        <button onclick="testSimilarSales()">Test Similar Sales</button>
+        <div id="similarResults" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Example API URLs</h2>
+        <div class="results">
+<strong>Property Search:</strong>
+https://zillow-com1.p.rapidapi.com/propertyExtendedSearch?location=Detroit%2C%20MI&status_type=ForSale&home_type=Houses&minPrice=50000&maxPrice=100000
+
+<strong>Sold Properties:</strong>
+https://zillow-com1.p.rapidapi.com/propertyExtendedSearch?location=Detroit%2C%20MI&status_type=RecentlySold&home_type=Houses&minPrice=150000
+
+<strong>Radius Search:</strong>
+https://zillow-com1.p.rapidapi.com/propertyByCoordinates?lat=42.3314&lng=-83.0458&radius=1&status_type=ForSale
+
+<strong>Property Details:</strong>
+https://zillow-com1.p.rapidapi.com/property?zpid=88100740
+
+<strong>Headers Required:</strong>
+X-RapidAPI-Key: [YOUR_API_KEY]
+X-RapidAPI-Host: zillow-com1.p.rapidapi.com
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'b6e96933b5msh0a4e833d17de153p1ab4d5jsn99e015d5c751';
+        const API_HOST = 'zillow-com1.p.rapidapi.com';
+        const BASE_URL = 'https://zillow-com1.p.rapidapi.com';
+
+        // Check API status
+        document.addEventListener('DOMContentLoaded', () => {
+            const status = document.getElementById('apiStatus');
+            if (API_KEY && API_KEY !== 'your_api_key_here') {
+                status.textContent = '✓ API Key is configured';
+                status.className = 'status success';
+            } else {
+                status.textContent = '✗ API Key not configured';
+                status.className = 'status error';
+            }
+        });
+
+        async function makeApiCall(endpoint, params) {
+            const queryString = new URLSearchParams(params).toString();
+            const url = `${BASE_URL}${endpoint}?${queryString}`;
+            
+            console.log('Calling:', url);
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-RapidAPI-Key': API_KEY,
+                        'X-RapidAPI-Host': API_HOST
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                return { success: true, data, url };
+            } catch (error) {
+                return { success: false, error: error.message, url };
+            }
+        }
+
+        async function testPropertySearch() {
+            const results = document.getElementById('searchResults');
+            results.textContent = 'Loading...';
+            
+            const result = await makeApiCall('/propertyExtendedSearch', {
+                location: 'Detroit, MI',
+                status_type: 'ForSale',
+                home_type: 'Houses',
+                minPrice: '50000',
+                maxPrice: '100000'
+            });
+            
+            displayResults(results, result);
+        }
+
+        async function testSoldProperties() {
+            const results = document.getElementById('searchResults');
+            results.textContent = 'Loading...';
+            
+            const result = await makeApiCall('/propertyExtendedSearch', {
+                location: 'Detroit, MI 48205',
+                status_type: 'RecentlySold',
+                home_type: 'Houses',
+                minPrice: '150000'
+            });
+            
+            displayResults(results, result);
+        }
+
+        async function testRadiusSearch() {
+            const results = document.getElementById('radiusResults');
+            results.textContent = 'Loading...';
+            
+            // Downtown Detroit coordinates
+            const result = await makeApiCall('/propertyByCoordinates', {
+                lat: '42.3314',
+                lng: '-83.0458',
+                radius: '1',
+                status_type: 'ForSale',
+                home_type: 'Houses'
+            });
+            
+            displayResults(results, result);
+        }
+
+        async function testPropertyDetails() {
+            const results = document.getElementById('detailsResults');
+            const zpid = document.getElementById('zpidInput').value || '88100740';
+            results.textContent = 'Loading...';
+            
+            const result = await makeApiCall('/property', {
+                zpid: zpid
+            });
+            
+            displayResults(results, result);
+        }
+
+        async function testSimilarSales() {
+            const results = document.getElementById('similarResults');
+            const zpid = document.getElementById('zpidInput').value || '88100740';
+            results.textContent = 'Loading...';
+            
+            const result = await makeApiCall('/similarSales', {
+                zpid: zpid
+            });
+            
+            displayResults(results, result);
+        }
+
+        function displayResults(element, result) {
+            if (result.success) {
+                element.textContent = `Success! URL: ${result.url}\n\n${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                element.textContent = `Error: ${result.error}\nURL attempted: ${result.url}`;
+                element.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -314,6 +314,121 @@
     color: var(--accent-green);
 }
 
+/* API Status */
+.api-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.api-status.connected {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.api-status.disconnected {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--pure-white);
+    margin: auto;
+    padding: var(--spacing-xl);
+    border: 1px solid var(--light-gray);
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.close {
+    color: var(--medium-gray);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+}
+
+.close:hover,
+.close:focus {
+    color: var(--primary-black);
+    text-decoration: none;
+}
+
+.modal h2 {
+    margin-bottom: var(--spacing-md);
+}
+
+.modal p {
+    margin-bottom: var(--spacing-lg);
+    color: var(--dark-gray);
+}
+
+.modal .form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+    color: var(--primary-black);
+}
+
+.modal input[type="password"] {
+    font-family: var(--font-primary);
+    font-size: 0.875rem;
+}
+
+.modal small {
+    font-size: 0.875rem;
+}
+
+.modal small a {
+    color: var(--accent-gold);
+    text-decoration: none;
+}
+
+.modal small a:hover {
+    text-decoration: underline;
+}
+
+#apiConfigStatus {
+    padding: 0.75rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+#apiConfigStatus.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+#apiConfigStatus.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .search-grid {
@@ -336,5 +451,10 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-sm);
+    }
+    
+    .modal-content {
+        margin: var(--spacing-md);
+        width: calc(100% - 2 * var(--spacing-md));
     }
 }

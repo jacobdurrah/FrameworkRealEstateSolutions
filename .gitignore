@@ -16,6 +16,10 @@ out/
 .env.*.local
 .env.production
 
+# API configuration files
+config.js
+js/config.js
+
 # IDE and editor files
 .vscode/
 .idea/

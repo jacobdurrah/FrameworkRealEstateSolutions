@@ -70,7 +70,7 @@ const mockProperties = [
 ];
 
 // Property search form handler
-document.getElementById('propertySearchForm')?.addEventListener('submit', function(e) {
+document.getElementById('propertySearchForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     // Get form values
@@ -85,11 +85,25 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', functi
     // Show loading state
     showLoading();
     
-    // Simulate API call with setTimeout
-    setTimeout(() => {
+    try {
+        // Check if API is available
+        if (window.propertyAPI && window.propertyAPI.isApiConfigured()) {
+            // Use real API
+            const results = await window.propertyAPI.searchPropertiesWithAPI(searchCriteria);
+            displayResults(results);
+        } else {
+            // Fall back to mock data
+            setTimeout(() => {
+                const results = searchProperties(searchCriteria);
+                displayResults(results);
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        // Fall back to mock data on error
         const results = searchProperties(searchCriteria);
         displayResults(results);
-    }, 1000);
+    }
 });
 
 // Search properties based on criteria
@@ -155,16 +169,26 @@ function displayResults(properties) {
 // Create property card element
 function createPropertyCard(property) {
     const totalInvestment = property.price + property.estimatedRehab;
-    const annualRent = property.monthlyRent * 12;
+    const monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate || 1329;
+    const annualRent = monthlyRent * 12;
     const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
-    const cashFlow = property.monthlyRent - (totalInvestment * 0.006); // Rough estimate
+    const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
     
     const card = document.createElement('div');
     card.className = 'property-result-card';
     
+    // Handle image display
+    let imageContent = '<span>Photo Coming Soon</span>';
+    if (property.images && property.images.length > 0) {
+        imageContent = `<img src="${property.images[0]}" alt="${property.address}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    }
+    
+    // Handle property info display
+    const sqft = property.squareFeet || property.sqft || 'N/A';
+    
     card.innerHTML = `
         <div class="property-result-image">
-            <span>Photo Coming Soon</span>
+            ${imageContent}
         </div>
         <div class="property-result-details">
             <h4 class="property-result-address">${property.address}</h4>
@@ -172,7 +196,7 @@ function createPropertyCard(property) {
             <div class="property-result-info">
                 <span>${property.bedrooms} bed</span>
                 <span>${property.bathrooms} bath</span>
-                <span>${property.sqft} sqft</span>
+                <span>${sqft} sqft</span>
                 <span>Built ${property.yearBuilt}</span>
             </div>
             <div class="property-result-analysis">
@@ -186,18 +210,21 @@ function createPropertyCard(property) {
                 </div>
                 <div class="analysis-item">
                     <span class="analysis-label">Potential Rent:</span>
-                    <span class="analysis-value">$${property.monthlyRent}/mo</span>
+                    <span class="analysis-value">$${monthlyRent}/mo</span>
                 </div>
                 <div class="analysis-item">
                     <span class="analysis-label">Est. ROI:</span>
                     <span class="analysis-value">${estimatedROI}%</span>
                 </div>
             </div>
-            <p style="margin-bottom: var(--spacing-md); font-size: 0.875rem; color: var(--dark-gray);">
+            ${property.description ? `<p style="margin-bottom: var(--spacing-md); font-size: 0.875rem; color: var(--dark-gray);">
                 ${property.description}
-            </p>
+            </p>` : ''}
+            ${property.zestimate ? `<p style="margin-bottom: var(--spacing-md); font-size: 0.875rem; color: var(--dark-gray);">
+                Zestimate: $${property.zestimate.toLocaleString()}
+            </p>` : ''}
             <div class="property-result-actions">
-                <button class="btn btn-primary" onclick="analyzeProperty(${property.id})">
+                <button class="btn btn-primary" onclick="analyzeProperty('${property.id}')">
                     Full Analysis
                 </button>
                 <button class="btn btn-outline" onclick="contactAboutProperty('${property.address}')">
@@ -273,4 +300,145 @@ document.addEventListener('DOMContentLoaded', function() {
     if (maxPriceInput && !maxPriceInput.value) {
         maxPriceInput.value = '100000';
     }
+    
+    // Check API status
+    updateApiStatus();
+    
+    // Configure API button
+    const configBtn = document.getElementById('configureApiBtn');
+    if (configBtn) {
+        configBtn.addEventListener('click', openApiModal);
+    }
+    
+    // Modal close button
+    const closeBtn = document.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeApiModal);
+    }
+    
+    // Modal click outside to close
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('apiModal');
+        if (event.target === modal) {
+            closeApiModal();
+        }
+    });
+    
+    // API Config form
+    const apiConfigForm = document.getElementById('apiConfigForm');
+    if (apiConfigForm) {
+        apiConfigForm.addEventListener('submit', handleApiConfig);
+    }
+    
+    // Clear API button
+    const clearBtn = document.getElementById('clearApiBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearApiConfig);
+    }
 });
+
+// Update API status indicator
+function updateApiStatus() {
+    const apiStatus = document.getElementById('apiStatus');
+    const currentStatus = document.getElementById('currentApiStatus');
+    const clearBtn = document.getElementById('clearApiBtn');
+    
+    if (window.propertyAPI) {
+        const isConfigured = window.propertyAPI.isApiConfigured();
+        
+        if (isConfigured) {
+            if (apiStatus) {
+                apiStatus.textContent = '✓ Zillow API Connected';
+                apiStatus.className = 'api-status connected';
+            }
+            if (currentStatus) {
+                currentStatus.textContent = 'Zillow API is configured and ready to use.';
+                currentStatus.style.color = '#155724';
+            }
+            if (clearBtn) {
+                clearBtn.style.display = 'inline-block';
+            }
+        } else {
+            if (apiStatus) {
+                apiStatus.textContent = '⚠ Using Mock Data - Configure API for Real Properties';
+                apiStatus.className = 'api-status disconnected';
+            }
+            if (currentStatus) {
+                currentStatus.textContent = 'No API configured. Using mock data for demonstration.';
+                currentStatus.style.color = '#721c24';
+            }
+            if (clearBtn) {
+                clearBtn.style.display = 'none';
+            }
+        }
+    }
+}
+
+// Open API configuration modal
+function openApiModal() {
+    const modal = document.getElementById('apiModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        updateApiStatus();
+    }
+}
+
+// Close API configuration modal
+function closeApiModal() {
+    const modal = document.getElementById('apiModal');
+    const statusDiv = document.getElementById('apiConfigStatus');
+    
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    if (statusDiv) {
+        statusDiv.style.display = 'none';
+        statusDiv.textContent = '';
+        statusDiv.className = '';
+    }
+}
+
+// Handle API configuration form submission
+async function handleApiConfig(e) {
+    e.preventDefault();
+    
+    const rentcastKey = document.getElementById('rentcastKey').value;
+    const statusDiv = document.getElementById('apiConfigStatus');
+    
+    if (!rentcastKey) {
+        showConfigStatus('Please enter your RentCast API key', 'error');
+        return;
+    }
+    
+    // This modal is now for Zillow API configuration
+    showConfigStatus('Zillow API is already configured via config.js', 'success');
+    updateApiStatus();
+    
+    // Close modal after 2 seconds
+    setTimeout(() => {
+        closeApiModal();
+    }, 2000);
+}
+
+// Clear API configuration
+function clearApiConfig() {
+    if (confirm('Are you sure you want to clear your API configuration?')) {
+        localStorage.removeItem('zillow_configured');
+        if (window.propertyAPI) {
+            window.propertyAPI.setApiKey('');
+        }
+        updateApiStatus();
+        showConfigStatus('API configuration cleared', 'success');
+    }
+}
+
+// Show configuration status message
+function showConfigStatus(message, type) {
+    const statusDiv = document.getElementById('apiConfigStatus');
+    if (statusDiv) {
+        statusDiv.textContent = message;
+        statusDiv.className = type;
+        statusDiv.style.display = 'block';
+    }
+}

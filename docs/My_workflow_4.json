@@ -1,0 +1,456 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-in",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "id": "f99538f6-472b-4879-9a0a-0209152277ee",
+      "position": [
+        -400,
+        240
+      ],
+      "webhookId": "0425f6db-8933-493e-b716-8c5e348b921a"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a real estate assistant. Extract the address in JSON format with this exact structure:\n\n{\n  \"address\": \"string\",\n  \"city\": \"string\",\n  \"state\": \"string\",\n  \"zipCode\": \"string\"\n}\n\nOnly respond with valid JSON. Do not include markdown or explanations.\n\nif the city and state is missing assume it is from a detroit, mi address. look up the address so that you can provide the zipcode as well.\n\nInput message:\n\"{{$json.body.Body}}\"",
+        "options": {}
+      },
+      "name": "Extract Address",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "id": "b88e970f-2c76-4050-9cdd-aa752b1caa93",
+      "position": [
+        -180,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "name": "OpenAI Model - Extract Address",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "id": "d6ea6e83-4450-4530-b134-648373850064",
+      "position": [
+        -92,
+        360
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "tqDaRwotySddLHTY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.rentcast.io/v1/properties",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "address",
+              "value": "={{$json.address}}"
+            },
+            {
+              "name": "city",
+              "value": "={{$json.city}}"
+            },
+            {
+              "name": "state",
+              "value": "={{$json.state}}"
+            },
+            {
+              "name": "zipCode",
+              "value": "={{$json.zipCode}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Request - RentCast Valuation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "id": "82f26212-f368-4f2e-97d2-072f7ee63f08",
+      "position": [
+        -400,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yTxJCgZPinTGrEbv",
+          "name": "rentcast credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1Ezm3A_oT1iVQgRb72UJ5c7Cmb_xUplbYJ0UvYJP2rq4/edit?tab=t.uhlpy2o5lgar#heading=h.ylkuwn7hznmw"
+      },
+      "name": "Google Docs - SOP",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 1,
+      "id": "ce0ae009-02a2-4cdf-bf06-42474667ca8c",
+      "position": [
+        640,
+        240
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "xGvFzu0eTZ6o9tE1",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prompt:\n\nUsing the JSON data provided about a property, determine which of the following investment strategies is the best fit:\n\nBRRRR: Based on potential for post-rehab equity, area appreciation, and refinance value.\n\nFix-and-Flip: Based on renovation potential and nearby comparable sales.\n\nBuy-and-Hold: Based on long-term rental income, property taxes, and stability of returns.\n\nSection 8: If the home is in okay condition, has low comps, and strong rental income, assess if it would work well with the Section 8 program in Detroit.\n\nAlso include:\n\nIncome potential for Detroit if not directly listed.\n\nA brief explanation of why the best strategy was selected.\n\nKey supporting property data (e.g., address, price, rent, zestimate, square footage, bedrooms, baths, condition, taxes, year built, and comps).\n\nThen:\n\nGenerate a concise, clear summary message to send over WhatsApp.\n\nGenerate a corresponding row of data to be logged into Google Sheets with all necessary fields to support strategy tracking and review.\n\n🧾 Example WhatsApp Summary Message Output\nyaml\nCopy\nEdit\n🏠 2404 Pennsylvania St, Detroit MI\n\nPrice: $550,000 | Zestimate: $589,800  \nRent Estimate: $1,608/month  \n7 beds, 5 baths | 3,365 sqft | Built 1913  \nType: Multi-Family (Triplex) | Taxes: $254/yr  \nRecent renovations and Airbnb use suggest strong income potential.\n\n✅ Suggested Strategy: Buy and Hold  \nReason: Renovated units, Airbnb track record, and cash flow-friendly taxes.\n\nAgent: Damian Hickman (EXP Realty)  \nPhone: 248-924-1377  \nLink: https://www.zillow.com/homedetails/2404-Pennsylvania-St-Detroit-MI-48214/88100740_zpid/\n\n\n\n{{ $json.content }}\n\n\n{{ JSON.stringify($('HTTP Request').item.json, null, 2) }}\n\n",
+        "options": {}
+      },
+      "name": "Evaluate Deal with SOP",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "id": "df95342e-e989-45fc-b3d9-97cbb9e152ba",
+      "position": [
+        856,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mSdCyW7B_a8RGWjE5FBjeWYtvWLBAfXfZb3z3gW7BzY",
+          "mode": "list",
+          "cachedResultName": "Framework Detroit AI Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mSdCyW7B_a8RGWjE5FBjeWYtvWLBAfXfZb3z3gW7BzY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1452649873,
+          "mode": "list",
+          "cachedResultName": "Valuation Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mSdCyW7B_a8RGWjE5FBjeWYtvWLBAfXfZb3z3gW7BzY/edit#gid=1452649873"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "output"
+          ],
+          "schema": [
+            {
+              "id": "output",
+              "displayName": "output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Save to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "id": "d2386b49-5058-49d8-9915-940bae320d90",
+      "position": [
+        1232,
+        240
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "xGvFzu0eTZ6o9tE1",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "+14155238886",
+        "to": "+13133486513",
+        "toWhatsapp": true,
+        "message": "={{ $json.decisionSummary }}\n\nFull sheet: https://docs.google.com/spreadsheets/d/1mSdCyW7B_a8RGWjE5FBjeWYtvWLBAfXfZb3z3gW7BzY/edit#gid=0",
+        "options": {}
+      },
+      "name": "Send WhatsApp via Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "id": "ddd07e39-7c96-4f8d-810d-a20851b6a90a",
+      "position": [
+        1452,
+        240
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "XTcAVmjWhbfY3L8b",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        944,
+        460
+      ],
+      "id": "6b3941dc-d0cd-4a10-a4fb-109493ba7cb1",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tqDaRwotySddLHTY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"address\": \"{{ JSON.parse($json.output).address }}\",\n  \"city\": \"{{ JSON.parse($json.output).city }}\",\n  \"state\": \"{{ JSON.parse($json.output).state }}\",\n  \"zipCode\": \"{{ JSON.parse($json.output).zipCode }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        240
+      ],
+      "id": "76021fbf-47c1-4019-8705-70545b8d8c4e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": " https://api.rentcast.io/v1/avm/value",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "address",
+              "value": "={{ $json.addressLine1 + \", \" + $json.city + \", \" + $json.state + \" \" + $json.zipCode }}\n"
+            },
+            {
+              "name": "radius",
+              "value": "0.5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Request - RentCast Valuation1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "id": "d0e139c4-2779-4d64-b65c-0e17c876043e",
+      "position": [
+        -180,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yTxJCgZPinTGrEbv",
+          "name": "rentcast credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://zillow-com1.p.rapidapi.com/property",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "address",
+              "value": "={{ $json.address }} , {{ $json.city }}, {{ $json.state }} , {{ $json.zipCode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        240
+      ],
+      "id": "081e5c66-70f6-4bea-8664-7f6ff406c382",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1FgzIvXsSUMbfRi5",
+          "name": "rapid api zillow"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model - Extract Address": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Address",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Address": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - RentCast Valuation": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - RentCast Valuation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs - SOP": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Deal with SOP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Deal with SOP": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp via Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Evaluate Deal with SOP",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - RentCast Valuation1": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Google Docs - SOP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3fe5df56-5443-4261-a73c-698bac797013",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "89eab49701952240efef5ec56c27596f73cc7102f398ba62604ca58cc6183888"
+  },
+  "id": "X9u7RcQTfvC7c9M1",
+  "tags": []
+}
