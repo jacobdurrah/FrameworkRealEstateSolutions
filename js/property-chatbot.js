@@ -145,73 +145,98 @@ class PropertyChatbot {
     }
 
     async parseUserIntent(message) {
-        // Simple pattern matching for common queries
-        const patterns = {
-            radius: /within (\d+) mile(?:s)? (?:of|from) (.+?)(?:\s|$)/i,
-            zipCode: /(?:zip|zipcode|zip code)\s*(\d{5})/i,
-            price: /(?:under|below|less than|max|maximum)\s*\$?(\d+)k?/i,
-            minPrice: /(?:over|above|more than|min|minimum)\s*\$?(\d+)k?/i,
-            bedrooms: /(\d+)\s*(?:bed|bedroom|br)/i,
-            sold: /sold|recent sales|recently sold/i,
-            address: /(?:at|near|around)\s+(\d+\s+[A-Za-z\s]+(?:st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive))/i
-        };
+        try {
+            // Use backend API for natural language processing
+            const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000/api' 
+                : '/api';
+                
+            const response = await fetch(`${baseUrl}/chatbot/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to parse message');
+            }
+            
+            const data = await response.json();
+            return data.parsedQuery || null;
+            
+        } catch (error) {
+            console.error('Failed to parse with backend, using local parsing:', error);
+            
+            // Fallback to local pattern matching
+            const patterns = {
+                radius: /within (\d+) mile(?:s)? (?:of|from) (.+?)(?:\s|$)/i,
+                zipCode: /(?:zip|zipcode|zip code)\s*(\d{5})/i,
+                price: /(?:under|below|less than|max|maximum)\s*\$?(\d+)k?/i,
+                minPrice: /(?:over|above|more than|min|minimum)\s*\$?(\d+)k?/i,
+                bedrooms: /(\d+)\s*(?:bed|bedroom|br)/i,
+                sold: /sold|recent sales|recently sold/i,
+                address: /(?:at|near|around)\s+(\d+\s+[A-Za-z\s]+(?:st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive))/i
+            };
 
-        const params = {};
+            const params = {};
 
-        // Extract radius search
-        const radiusMatch = message.match(patterns.radius);
-        if (radiusMatch) {
-            params.radius = radiusMatch[1];
-            params.searchAddress = radiusMatch[2];
-            params.needsGeocoding = true;
+            // Extract radius search
+            const radiusMatch = message.match(patterns.radius);
+            if (radiusMatch) {
+                params.radius = radiusMatch[1];
+                params.searchAddress = radiusMatch[2];
+                params.needsGeocoding = true;
+            }
+
+            // Extract zip code
+            const zipMatch = message.match(patterns.zipCode);
+            if (zipMatch) {
+                params.zipCode = zipMatch[1];
+                params.location = zipMatch[1];
+            }
+
+            // Extract price constraints
+            const maxPriceMatch = message.match(patterns.price);
+            if (maxPriceMatch) {
+                params.maxPrice = maxPriceMatch[1].endsWith('k') ? 
+                    parseInt(maxPriceMatch[1]) * 1000 : 
+                    parseInt(maxPriceMatch[1]);
+            }
+
+            const minPriceMatch = message.match(patterns.minPrice);
+            if (minPriceMatch) {
+                params.minPrice = minPriceMatch[1].endsWith('k') ? 
+                    parseInt(minPriceMatch[1]) * 1000 : 
+                    parseInt(minPriceMatch[1]);
+            }
+
+            // Extract bedrooms
+            const bedroomMatch = message.match(patterns.bedrooms);
+            if (bedroomMatch) {
+                params.minBeds = bedroomMatch[1];
+            }
+
+            // Check if looking for sold properties
+            if (patterns.sold.test(message)) {
+                params.status_type = 'RecentlySold';
+            }
+
+            // Extract specific address
+            const addressMatch = message.match(patterns.address);
+            if (addressMatch && !params.searchAddress) {
+                params.searchAddress = addressMatch[1];
+                params.needsGeocoding = true;
+            }
+
+            // Default location if none specified
+            if (!params.location && !params.zipCode && !params.searchAddress) {
+                params.location = 'Detroit, MI';
+            }
+
+            return Object.keys(params).length > 0 ? params : null;
         }
-
-        // Extract zip code
-        const zipMatch = message.match(patterns.zipCode);
-        if (zipMatch) {
-            params.zipCode = zipMatch[1];
-            params.location = zipMatch[1];
-        }
-
-        // Extract price constraints
-        const maxPriceMatch = message.match(patterns.price);
-        if (maxPriceMatch) {
-            params.maxPrice = maxPriceMatch[1].endsWith('k') ? 
-                parseInt(maxPriceMatch[1]) * 1000 : 
-                parseInt(maxPriceMatch[1]);
-        }
-
-        const minPriceMatch = message.match(patterns.minPrice);
-        if (minPriceMatch) {
-            params.minPrice = minPriceMatch[1].endsWith('k') ? 
-                parseInt(minPriceMatch[1]) * 1000 : 
-                parseInt(minPriceMatch[1]);
-        }
-
-        // Extract bedrooms
-        const bedroomMatch = message.match(patterns.bedrooms);
-        if (bedroomMatch) {
-            params.minBeds = bedroomMatch[1];
-        }
-
-        // Check if looking for sold properties
-        if (patterns.sold.test(message)) {
-            params.status_type = 'RecentlySold';
-        }
-
-        // Extract specific address
-        const addressMatch = message.match(patterns.address);
-        if (addressMatch && !params.searchAddress) {
-            params.searchAddress = addressMatch[1];
-            params.needsGeocoding = true;
-        }
-
-        // Default location if none specified
-        if (!params.location && !params.zipCode && !params.searchAddress) {
-            params.location = 'Detroit, MI';
-        }
-
-        return Object.keys(params).length > 0 ? params : null;
     }
 
     async searchProperties(params) {
@@ -233,8 +258,8 @@ class PropertyChatbot {
                     beds_min: params.minBeds
                 };
 
-                const results = await window.propertyAPI.searchPropertiesZillow(searchParams);
-                return results.props || [];
+                const results = await window.propertyAPI.searchPropertiesWithAPI(searchParams);
+                return results || [];
             } catch (error) {
                 console.error('API search error:', error);
                 return [];

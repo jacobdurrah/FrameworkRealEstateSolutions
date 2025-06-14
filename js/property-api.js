@@ -1,91 +1,64 @@
-// Property API Integration - Zillow RapidAPI
+// Property API Integration - Backend API
 
-// Zillow RapidAPI configuration
-const ZILLOW_CONFIG = {
-    baseUrl: 'https://zillow-com1.p.rapidapi.com',
+// API configuration - now using our secure backend
+const API_CONFIG = {
+    // Use app configuration if available, otherwise fallback
+    baseUrl: window.APP_CONFIG ? 
+        window.APP_CONFIG.API.getBaseUrl() : 
+        (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api'),
     headers: {
-        'X-RapidAPI-Key': '435eeaf287msh252959294ebf8abp1d39bbjsnc04db0da6d18',
-        'X-RapidAPI-Host': 'zillow-com1.p.rapidapi.com'
+        'Content-Type': 'application/json'
     }
 };
 
-// Available Zillow API endpoints
-const ZILLOW_ENDPOINTS = {
-    propertyExtendedSearch: '/propertyExtendedSearch',
-    property: '/property',
-    propertyByCoordinates: '/propertyByCoordinates',
-    similarSales: '/similarSales',
-    rentEstimate: '/rentEstimate'
+// Backend API endpoints
+const API_ENDPOINTS = {
+    search: '/properties/search',
+    property: '/properties',
+    radius: '/properties/radius',
+    chatbot: '/chatbot/message'
 };
 
-// Set API Key
-function setApiKey(zillowKey) {
-    if (zillowKey) {
-        ZILLOW_CONFIG.headers['X-RapidAPI-Key'] = zillowKey;
-        localStorage.setItem('zillow_configured', 'true');
-        localStorage.setItem('zillow_key', btoa(zillowKey));
-    } else if (zillowKey === '') {
-        // Clear key
-        ZILLOW_CONFIG.headers['X-RapidAPI-Key'] = '';
-        localStorage.removeItem('zillow_configured');
-        localStorage.removeItem('zillow_key');
-    }
-}
-
-// Load saved API key on page load
-function loadSavedApiKey() {
-    const zillowKey = localStorage.getItem('zillow_key');
-    
-    if (zillowKey) {
-        try {
-            ZILLOW_CONFIG.headers['X-RapidAPI-Key'] = atob(zillowKey);
-        } catch (e) {
-            console.error('Failed to load Zillow API key');
-        }
-    }
-}
-
-// Check if API is configured
+// Check if backend API is available
 function isApiConfigured() {
-    return localStorage.getItem('zillow_configured') === 'true' && ZILLOW_CONFIG.headers['X-RapidAPI-Key'];
+    // Always return true since we're using backend API
+    return true;
 }
 
 
-// Search properties using Zillow RapidAPI
+// Search properties using our backend API
 async function searchPropertiesZillow(params) {
     try {
-        const queryParams = new URLSearchParams({
-            location: params.location || 'Detroit, MI',
-            status_type: params.status_type || 'ForSale',
-            home_type: params.home_type || 'Houses',
-            ...(params.minPrice && { minPrice: params.minPrice }),
-            ...(params.maxPrice && { maxPrice: params.maxPrice }),
-            ...(params.beds_min && { beds_min: params.beds_min }),
-            ...(params.sqft_min && { sqft_min: params.sqft_min }),
-            ...(params.sqft_max && { sqft_max: params.sqft_max }),
-            ...(params.sort && { sort: params.sort })
-        });
-        
-        const response = await fetch(`${ZILLOW_CONFIG.baseUrl}${ZILLOW_ENDPOINTS.propertyExtendedSearch}?${queryParams}`, {
-            headers: ZILLOW_CONFIG.headers
+        const response = await fetch(`${API_CONFIG.baseUrl}/properties/search`, {
+            method: 'POST',
+            headers: API_CONFIG.headers,
+            body: JSON.stringify({
+                location: params.location || 'Detroit, MI',
+                status_type: params.status_type || 'ForSale',
+                home_type: params.home_type || 'Houses',
+                minPrice: params.minPrice,
+                maxPrice: params.maxPrice,
+                beds_min: params.beds_min,
+                sqft_min: params.sqft_min,
+                sqft_max: params.sqft_max,
+                sort: params.sort
+            })
         });
         
         if (!response.ok) {
+            const errorData = await response.json();
             if (response.status === 403) {
-                console.error('API Key Error: The Zillow API key may have exceeded its rate limit or subscription quota.');
-                throw new Error('API rate limit exceeded. Using mock data instead.');
-            } else if (response.status === 429) {
-                console.error('API Rate Limit: Too many requests. Please wait a moment and try again.');
-                throw new Error('Too many requests. Please wait and try again.');
+                console.error('API rate limit exceeded');
+                throw new Error(errorData.message || 'API rate limit exceeded. Using mock data instead.');
             }
-            throw new Error(`Zillow API error: ${response.status}`);
+            throw new Error(errorData.message || `API error: ${response.status}`);
         }
         
         const data = await response.json();
         return data;
         
     } catch (error) {
-        console.error('Zillow API error:', error);
+        console.error('Property search error:', error);
         throw error;
     }
 }
@@ -93,28 +66,29 @@ async function searchPropertiesZillow(params) {
 // Search properties by coordinates and radius
 async function searchPropertiesByRadius(params) {
     try {
-        const queryParams = new URLSearchParams({
-            lat: params.lat,
-            lng: params.lng,
-            radius: params.radius || '1', // radius in miles
-            status_type: params.status_type || 'ForSale',
-            home_type: params.home_type || 'Houses',
-            ...(params.minPrice && { minPrice: params.minPrice }),
-            ...(params.maxPrice && { maxPrice: params.maxPrice })
-        });
-        
-        const response = await fetch(`${ZILLOW_CONFIG.baseUrl}${ZILLOW_ENDPOINTS.propertyByCoordinates}?${queryParams}`, {
-            headers: ZILLOW_CONFIG.headers
+        const response = await fetch(`${API_CONFIG.baseUrl}/properties/radius`, {
+            method: 'POST',
+            headers: API_CONFIG.headers,
+            body: JSON.stringify({
+                lat: params.lat,
+                lng: params.lng,
+                radius: params.radius || '1',
+                status_type: params.status_type || 'ForSale',
+                home_type: params.home_type || 'Houses',
+                minPrice: params.minPrice,
+                maxPrice: params.maxPrice
+            })
         });
         
         if (!response.ok) {
-            throw new Error(`Zillow API error: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.message || `API error: ${response.status}`);
         }
         
         return await response.json();
         
     } catch (error) {
-        console.error('Zillow radius search error:', error);
+        console.error('Radius search error:', error);
         throw error;
     }
 }
@@ -122,45 +96,41 @@ async function searchPropertiesByRadius(params) {
 // Get similar sales for property analysis
 async function getSimilarSales(zpid) {
     try {
-        const queryParams = new URLSearchParams({
-            zpid: zpid
-        });
-        
-        const response = await fetch(`${ZILLOW_CONFIG.baseUrl}${ZILLOW_ENDPOINTS.similarSales}?${queryParams}`, {
-            headers: ZILLOW_CONFIG.headers
+        const response = await fetch(`${API_CONFIG.baseUrl}/properties/${zpid}/similar`, {
+            method: 'GET',
+            headers: API_CONFIG.headers
         });
         
         if (!response.ok) {
-            throw new Error(`Zillow API error: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.message || `API error: ${response.status}`);
         }
         
         return await response.json();
         
     } catch (error) {
-        console.error('Zillow similar sales error:', error);
+        console.error('Similar sales error:', error);
         throw error;
     }
 }
 
-// Get property details from Zillow
+// Get property details from backend
 async function getPropertyDetailsZillow(zpid) {
     try {
-        const queryParams = new URLSearchParams({
-            zpid: zpid
-        });
-        
-        const response = await fetch(`${ZILLOW_CONFIG.baseUrl}/property?${queryParams}`, {
-            headers: ZILLOW_CONFIG.headers
+        const response = await fetch(`${API_CONFIG.baseUrl}/properties/${zpid}`, {
+            method: 'GET',
+            headers: API_CONFIG.headers
         });
         
         if (!response.ok) {
-            throw new Error(`Zillow API error: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.message || `API error: ${response.status}`);
         }
         
         return await response.json();
         
     } catch (error) {
-        console.error('Zillow property details error:', error);
+        console.error('Property details error:', error);
         throw error;
     }
 }
@@ -311,21 +281,13 @@ function mapPropertyType(type) {
     return typeMap[type] || 'Houses';
 }
 
-// Initialize API on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // API key is now embedded directly
-    localStorage.setItem('zillow_configured', 'true');
-});
-
 // Export functions for use in property-finder.js
 window.propertyAPI = {
-    setApiKey,
     isApiConfigured,
     searchPropertiesWithAPI,
     searchPropertiesZillow,
     searchPropertiesByRadius,
     getPropertyDetailsZillow,
     getSimilarSales,
-    loadSavedApiKey,
     formatZillowProperty
 };

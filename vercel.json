@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "env": {
+    "ZILLOW_API_KEY": "@zillow-api-key"
+  },
+  "build": {
+    "env": {
+      "ZILLOW_API_KEY": "@zillow-api-key"
+    }
+  }
+}

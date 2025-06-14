@@ -1,20 +1,23 @@
 {
   "name": "framework-realestate-solutions",
   "version": "1.0.0",
-  "description": "A comprehensive framework for building real estate investment technology platforms",
+  "description": "AI-powered real estate investment platform for Framework Real Estate Solutions",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "agent": "node src/services/agent/index.js",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
     "winston": "^3.11.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "eslint": "^8.56.0"
+    "eslint": "^8.56.0",
+    "vercel": "^32.5.0"
   },
   "engines": {
     "node": ">=18.0.0"
