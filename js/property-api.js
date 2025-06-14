@@ -71,6 +71,10 @@ async function searchPropertiesZillow(params) {
         });
         
         if (!response.ok) {
+            if (response.status === 403) {
+                console.error('API Key Error: The Zillow API key may have exceeded its rate limit or subscription quota.');
+                throw new Error('API rate limit exceeded. Using mock data instead.');
+            }
             throw new Error(`Zillow API error: ${response.status}`);
         }
         
@@ -284,6 +288,12 @@ async function searchPropertiesWithAPI(searchParams) {
         return [];
     } catch (error) {
         console.error('Zillow search failed, using mock data:', error);
+        // Show user-friendly message
+        const apiStatus = document.getElementById('apiStatus');
+        if (apiStatus) {
+            apiStatus.textContent = '⚠ API Limit Reached - Using Demo Data';
+            apiStatus.className = 'api-status disconnected';
+        }
         return searchProperties(searchParams); // Falls back to mock data
     }
 }
