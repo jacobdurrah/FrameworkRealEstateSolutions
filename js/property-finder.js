@@ -362,7 +362,7 @@ function createPropertyCard(property, parcelData = null) {
                     📊 Analyze
                 </button>
                 ${parcelInfo ? `
-                <button class="btn btn-outline" onclick="viewPropertyDetails('${property.address}')">
+                <button class="btn btn-outline" onclick="viewPropertyDetails('${property.address}', ${JSON.stringify(parcelInfo).replace(/"/g, '&quot;')})">
                     📋 Details
                 </button>
                 <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
@@ -541,8 +541,35 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Store last search results for refresh
 window.lastSearchResults = null;
 
-// View detailed property information
-async function viewPropertyDetails(address) {
+// Extract street address from full address
+function extractStreetAddress(fullAddress) {
+    const parts = fullAddress.split(',');
+    const streetPart = parts[0].trim().toUpperCase();
+    
+    // Remove common suffixes
+    return streetPart
+        .replace(/\bSTREET\b/g, '')
+        .replace(/\bST\b/g, '')
+        .replace(/\bAVENUE\b/g, '')
+        .replace(/\bAVE\b/g, '')
+        .replace(/\bDRIVE\b/g, '')
+        .replace(/\bDR\b/g, '')
+        .replace(/\bROAD\b/g, '')
+        .replace(/\bRD\b/g, '')
+        .replace(/\bBOULEVARD\b/g, '')
+        .replace(/\bBLVD\b/g, '')
+        .replace(/\bCOURT\b/g, '')
+        .replace(/\bCT\b/g, '')
+        .replace(/\bPLACE\b/g, '')
+        .replace(/\bPL\b/g, '')
+        .replace(/\bLANE\b/g, '')
+        .replace(/\bLN\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// View detailed property information  
+async function viewPropertyDetails(address, parcelData = null) {
     if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
         alert('Property details service not available');
         return;
@@ -558,13 +585,24 @@ async function viewPropertyDetails(address) {
     document.getElementById('propertyDetailsModal').style.display = 'block';
     
     try {
-        const parcelInfo = await window.parcelAPIService.getParcelByAddress(address);
+        let parcelInfo = parcelData;
+        
+        // If parcel data not provided, fetch it
+        if (!parcelInfo) {
+            // Extract street address for API lookup
+            const streetAddress = extractStreetAddress(address);
+            console.log(`Looking up property details for: "${streetAddress}" (from "${address}")`);
+            
+            parcelInfo = await window.parcelAPIService.getParcelByAddress(streetAddress);
+        }
+        
         if (!parcelInfo) {
             document.getElementById('propertyDetailsContent').innerHTML = '<div style="text-align: center; padding: 40px;">Property details not found</div>';
             return;
         }
         
-        openPropertyDetailsModal(parcelInfo);
+        // Pass both addresses for display
+        openPropertyDetailsModal(parcelInfo, address);
     } catch (error) {
         console.error('Error loading property details:', error);
         document.getElementById('propertyDetailsContent').innerHTML = '<div style="text-align: center; padding: 40px;">Error loading property details</div>';
@@ -572,16 +610,25 @@ async function viewPropertyDetails(address) {
 }
 
 // Open property details modal
-function openPropertyDetailsModal(parcelInfo) {
+function openPropertyDetailsModal(parcelInfo, fullAddress = null) {
     const modal = document.getElementById('propertyDetailsModal');
     if (!modal) {
         createPropertyDetailsModal();
     }
     
+    // Create Zillow search URL
+    const addressForZillow = fullAddress || parcelInfo.address;
+    const zillowUrl = `https://www.zillow.com/homes/${encodeURIComponent(addressForZillow)}_rb/`;
+    
     // Populate modal with property data
     const detailsContent = document.getElementById('propertyDetailsContent');
     detailsContent.innerHTML = `
         <h3>${parcelInfo.address}</h3>
+        <div style="margin-bottom: 20px;">
+            <a href="${zillowUrl}" target="_blank" class="btn btn-outline" style="display: inline-block;">
+                🏠 View on Zillow
+            </a>
+        </div>
         <div class="details-section">
             <h4>Property Information</h4>
             <div class="detail-row">
