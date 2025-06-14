@@ -472,6 +472,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             console.groupEnd();
             
+            // Add a test lookup for 2404 Pennsylvania
+            console.group('Testing 2404 Pennsylvania lookup');
+            try {
+                const pennData = await window.parcelAPIService.getParcelByAddress('2404 PENNSYLVANIA');
+                if (pennData) {
+                    console.log('✅ 2404 PENNSYLVANIA found:', pennData.owner.fullName);
+                    console.log('Full data:', pennData);
+                } else {
+                    console.log('❌ 2404 PENNSYLVANIA not found');
+                    // Try with STREET
+                    const pennData2 = await window.parcelAPIService.getParcelByAddress('2404 PENNSYLVANIA STREET');
+                    if (pennData2) {
+                        console.log('✅ Found with STREET added:', pennData2.owner.fullName);
+                    }
+                }
+            } catch (error) {
+                console.error('Error testing Pennsylvania address:', error);
+            }
+            console.groupEnd();
+            
             // If we have an active search, refresh it to show parcel data
             const resultsContainer = document.getElementById('resultsContainer');
             console.log('Results container exists:', !!resultsContainer);

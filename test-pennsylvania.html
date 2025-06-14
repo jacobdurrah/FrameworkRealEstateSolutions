@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Parcel Lookup - 2404 Pennsylvania</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        .btn {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #555;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffe7e7;
+            color: #d00;
+        }
+        .success {
+            background: #e7ffe7;
+            color: #060;
+        }
+        .property-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            background: white;
+        }
+        .property-detail {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+        }
+        .value {
+            color: #333;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-ok { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Parcel Data Test - 2404 Pennsylvania Street, Detroit MI</h1>
+        
+        <div class="test-section">
+            <h2>Quick Actions</h2>
+            <button class="btn" onclick="runAllTests()">🚀 Run All Tests</button>
+            <button class="btn" onclick="checkSpecificAddress()">🏠 Check 2404 Pennsylvania</button>
+            <button class="btn" onclick="checkVariations()">🔄 Try Address Variations</button>
+            <button class="btn" onclick="searchDatabase()">🔎 Search Database</button>
+            <button class="btn" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Results</h2>
+            <div id="results" class="result">Click a button above to start testing...</div>
+        </div>
+
+        <div id="propertyDisplay"></div>
+    </div>
+
+    <!-- Load dependencies -->
+    <script src="js/app-config.js"></script>
+    <script src="js/parcel-api.js"></script>
+    
+    <script>
+        let results = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            results.push(`[${timestamp}] ${prefix} ${message}`);
+            updateResults();
+        }
+        
+        function updateResults() {
+            document.getElementById('results').textContent = results.join('\n');
+        }
+        
+        function clearResults() {
+            results = [];
+            updateResults();
+            document.getElementById('propertyDisplay').innerHTML = '';
+        }
+        
+        async function runAllTests() {
+            clearResults();
+            log('Starting comprehensive tests...');
+            
+            // Test 1: Configuration
+            log('Test 1: Checking configuration...');
+            if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) {
+                log('Configuration found!', 'success');
+                log(`Supabase URL: ${window.APP_CONFIG.SUPABASE_URL}`);
+                log(`Parcel data enabled: ${window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA}`);
+            } else {
+                log('Configuration missing!', 'error');
+                return;
+            }
+            
+            // Test 2: Service initialization
+            log('\nTest 2: Checking parcel service...');
+            if (window.parcelAPIService) {
+                log('Parcel service exists', 'success');
+                
+                // Initialize if needed
+                if (!window.parcelAPIService.isReady()) {
+                    log('Initializing service...');
+                    const success = await window.parcelAPIService.init(
+                        window.APP_CONFIG.SUPABASE_URL,
+                        window.APP_CONFIG.SUPABASE_ANON_KEY
+                    );
+                    log(success ? 'Service initialized!' : 'Service initialization failed!', success ? 'success' : 'error');
+                } else {
+                    log('Service already initialized', 'success');
+                }
+            } else {
+                log('Parcel service not found!', 'error');
+                return;
+            }
+            
+            // Test 3: Specific address lookup
+            await checkSpecificAddress();
+            
+            // Test 4: Address variations
+            await checkVariations();
+        }
+        
+        async function checkSpecificAddress() {
+            log('\nTest: Looking up 2404 Pennsylvania Street...');
+            
+            try {
+                const data = await window.parcelAPIService.getParcelByAddress('2404 PENNSYLVANIA');
+                
+                if (data) {
+                    log('Property found!', 'success');
+                    displayProperty(data);
+                } else {
+                    log('Property not found with exact address', 'error');
+                    log('Trying with more specific address...');
+                    
+                    // Try with STREET added
+                    const data2 = await window.parcelAPIService.getParcelByAddress('2404 PENNSYLVANIA STREET');
+                    if (data2) {
+                        log('Property found with STREET added!', 'success');
+                        displayProperty(data2);
+                    } else {
+                        log('Property still not found', 'error');
+                    }
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkVariations() {
+            log('\nTest: Trying address variations...');
+            
+            const variations = [
+                '2404 PENNSYLVANIA',
+                '2404 PENNSYLVANIA ST',
+                '2404 PENNSYLVANIA STREET',
+                '2404 PENNSYLVANIA AVE',
+                '2404 PENNSYLVANIA AVENUE',
+                '2404 Pennsylvania',
+                '2404 pennsylvania'
+            ];
+            
+            for (const addr of variations) {
+                log(`Trying: "${addr}"`);
+                try {
+                    const data = await window.parcelAPIService.getParcelByAddress(addr);
+                    if (data) {
+                        log(`✅ Found with: "${addr}"`, 'success');
+                        log(`Owner: ${data.owner.fullName}`);
+                        log(`Parcel ID: ${data.parcelId}`);
+                        break;
+                    } else {
+                        log(`❌ Not found with: "${addr}"`);
+                    }
+                } catch (error) {
+                    log(`Error with "${addr}": ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function searchDatabase() {
+            log('\nSearching database for Pennsylvania properties...');
+            
+            try {
+                // Direct Supabase query for debugging
+                if (window.parcelAPIService.client) {
+                    const { data, error } = await window.parcelAPIService.client
+                        .from('parcels')
+                        .select('address, owner_full_name, parcel_id')
+                        .ilike('address', '%PENNSYLVANIA%')
+                        .limit(10);
+                    
+                    if (error) {
+                        log(`Database error: ${error.message}`, 'error');
+                    } else if (data && data.length > 0) {
+                        log(`Found ${data.length} Pennsylvania properties:`, 'success');
+                        data.forEach(p => {
+                            log(`  - ${p.address} (Owner: ${p.owner_full_name}, Parcel: ${p.parcel_id})`);
+                        });
+                        
+                        // Check if 2404 is in the results
+                        const target = data.find(p => p.address.includes('2404'));
+                        if (target) {
+                            log(`\n🎯 Found 2404 Pennsylvania! Exact address in database: "${target.address}"`, 'success');
+                        }
+                    } else {
+                        log('No Pennsylvania properties found in database', 'error');
+                    }
+                }
+            } catch (error) {
+                log(`Search error: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayProperty(data) {
+            const html = `
+                <div class="property-card">
+                    <h3>📍 ${data.address}</h3>
+                    
+                    <h4>Owner Information</h4>
+                    <div class="property-detail">
+                        <span class="label">Owner Name:</span>
+                        <span class="value">${data.owner.fullName || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Mailing Address:</span>
+                        <span class="value">${data.owner.fullMailingAddress || 'N/A'}</span>
+                    </div>
+                    
+                    <h4>Property Details</h4>
+                    <div class="property-detail">
+                        <span class="label">Parcel ID:</span>
+                        <span class="value">${data.parcelId || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Neighborhood:</span>
+                        <span class="value">${data.neighborhood || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Property Class:</span>
+                        <span class="value">${data.propertyClass || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Year Built:</span>
+                        <span class="value">${data.yearBuilt || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Square Footage:</span>
+                        <span class="value">${data.totalFloorArea ? data.totalFloorArea.toLocaleString() + ' sq ft' : 'N/A'}</span>
+                    </div>
+                    
+                    <h4>Valuation</h4>
+                    <div class="property-detail">
+                        <span class="label">Assessed Value:</span>
+                        <span class="value">$${(data.assessedValue || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Taxable Value:</span>
+                        <span class="value">$${(data.taxableValue || 0).toLocaleString()}</span>
+                    </div>
+                    
+                    <h4>Last Sale</h4>
+                    <div class="property-detail">
+                        <span class="label">Sale Date:</span>
+                        <span class="value">${data.lastSale.date || 'N/A'}</span>
+                    </div>
+                    <div class="property-detail">
+                        <span class="label">Sale Price:</span>
+                        <span class="value">${data.lastSale.price ? '$' + data.lastSale.price.toLocaleString() : 'N/A'}</span>
+                    </div>
+                    
+                    <h4>Raw Data</h4>
+                    <pre style="background: #f5f5f5; padding: 10px; overflow: auto; font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+            
+            document.getElementById('propertyDisplay').innerHTML = html;
+            log('Property details displayed below', 'success');
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded. Click "Run All Tests" to begin.');
+        });
+    </script>
+</body>
+</html>
