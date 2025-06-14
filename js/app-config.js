@@ -16,15 +16,15 @@ const CONFIG = {
     
     // Supabase configuration for parcel data
     // These are public keys safe to expose
-    SUPABASE_URL: 'YOUR_SUPABASE_PROJECT_URL',
-    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+    SUPABASE_URL: 'https://gzswtqlvffqcpifdyrnf.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6c3d0cWx2ZmZxY3BpZmR5cm5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MzM5ODcsImV4cCI6MjA2NTUwOTk4N30.8WTX9v2GD2MziYqfVn-ZBURcVqaCvjkdQjBUlv2-GgI',
     
     // Feature flags
     FEATURES: {
         USE_MOCK_DATA_FALLBACK: true,
         ENABLE_CHATBOT: true,
         SHOW_API_STATUS: true,
-        ENABLE_PARCEL_DATA: false // Set to true when Supabase is configured
+        ENABLE_PARCEL_DATA: true // Supabase is now configured
     },
     
     // Business rules
