@@ -79,8 +79,33 @@
     <!-- Search Section -->
     <section class="search-section">
         <div class="container">
-            <div class="search-card">
-                <h3>Property Search</h3>
+            <!-- Search Type Tabs -->
+            <div class="search-tabs">
+                <button class="search-tab active" onclick="switchSearchType('criteria')">
+                    <span class="tab-icon">🏘️</span>
+                    Search by Criteria
+                </button>
+                <button class="search-tab" onclick="switchSearchType('address')">
+                    <span class="tab-icon">📍</span>
+                    Search by Address
+                </button>
+                <button class="search-tab" onclick="switchSearchType('owner')">
+                    <span class="tab-icon">👤</span>
+                    Search by Owner
+                </button>
+                <button class="search-tab" onclick="switchSearchType('parcel')">
+                    <span class="tab-icon">📋</span>
+                    Search by Parcel ID
+                </button>
+                <button class="search-tab" onclick="switchSearchType('block')">
+                    <span class="tab-icon">🏢</span>
+                    Search by Block
+                </button>
+            </div>
+
+            <!-- Criteria Search -->
+            <div class="search-card search-type-content" id="searchCriteria">
+                <h3>Search by Investment Criteria</h3>
                 <form id="propertySearchForm" class="search-form">
                     <div class="search-grid">
                         <div class="form-group">
@@ -111,6 +136,78 @@
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-search">Search Properties</button>
+                </form>
+            </div>
+
+            <!-- Address Search -->
+            <div class="search-card search-type-content" id="searchAddress" style="display: none;">
+                <h3>Search by Property Address</h3>
+                <form id="addressSearchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="addressInput">Enter Property Address</label>
+                        <input type="text" id="addressInput" name="addressInput" 
+                               placeholder="e.g., 442 Chandler, Detroit, MI" 
+                               class="large-input"
+                               autocomplete="off">
+                        <div id="addressSuggestions" class="address-suggestions"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-search">Search Address</button>
+                </form>
+            </div>
+
+            <!-- Owner Search -->
+            <div class="search-card search-type-content" id="searchOwner" style="display: none;">
+                <h3>Search by Property Owner</h3>
+                <form id="ownerSearchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="ownerName">Owner Name</label>
+                        <input type="text" id="ownerName" name="ownerName" 
+                               placeholder="e.g., John Smith or Smith LLC" 
+                               class="large-input">
+                    </div>
+                    <div class="search-options">
+                        <label>
+                            <input type="checkbox" id="exactMatch" name="exactMatch">
+                            Exact match only
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-search">Search by Owner</button>
+                </form>
+            </div>
+
+            <!-- Parcel ID Search -->
+            <div class="search-card search-type-content" id="searchParcel" style="display: none;">
+                <h3>Search by Parcel ID</h3>
+                <form id="parcelSearchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="parcelId">Parcel ID</label>
+                        <input type="text" id="parcelId" name="parcelId" 
+                               placeholder="e.g., 01234567" 
+                               class="large-input">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-search">Search by Parcel ID</button>
+                </form>
+            </div>
+
+            <!-- Block Search -->
+            <div class="search-card search-type-content" id="searchBlock" style="display: none;">
+                <h3>Search Properties on Block</h3>
+                <form id="blockSearchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="blockAddress">Reference Address on Block</label>
+                        <input type="text" id="blockAddress" name="blockAddress" 
+                               placeholder="Enter any address on the block" 
+                               class="large-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="blockRadius">Search Radius</label>
+                        <select id="blockRadius" name="blockRadius">
+                            <option value="250">250 feet (same block)</option>
+                            <option value="500" selected>500 feet (nearby)</option>
+                            <option value="1000">1000 feet (neighborhood)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-search">Search Block</button>
                 </form>
             </div>
         </div>

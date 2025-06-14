@@ -147,6 +147,47 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', async 
     }
 });
 
+// Address search form handler
+document.getElementById('addressSearchForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const address = document.getElementById('addressInput').value;
+    if (!address) return;
+    
+    showLoading();
+    await searchByAddress(address);
+});
+
+// Owner search form handler
+document.getElementById('ownerSearchForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const ownerName = document.getElementById('ownerName').value;
+    if (!ownerName) return;
+    
+    showLoading();
+    await searchByOwner(ownerName, false); // false = don't open in new tab
+});
+
+// Parcel search form handler
+document.getElementById('parcelSearchForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const parcelId = document.getElementById('parcelId').value;
+    if (!parcelId) return;
+    
+    showLoading();
+    await searchByParcelId(parcelId);
+});
+
+// Block search form handler
+document.getElementById('blockSearchForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const address = document.getElementById('blockAddress').value;
+    const radius = document.getElementById('blockRadius').value;
+    if (!address) return;
+    
+    showLoading();
+    await searchByBlock(address, radius);
+});
+
 // Removed preloadParcelData function - using API directly instead
 
 // Search properties based on criteria
@@ -171,7 +212,7 @@ function searchProperties(criteria) {
 }
 
 // Display search results
-async function displayResults(properties) {
+async function displayResults(properties, title = null) {
     const resultsSection = document.getElementById('resultsSection');
     const resultsContainer = document.getElementById('resultsContainer');
     const resultCount = document.getElementById('resultCount');
@@ -189,11 +230,16 @@ async function displayResults(properties) {
     // Clear previous results
     resultsContainer.innerHTML = '';
     
+    // Add custom title if provided
+    if (title) {
+        resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px; text-align: center;">${title}</h3>`;
+    }
+    
     // Show results section
     resultsSection.style.display = 'block';
     
     if (properties.length === 0) {
-        resultsContainer.innerHTML = `
+        resultsContainer.innerHTML += `
             <div class="no-results">
                 <p>No properties found matching your criteria.</p>
                 <p>Try adjusting your search parameters.</p>
@@ -272,11 +318,31 @@ async function displayResults(properties) {
 
 // Create property card element
 function createPropertyCard(property, parcelData = null) {
-    const totalInvestment = property.price + property.estimatedRehab;
+    const price = property.price || property.zestimate || 0;
+    const rehabEstimate = property.estimatedRehab || 8000; // Default rehab estimate
+    const totalInvestment = price + rehabEstimate;
     const monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate || 1329;
     const annualRent = monthlyRent * 12;
-    const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
-    const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
+    
+    // Calculate key metrics
+    const downPayment = price * 0.25; // 25% down
+    const loanAmount = price - downPayment;
+    const monthlyPayment = calculateMonthlyPayment(loanAmount, 7.5, 30); // 7.5% rate, 30 years
+    const totalCashNeeded = downPayment + rehabEstimate + 2000; // +closing costs
+    
+    // Operating expenses (rough estimates)
+    const monthlyTax = (parcelData?.taxableValue || price) * 0.02 / 12; // 2% annual tax
+    const monthlyInsurance = 85;
+    const propertyManagement = monthlyRent * 0.08; // 8%
+    const maintenance = monthlyRent * 0.05; // 5%
+    const reserves = monthlyRent * 0.05; // 5%
+    const totalExpenses = monthlyTax + monthlyInsurance + propertyManagement + maintenance + reserves;
+    
+    // Cash flow and returns
+    const monthlyCashFlow = monthlyRent - totalExpenses - monthlyPayment;
+    const annualCashFlow = monthlyCashFlow * 12;
+    const cashOnCash = totalCashNeeded > 0 ? (annualCashFlow / totalCashNeeded * 100) : 0;
+    const capRate = price > 0 ? ((monthlyRent - totalExpenses) * 12 / price * 100) : 0;
     
     // Use provided parcel data
     const parcelInfo = parcelData || null;
@@ -333,22 +399,39 @@ function createPropertyCard(property, parcelData = null) {
                 <span>Built ${property.yearBuilt}</span>
                 ${parcelInfo ? `<span>Assessed: $${(parcelInfo.assessedValue || 0).toLocaleString()}</span>` : ''}
             </div>
-            <div class="property-result-analysis">
-                <div class="analysis-item">
-                    <span class="analysis-label">Est. Rehab:</span>
-                    <span class="analysis-value">$${property.estimatedRehab.toLocaleString()}</span>
+            ${parcelInfo ? `
+            <div class="property-status-badges">
+                ${parcelInfo.taxStatus === 'Current' ? 
+                    '<span class="status-badge tax-current">Tax Current</span>' : 
+                    '<span class="status-badge tax-delinquent">Tax Delinquent</span>'}
+                ${parcelInfo.buildingStatus === 'Occupied' ? 
+                    '<span class="status-badge owner-occupied">Occupied</span>' : 
+                    parcelInfo.buildingStatus === 'Vacant' ?
+                    '<span class="status-badge vacant">Vacant</span>' : ''}
+            </div>
+            ` : ''}
+            <div class="property-metrics">
+                <div class="metric-item">
+                    <span class="metric-label">Monthly Cash Flow</span>
+                    <span class="metric-value ${monthlyCashFlow >= 0 ? 'positive' : 'negative'}">
+                        $${Math.abs(monthlyCashFlow).toFixed(0)}
+                    </span>
                 </div>
-                <div class="analysis-item">
-                    <span class="analysis-label">Total Investment:</span>
-                    <span class="analysis-value">$${totalInvestment.toLocaleString()}</span>
+                <div class="metric-item">
+                    <span class="metric-label">Cash on Cash</span>
+                    <span class="metric-value ${cashOnCash >= 8 ? 'positive' : ''}">
+                        ${cashOnCash.toFixed(1)}%
+                    </span>
                 </div>
-                <div class="analysis-item">
-                    <span class="analysis-label">Potential Rent:</span>
-                    <span class="analysis-value">$${monthlyRent}/mo</span>
+                <div class="metric-item">
+                    <span class="metric-label">Cap Rate</span>
+                    <span class="metric-value ${capRate >= 8 ? 'positive' : ''}">
+                        ${capRate.toFixed(1)}%
+                    </span>
                 </div>
-                <div class="analysis-item">
-                    <span class="analysis-label">Est. ROI:</span>
-                    <span class="analysis-value">${estimatedROI}%</span>
+                <div class="metric-item">
+                    <span class="metric-label">Total Investment</span>
+                    <span class="metric-value">$${totalInvestment.toLocaleString()}</span>
                 </div>
             </div>
             ${property.description ? `<p style="margin-bottom: var(--spacing-md); font-size: 0.875rem; color: var(--dark-gray);">
@@ -540,6 +623,41 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Store last search results for refresh
 window.lastSearchResults = null;
+
+// Switch between search types
+function switchSearchType(type) {
+    // Update tabs
+    document.querySelectorAll('.search-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.closest('.search-tab').classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.search-type-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    const searchTypeMap = {
+        'criteria': 'searchCriteria',
+        'address': 'searchAddress',
+        'owner': 'searchOwner',
+        'parcel': 'searchParcel',
+        'block': 'searchBlock'
+    };
+    
+    document.getElementById(searchTypeMap[type]).style.display = 'block';
+}
+
+// Calculate monthly payment (P&I)
+function calculateMonthlyPayment(principal, annualRate, years) {
+    const monthlyRate = annualRate / 100 / 12;
+    const numPayments = years * 12;
+    
+    if (monthlyRate === 0) return principal / numPayments;
+    
+    return principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+           (Math.pow(1 + monthlyRate, numPayments) - 1);
+}
 
 // Extract street address from full address
 function extractStreetAddress(fullAddress) {
@@ -752,22 +870,169 @@ function closePropertyDetailsModal() {
     document.getElementById('propertyDetailsModal').style.display = 'none';
 }
 
-// Search for properties by owner
-async function searchByOwner(ownerName) {
+// Search by property address
+async function searchByAddress(address) {
+    try {
+        // First try to get complete property data
+        const propertyData = await getCompletePropertyData(address);
+        
+        if (propertyData.listing || propertyData.parcel) {
+            // Display single property result
+            const property = {
+                address: address,
+                price: propertyData.listing?.price || propertyData.parcel?.assessedValue || 0,
+                bedrooms: propertyData.listing?.bedrooms || 3,
+                bathrooms: propertyData.listing?.bathrooms || 1,
+                sqft: propertyData.listing?.livingArea || propertyData.parcel?.totalFloorArea || 1200,
+                yearBuilt: propertyData.listing?.yearBuilt || propertyData.parcel?.yearBuilt,
+                propertyType: 'single-family',
+                estimatedRehab: 8000,
+                monthlyRent: propertyData.listing?.rentZestimate || 1329,
+                description: propertyData.listing?.description,
+                images: propertyData.listing?.images || [],
+                latitude: propertyData.location?.lat,
+                longitude: propertyData.location?.lng,
+                zestimate: propertyData.listing?.zestimate,
+                parcelData: propertyData.parcel,
+                blockAnalysis: propertyData.blockAnalysis
+            };
+            
+            displayResults([property], `Property at ${address}`);
+        } else {
+            alert('Property not found. Please check the address and try again.');
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Error searching by address:', error);
+        alert('Error searching for property');
+        hideLoading();
+    }
+}
+
+// Search by parcel ID
+async function searchByParcelId(parcelId) {
+    if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+        alert('Parcel search service not available');
+        return;
+    }
+    
+    try {
+        // Query Supabase for parcel
+        const { data, error } = await window.parcelAPIService.client
+            .from('parcels')
+            .select('*')
+            .eq('parcel_id', parcelId)
+            .single();
+            
+        if (error || !data) {
+            alert('Parcel not found');
+            hideLoading();
+            return;
+        }
+        
+        const parcelData = window.parcelAPIService.transformParcelData(data);
+        
+        // Create property object from parcel data
+        const property = {
+            address: parcelData.address,
+            city: 'Detroit',
+            state: 'MI',
+            zip: parcelData.zipCode,
+            price: parcelData.assessedValue || 0,
+            yearBuilt: parcelData.yearBuilt,
+            propertyType: 'single-family',
+            estimatedRehab: 8000,
+            bedrooms: 3,
+            bathrooms: 1,
+            sqft: parcelData.totalFloorArea || 1200,
+            monthlyRent: 1329, // Default to 3BR rent
+            parcelData: parcelData
+        };
+        
+        displayResults([property], `Parcel ${parcelId}`);
+    } catch (error) {
+        console.error('Error searching by parcel:', error);
+        alert('Error searching for parcel');
+        hideLoading();
+    }
+}
+
+// Search properties on block
+async function searchByBlock(address, radius) {
+    try {
+        // First geocode the address
+        const geocoded = await geocodeAddress(address);
+        if (!geocoded) {
+            alert('Could not find the specified address');
+            hideLoading();
+            return;
+        }
+        
+        // Search for properties within radius
+        const results = await searchPropertiesByRadius({
+            lat: geocoded.lat,
+            lng: geocoded.lng,
+            radius: radius || '500',
+            minPrice: 1,
+            maxPrice: 500000
+        });
+        
+        if (results && results.length > 0) {
+            displayResults(results, `Properties within ${radius} feet of ${address}`);
+        } else {
+            alert('No properties found in the specified area');
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Error searching block:', error);
+        alert('Error searching for properties on block');
+        hideLoading();
+    }
+}
+
+// Search for properties by owner (updated to handle tab vs new window)
+async function searchByOwner(ownerName, openInNewTab = true) {
     if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
         alert('Property search service not available');
         return;
     }
     
-    // Show loading state
-    showLoading();
-    
     try {
         const properties = await window.parcelAPIService.searchByOwner(ownerName);
-        displayOwnerResults(properties, `Properties owned by ${ownerName}`);
+        
+        if (openInNewTab) {
+            // Original behavior - open in new tab/window
+            displayOwnerResults(properties, `Properties owned by ${ownerName}`);
+        } else {
+            // New behavior - display in current results
+            if (properties.length > 0) {
+                // Convert parcel data to property format
+                const formattedProperties = properties.map(parcel => ({
+                    address: parcel.address,
+                    city: 'Detroit',
+                    state: 'MI',
+                    zip: parcel.zipCode,
+                    price: parcel.assessedValue || 0,
+                    yearBuilt: parcel.yearBuilt,
+                    propertyType: 'single-family',
+                    estimatedRehab: 8000,
+                    bedrooms: 3,
+                    bathrooms: 1,
+                    sqft: parcel.totalFloorArea || 1200,
+                    monthlyRent: 1329,
+                    parcelData: parcel
+                }));
+                
+                displayResults(formattedProperties, `Properties owned by ${ownerName}`);
+            } else {
+                alert('No properties found for this owner');
+                hideLoading();
+            }
+        }
     } catch (error) {
         console.error('Error searching by owner:', error);
         alert('Error searching for properties');
+        hideLoading();
     }
 }
 
@@ -876,6 +1141,112 @@ async function testParcelData() {
     console.log('=== Test Complete ===');
 }
 
+// Hide loading spinner
+function hideLoading() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'none';
+    }
+}
+
+// Get complete property data from all sources
+async function getCompletePropertyData(address) {
+    try {
+        // Try to search Zillow first
+        const zillowResults = await window.propertyAPI?.searchPropertiesWithAPI({
+            location: address,
+            maxPrice: 500000
+        }).catch(() => null);
+        
+        const zillowData = zillowResults?.results?.find(p => 
+            p.address.toLowerCase().includes(address.toLowerCase().split(',')[0])
+        );
+        
+        // Get parcel data
+        const streetAddress = extractStreetAddress(address);
+        const parcelData = await window.parcelAPIService?.getParcelByAddress(streetAddress).catch(() => null);
+        
+        // Geocode if needed
+        let coordinates = null;
+        if (zillowData?.latitude && zillowData?.longitude) {
+            coordinates = { lat: zillowData.latitude, lng: zillowData.longitude };
+        } else {
+            coordinates = await geocodeAddress(address).catch(() => null);
+        }
+        
+        // Get block analysis if available
+        let blockAnalysis = null;
+        if (coordinates && parcelData?.parcelId) {
+            blockAnalysis = await analyzeBlock(parcelData.parcelId, coordinates).catch(() => null);
+        }
+        
+        return {
+            listing: zillowData,
+            parcel: parcelData,
+            location: coordinates,
+            blockAnalysis: blockAnalysis
+        };
+    } catch (error) {
+        console.error('Error getting complete property data:', error);
+        return { listing: null, parcel: null, location: null, blockAnalysis: null };
+    }
+}
+
+// Geocode address using Detroit geocoding service
+async function geocodeAddress(address) {
+    try {
+        const GEOCODER = 'https://opengis.detroitmi.gov/opengis/rest/services/BaseUnits/BaseUnitGeocoder/GeocodeServer';
+        
+        const response = await fetch(`${GEOCODER}/findAddressCandidates?` + new URLSearchParams({
+            singleLine: address + ', Detroit, MI',
+            outFields: '*',
+            f: 'json'
+        }));
+        
+        const data = await response.json();
+        if (data.candidates && data.candidates.length > 0) {
+            const best = data.candidates[0];
+            return {
+                lat: best.location.y,
+                lng: best.location.x,
+                score: best.score,
+                address: best.address
+            };
+        }
+    } catch (error) {
+        console.error('Geocoding error:', error);
+    }
+    return null;
+}
+
+// Search properties by radius (placeholder - would use Zillow API)
+async function searchPropertiesByRadius(params) {
+    try {
+        if (window.propertyAPI && window.propertyAPI.searchPropertiesByRadius) {
+            return await window.propertyAPI.searchPropertiesByRadius(params);
+        }
+    } catch (error) {
+        console.error('Radius search error:', error);
+    }
+    
+    // Fallback to empty results
+    return [];
+}
+
+// Analyze block (placeholder - would use ArcGIS)
+async function analyzeBlock(parcelId, coordinates) {
+    // This would implement the block analysis from the API guide
+    // For now, return mock data
+    return {
+        totalProperties: 25,
+        vacantLots: 3,
+        occupiedHomes: 18,
+        vacantHomes: 4,
+        distanceToDowntown: 3.5,
+        blockScore: 75
+    };
+}
+
 // Export functions for chatbot
 window.displayResults = displayResults;
 window.searchProperties = searchProperties;
@@ -883,6 +1254,10 @@ window.viewPropertyDetails = viewPropertyDetails;
 window.searchByOwner = searchByOwner;
 window.searchByMailingAddress = searchByMailingAddress;
 window.testParcelData = testParcelData;
+window.switchSearchType = switchSearchType;
+window.searchByAddress = searchByAddress;
+window.searchByParcelId = searchByParcelId;
+window.searchByBlock = searchByBlock;
 
 // Proforma Analysis Functions
 let proformaCalculator = null;
@@ -1064,6 +1439,25 @@ function updateHoldProjection(projection) {
     container.innerHTML = html;
 }
 
+// Get simple explanation for metrics (6th grade level)
+function getSimpleExplanation(metricTitle, results, data) {
+    const explanations = {
+        'Cash on Cash Return': `Imagine you put $${results.totalCashNeeded.toLocaleString()} in a piggy bank. Each year, you get $${results.annualCashFlow.toLocaleString()} back. That's like getting ${results.cashOnCash.toFixed(1)}¢ for every dollar you put in!`,
+        
+        'Cap Rate': `If you bought this house with all cash (no loan), you'd make ${results.capRate.toFixed(1)}¢ for every dollar the house cost. It's like buying a lemonade stand - the cap rate shows how good the business is!`,
+        
+        'DSCR (Debt Service Coverage Ratio)': `This is like checking if your allowance can pay for your phone bill. A ${results.dscr.toFixed(2)} means the rent brings in ${results.dscr.toFixed(2)} times what you need for the mortgage. Above 1.0 means you have money left over!`,
+        
+        'Monthly Cash Flow': `This is the money you keep each month after paying all the bills. It's like your allowance after buying lunch - what's left is yours to save or spend!`,
+        
+        'Total ROI': `This shows how much your money grows. A ${results.totalROI.toFixed(1)}% return means if you invest $100, you'll have $${(100 + results.totalROI).toFixed(0)} after a year!`,
+        
+        'Gross Rent Multiplier': `This tells you how many years of rent equal the house price. If it's ${results.grossRentMultiplier.toFixed(1)}, that means ${results.grossRentMultiplier.toFixed(1)} years of rent = what you paid for the house.`
+    };
+    
+    return explanations[metricTitle] || `This metric helps you understand if this is a good investment.`;
+}
+
 // Update metric explanations
 function updateMetricExplanations() {
     const container = document.getElementById('metricExplanations');
@@ -1101,6 +1495,15 @@ function updateMetricExplanations() {
         }
     ];
     
+    // Add more metrics
+    explanations.push({
+        icon: '💰',
+        title: 'Monthly Cash Flow',
+        value: proformaCalculator.formatCurrency(results.monthlyCashFlow),
+        formula: `Rent - Expenses - Mortgage = $${results.effectiveMonthlyIncome.toFixed(0)} - $${results.totalMonthlyExpenses.toFixed(0)} - $${results.monthlyPayment.toFixed(0)} = $${results.monthlyCashFlow.toFixed(0)}`,
+        text: `This is your monthly profit after all expenses and mortgage. ${results.monthlyCashFlow >= 500 ? 'Strong positive cash flow!' : results.monthlyCashFlow >= 200 ? 'Decent monthly profit.' : results.monthlyCashFlow >= 0 ? 'Breaking even - risky if repairs needed.' : 'Negative cash flow - losing money monthly!'}`
+    });
+    
     let html = '';
     explanations.forEach(exp => {
         html += `
@@ -1111,6 +1514,9 @@ function updateMetricExplanations() {
                 </div>
                 <div class="explanation-formula">${exp.formula}</div>
                 <div class="explanation-text">${exp.text}</div>
+                <div class="simple-explanation">
+                    <strong>Simple explanation:</strong> ${getSimpleExplanation(exp.title, results, data)}
+                </div>
             </div>
         `;
     });

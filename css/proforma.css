@@ -387,6 +387,22 @@
     line-height: 1.6;
 }
 
+.simple-explanation {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background-color: #e8f4f8;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #0066cc;
+}
+
+.simple-explanation strong {
+    color: #004080;
+    display: block;
+    margin-bottom: 4px;
+}
+
 /* Action Buttons */
 .proforma-actions {
     display: flex;
