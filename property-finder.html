@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/property-finder.css">
     <link rel="stylesheet" href="css/chatbot.css">
+    <link rel="stylesheet" href="css/proforma.css">
     
     <!-- Configuration -->
     <script src="js/app-config.js"></script>
@@ -211,9 +212,346 @@
     </footer>
 
 
+    <!-- Proforma Modal -->
+    <div id="proformaModal" class="proforma-modal">
+        <div class="proforma-container">
+            <div class="proforma-header">
+                <h2>Investment Property Analysis</h2>
+                <div class="proforma-address" id="proformaAddress"></div>
+                <button class="proforma-close" onclick="closeProforma()">&times;</button>
+            </div>
+            <div class="proforma-body">
+                <!-- Metrics Dashboard -->
+                <div class="metrics-dashboard">
+                    <h3>Key Investment Metrics</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon">💵</div>
+                            <div class="metric-label">Cash on Cash Return</div>
+                            <div class="metric-value" id="metricCashOnCash">--%</div>
+                            <div class="metric-status" id="statusCashOnCash">CALCULATING</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">📈</div>
+                            <div class="metric-label">Cap Rate</div>
+                            <div class="metric-value" id="metricCapRate">--%</div>
+                            <div class="metric-status" id="statusCapRate">CALCULATING</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">🏦</div>
+                            <div class="metric-label">DSCR</div>
+                            <div class="metric-value" id="metricDSCR">-.--</div>
+                            <div class="metric-status" id="statusDSCR">CALCULATING</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">💰</div>
+                            <div class="metric-label">Monthly Cash Flow</div>
+                            <div class="metric-value" id="metricCashFlow">$0</div>
+                            <div class="metric-status" id="statusCashFlow">CALCULATING</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">🏠</div>
+                            <div class="metric-label">Total ROI</div>
+                            <div class="metric-value" id="metricROI">--%</div>
+                            <div class="metric-status" id="statusROI">CALCULATING</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">📊</div>
+                            <div class="metric-label">GRM</div>
+                            <div class="metric-value" id="metricGRM">-.--</div>
+                            <div class="metric-status" id="statusGRM">CALCULATING</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purchase Assumptions -->
+                <div class="proforma-section">
+                    <h3>📋 Purchase Assumptions</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="purchasePrice">Purchase Price</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="purchasePrice" class="proforma-input input-with-prefix" value="0" min="0" step="1000">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="rehabBudget">Rehab Budget</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="rehabBudget" class="proforma-input input-with-prefix" value="8000" min="0" step="1000">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="afterRepairValue">After Repair Value (ARV)</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="afterRepairValue" class="proforma-input input-with-prefix" value="0" min="0" step="1000">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="closingCosts">Closing Costs</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="closingCosts" class="proforma-input input-with-prefix" value="2000" min="0" step="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-table">
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Total Investment</span>
+                            <span class="summary-value" id="totalInvestment">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financing -->
+                <div class="proforma-section">
+                    <h3>🏦 Financing</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="downPaymentPercent">Down Payment</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="downPaymentPercent" class="proforma-input input-with-suffix" value="25" min="0" max="100" step="5">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="interestRate">Interest Rate</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="interestRate" class="proforma-input input-with-suffix" value="7.5" min="0" max="20" step="0.1">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="loanTermYears">Loan Term</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="loanTermYears" class="proforma-input input-with-suffix" value="30" min="1" max="30" step="1">
+                                <span class="input-suffix">years</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-table">
+                        <div class="summary-row">
+                            <span class="summary-label">Down Payment</span>
+                            <span class="summary-value" id="downPaymentAmount">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Loan Amount</span>
+                            <span class="summary-value" id="loanAmount">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Monthly P&I</span>
+                            <span class="summary-value" id="monthlyPayment">$0</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Total Cash Needed</span>
+                            <span class="summary-value" id="totalCashNeeded">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Income Analysis -->
+                <div class="proforma-section">
+                    <h3>💵 Income Analysis</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="monthlyRent">Monthly Rent</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="monthlyRent" class="proforma-input input-with-prefix" value="0" min="0" step="50">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="vacancyRate">Vacancy Rate</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="vacancyRate" class="proforma-input input-with-suffix" value="5" min="0" max="100" step="1">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="otherIncome">Other Income</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="otherIncome" class="proforma-input input-with-prefix" value="0" min="0" step="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-table">
+                        <div class="summary-row">
+                            <span class="summary-label">Gross Monthly Income</span>
+                            <span class="summary-value" id="grossMonthlyIncome">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Vacancy Loss</span>
+                            <span class="summary-value" id="vacancyLoss">-$0</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Effective Monthly Income</span>
+                            <span class="summary-value" id="effectiveMonthlyIncome">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operating Expenses -->
+                <div class="proforma-section">
+                    <h3>📊 Operating Expenses</h3>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="propertyTax">Property Tax (Monthly)</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="propertyTax" class="proforma-input input-with-prefix" value="150" min="0" step="10">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="insurance">Insurance (Monthly)</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="insurance" class="proforma-input input-with-prefix" value="85" min="0" step="10">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="propertyManagementPercent">Property Management</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="propertyManagementPercent" class="proforma-input input-with-suffix" value="8" min="0" max="100" step="1">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="maintenancePercent">Maintenance</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="maintenancePercent" class="proforma-input input-with-suffix" value="5" min="0" max="100" step="1">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="utilities">Utilities (if paid)</label>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">$</span>
+                                <input type="number" id="utilities" class="proforma-input input-with-prefix" value="40" min="0" step="10">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="reservesPercent">Reserves</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="reservesPercent" class="proforma-input input-with-suffix" value="5" min="0" max="100" step="1">
+                                <span class="input-suffix">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-table">
+                        <div class="summary-row">
+                            <span class="summary-label">Property Management</span>
+                            <span class="summary-value" id="propertyManagementAmount">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Maintenance</span>
+                            <span class="summary-value" id="maintenanceAmount">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Reserves</span>
+                            <span class="summary-value" id="reservesAmount">$0</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Total Monthly Expenses</span>
+                            <span class="summary-value" id="totalMonthlyExpenses">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Flow Analysis -->
+                <div class="proforma-section">
+                    <h3>💸 Cash Flow Analysis</h3>
+                    <div class="summary-table">
+                        <div class="summary-row">
+                            <span class="summary-label">Effective Monthly Income</span>
+                            <span class="summary-value" id="cfEffectiveIncome">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Operating Expenses</span>
+                            <span class="summary-value" id="cfOperatingExpenses">-$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Net Operating Income (NOI)</span>
+                            <span class="summary-value" id="monthlyNOI">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Debt Service (P&I)</span>
+                            <span class="summary-value" id="cfDebtService">-$0</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Monthly Cash Flow</span>
+                            <span class="summary-value" id="cfMonthlyCashFlow">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Annual Cash Flow</span>
+                            <span class="summary-value" id="annualCashFlow">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exit Strategy -->
+                <div class="proforma-section">
+                    <h3>🚪 Exit Strategy</h3>
+                    <div class="strategy-tabs">
+                        <button class="strategy-tab active" onclick="switchStrategy('hold')">Buy & Hold</button>
+                        <button class="strategy-tab" onclick="switchStrategy('flip')">Fix & Flip</button>
+                        <button class="strategy-tab" onclick="switchStrategy('brrrr')">BRRRR</button>
+                    </div>
+                    
+                    <div id="strategyHold" class="strategy-content active">
+                        <h4>5-Year Buy & Hold Projection</h4>
+                        <div id="holdProjection">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div id="strategyFlip" class="strategy-content">
+                        <h4>Fix & Flip Analysis</h4>
+                        <p>Coming soon...</p>
+                    </div>
+                    
+                    <div id="strategyBrrrr" class="strategy-content">
+                        <h4>BRRRR Strategy Analysis</h4>
+                        <p>Coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Metric Explanations -->
+                <div class="metric-explanations">
+                    <h3>📚 Understanding Your Metrics</h3>
+                    <div id="metricExplanations">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <a href="docs/proforma-formulas.md" target="_blank" class="proforma-btn proforma-btn-secondary">
+                        📄 View All Formulas & Documentation
+                    </a>
+                </div>
+
+                <!-- Actions -->
+                <div class="proforma-actions">
+                    <button class="proforma-btn proforma-btn-primary" onclick="saveProforma()">
+                        💾 Save Analysis
+                    </button>
+                    <button class="proforma-btn proforma-btn-secondary" onclick="exportProforma()">
+                        📄 Export PDF
+                    </button>
+                    <button class="proforma-btn proforma-btn-secondary" onclick="emailProforma()">
+                        📧 Email Report
+                    </button>
+                    <button class="proforma-btn proforma-btn-secondary" onclick="resetProforma()">
+                        🔄 Reset Values
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/main.js"></script>
     <script src="js/property-api.js"></script>
+    <script src="js/proforma-calculator.js"></script>
     <script src="js/property-finder.js"></script>
     <script src="js/property-chatbot.js"></script>
 </body>

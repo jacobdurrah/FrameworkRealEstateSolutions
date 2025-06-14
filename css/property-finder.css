@@ -209,6 +209,17 @@
     font-size: 0.875rem;
 }
 
+.property-result-actions .btn-primary {
+    background-color: var(--primary-black);
+    color: var(--pure-white);
+    font-weight: 500;
+}
+
+.property-result-actions .btn-primary:hover {
+    background-color: #333;
+    transform: translateY(-1px);
+}
+
 /* Loading Spinner */
 .loading-spinner {
     text-align: center;
