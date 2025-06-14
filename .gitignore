@@ -107,3 +107,7 @@ Desktop.ini
 .claude/
 .cursor/
 .vercel
+
+# Large data files
+parcel_file_current_*.csv
+*.csv

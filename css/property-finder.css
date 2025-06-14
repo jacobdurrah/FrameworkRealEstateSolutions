@@ -440,6 +440,102 @@
     border: 1px solid #f5c6cb;
 }
 
+/* Property Neighborhood Badge */
+.property-neighborhood {
+    display: inline-block;
+    margin-left: var(--spacing-sm);
+    padding: 2px 8px;
+    background-color: var(--accent-gold);
+    color: var(--primary-black);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 12px;
+}
+
+/* Property Owner Info */
+.property-owner-info {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.875rem;
+    color: var(--dark-gray);
+}
+
+.owner-label {
+    font-weight: 500;
+}
+
+.owner-name {
+    color: var(--primary-black);
+}
+
+/* Property Details Modal */
+.property-details-modal {
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.details-section {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.details-section:last-child {
+    border-bottom: none;
+}
+
+.details-section h4 {
+    color: var(--primary-black);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.125rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--dark-gray);
+    min-width: 140px;
+}
+
+.detail-value {
+    flex: 1;
+    text-align: right;
+    color: var(--primary-black);
+}
+
+.owner-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.owner-actions .btn {
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.875rem;
+}
+
+/* Property Result Card Updates */
+.property-result-card .btn-outline {
+    background-color: var(--pure-white);
+    color: var(--primary-black);
+    border: 1px solid var(--primary-black);
+}
+
+.property-result-card .btn-outline:hover {
+    background-color: var(--primary-black);
+    color: var(--pure-white);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .search-grid {
@@ -467,5 +563,31 @@
     .modal-content {
         margin: var(--spacing-md);
         width: calc(100% - 2 * var(--spacing-md));
+    }
+    
+    .property-neighborhood {
+        display: block;
+        margin-left: 0;
+        margin-top: var(--spacing-xs);
+    }
+    
+    .detail-row {
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .detail-value {
+        text-align: left;
+    }
+    
+    .owner-actions {
+        flex-direction: column;
+    }
+    
+    .owner-actions .btn {
+        width: 100%;
     }
 }

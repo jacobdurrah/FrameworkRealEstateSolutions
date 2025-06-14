@@ -1,0 +1,18 @@
+{
+  "name": "framework-parcel-data-backend",
+  "version": "1.0.0",
+  "description": "Backend scripts for managing Detroit parcel data in Supabase",
+  "main": "upload-parcel-data.js",
+  "scripts": {
+    "upload": "node upload-parcel-data.js",
+    "update": "node update-parcel-data.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "p-limit": "^3.1.0"
+  },
+  "author": "Framework Real Estate Solutions",
+  "license": "MIT"
+}

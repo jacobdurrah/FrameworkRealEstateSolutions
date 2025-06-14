@@ -5,104 +5,104 @@
 const mockProperties = [
     {
         id: 1,
-        address: '14567 Eastwood St',
+        address: '442 CHANDLER',
         city: 'Detroit',
         state: 'MI',
-        zip: '48205',
+        zip: '48202',
         price: 68500,
         bedrooms: 3,
         bathrooms: 1,
-        sqft: 1150,
-        yearBuilt: 1952,
+        sqft: 2514,
+        yearBuilt: 1912,
         propertyType: 'single-family',
         estimatedRehab: 8000,
         monthlyRent: 1329,
-        description: 'Brick bungalow with hardwood floors, needs kitchen update. Great rental potential in stable neighborhood.',
+        description: 'Single family home with original hardwood floors, needs kitchen update. Great rental potential in North End neighborhood.',
         images: ['https://photos.zillowstatic.com/fp/demo1.jpg']
     },
     {
         id: 2,
-        address: '8923 Chalmers St',
+        address: '444 HORTON',
         city: 'Detroit',
         state: 'MI',
-        zip: '48213',
+        zip: '48202',
         price: 52000,
         bedrooms: 3,
         bathrooms: 1,
-        sqft: 1080,
-        yearBuilt: 1954,
+        sqft: 1700,
+        yearBuilt: 1905,
         propertyType: 'single-family',
         estimatedRehab: 9500,
         monthlyRent: 1329,
-        description: 'Solid investment property near Chandler Park. Needs cosmetic updates but structurally sound.',
+        description: 'Solid investment property in Lower North End. Needs cosmetic updates but structurally sound.',
         images: ['https://photos.zillowstatic.com/fp/demo2.jpg']
     },
     {
         id: 3,
-        address: '15234 Piedmont St',
+        address: '420 E FERRY',
         city: 'Detroit',
         state: 'MI',
-        zip: '48223',
+        zip: '48202',
         price: 75000,
         bedrooms: 3,
-        bathrooms: 1.5,
-        sqft: 1250,
-        yearBuilt: 1956,
+        bathrooms: 2,
+        sqft: 3920,
+        yearBuilt: 1917,
         propertyType: 'single-family',
         estimatedRehab: 7500,
         monthlyRent: 1329,
-        description: 'Well-maintained brick home in Rosedale Park area. Move-in ready with minor updates needed.',
+        description: 'Two family flat in Cultural Center area. Great investment opportunity with rental income potential.',
         images: ['https://photos.zillowstatic.com/fp/demo3.jpg']
     },
     {
         id: 4,
-        address: '12890 Wade St',
+        address: '246 E EUCLID',
         city: 'Detroit',
         state: 'MI',
-        zip: '48213',
+        zip: '48202',
         price: 59900,
         bedrooms: 2,
         bathrooms: 1,
-        sqft: 924,
-        yearBuilt: 1951,
+        sqft: 1542,
+        yearBuilt: 1916,
         propertyType: 'single-family',
         estimatedRehab: 6500,
         monthlyRent: 1024,
-        description: 'Compact starter home perfect for Section 8 rental. New roof in 2022.',
+        description: 'Single family home in Upper North End. Perfect for Section 8 rental program.',
         images: ['https://photos.zillowstatic.com/fp/demo4.jpg']
     },
     {
         id: 5,
-        address: '9876 Longview St',
+        address: '235 MELBOURNE',
         city: 'Detroit',
         state: 'MI',
-        zip: '48219',
+        zip: '48202',
         price: 82000,
         bedrooms: 4,
         bathrooms: 1.5,
-        sqft: 1475,
-        yearBuilt: 1958,
+        sqft: 1602,
+        yearBuilt: 1918,
         propertyType: 'single-family',
         estimatedRehab: 10000,
         monthlyRent: 1628,
-        description: 'Spacious 4-bedroom in Grandmont. Great bones, needs updating. High rental demand area.',
+        description: 'Spacious 4-bedroom in Upper North End. Great bones, needs updating. High rental demand area.',
         images: ['https://photos.zillowstatic.com/fp/demo5.jpg']
     },
     {
         id: 6,
-        address: '4521 Lakepointe St',
+        address: '231 CHANDLER',
         city: 'Detroit',
         state: 'MI',
-        zip: '48224',
+        zip: '48202',
         price: 95000,
         bedrooms: 3,
         bathrooms: 2,
-        sqft: 1320,
-        yearBuilt: 1925,
+        sqft: 1749,
+        yearBuilt: 1914,
         propertyType: 'single-family',
         estimatedRehab: 5000,
         monthlyRent: 1329,
-        description: 'Charming home near Alter Rd. Updated plumbing and electrical. Just needs cosmetic work.',
+        description: 'Charming home in Lower North End. Well-maintained with original features. Just needs cosmetic work.',
         images: ['https://photos.zillowstatic.com/fp/demo6.jpg']
     }
 ];
@@ -212,6 +212,12 @@ function createPropertyCard(property) {
     const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
     const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
     
+    // Get parcel data if available (will be populated asynchronously)
+    let parcelInfo = null;
+    
+    // Store property reference for async update
+    property._cardElement = card;
+    
     const card = document.createElement('div');
     card.className = 'property-result-card';
     
@@ -229,8 +235,15 @@ function createPropertyCard(property) {
             ${imageContent}
         </div>
         <div class="property-result-details">
-            <h4 class="property-result-address">${property.address}</h4>
+            <h4 class="property-result-address">
+                ${property.address}
+                <span class="property-neighborhood" style="display: none;"></span>
+            </h4>
             <p class="property-result-price">$${property.price.toLocaleString()}</p>
+            <div class="property-owner-info" style="display: none;">
+                <span class="owner-label">Owner:</span>
+                <span class="owner-name">Loading...</span>
+            </div>
             <div class="property-result-info">
                 <span>${property.bedrooms} bed</span>
                 <span>${property.bathrooms} bath</span>
@@ -265,12 +278,45 @@ function createPropertyCard(property) {
                 <button class="btn btn-primary" onclick="analyzeProperty(${JSON.stringify(property).replace(/"/g, '&quot;')})">
                     📊 Analyze Deal
                 </button>
-                <button class="btn btn-outline" onclick="contactAboutProperty('${property.address}')">
+                <button class="btn btn-outline btn-details" onclick="viewPropertyDetails('${property.address}')" style="display: none;">
+                    📋 View Details
+                </button>
+                <button class="btn btn-outline btn-contact" onclick="contactAboutProperty('${property.address}')">
                     📧 Inquire
                 </button>
             </div>
         </div>
     `;
+    
+    // Asynchronously load parcel data if enabled
+    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
+        window.parcelAPIService && window.parcelAPIService.isReady()) {
+        
+        window.parcelAPIService.getParcelByAddress(property.address).then(parcelData => {
+            if (parcelData && card.parentElement) { // Check if card is still in DOM
+                // Update neighborhood
+                const neighborhoodEl = card.querySelector('.property-neighborhood');
+                if (parcelData.neighborhood) {
+                    neighborhoodEl.textContent = parcelData.neighborhood;
+                    neighborhoodEl.style.display = 'inline-block';
+                }
+                
+                // Update owner info
+                const ownerInfoEl = card.querySelector('.property-owner-info');
+                const ownerNameEl = card.querySelector('.owner-name');
+                if (parcelData.owner.fullName) {
+                    ownerNameEl.textContent = parcelData.owner.fullName;
+                    ownerInfoEl.style.display = 'flex';
+                }
+                
+                // Show details button, hide contact button
+                card.querySelector('.btn-details').style.display = 'inline-block';
+                card.querySelector('.btn-contact').style.display = 'none';
+            }
+        }).catch(err => {
+            console.error('Error loading parcel data:', err);
+        });
+    }
     
     return card;
 }
@@ -331,11 +377,274 @@ document.addEventListener('DOMContentLoaded', function() {
     if (maxPriceInput && !maxPriceInput.value) {
         maxPriceInput.value = '100000';
     }
+    
+    // Initialize parcel API service if enabled
+    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA) {
+        if (window.parcelAPIService && !window.parcelAPIService.isReady()) {
+            window.parcelAPIService.init(
+                window.APP_CONFIG.SUPABASE_URL,
+                window.APP_CONFIG.SUPABASE_ANON_KEY
+            ).then(success => {
+                if (success) {
+                    console.log('Parcel API service initialized');
+                }
+            });
+        }
+    }
 });
+
+// View detailed property information
+async function viewPropertyDetails(address) {
+    if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+        alert('Property details service not available');
+        return;
+    }
+    
+    // Show loading state
+    const modal = document.getElementById('propertyDetailsModal');
+    if (!modal) {
+        createPropertyDetailsModal();
+    }
+    
+    document.getElementById('propertyDetailsContent').innerHTML = '<div style="text-align: center; padding: 40px;">Loading property details...</div>';
+    document.getElementById('propertyDetailsModal').style.display = 'block';
+    
+    try {
+        const parcelInfo = await window.parcelAPIService.getParcelByAddress(address);
+        if (!parcelInfo) {
+            document.getElementById('propertyDetailsContent').innerHTML = '<div style="text-align: center; padding: 40px;">Property details not found</div>';
+            return;
+        }
+        
+        openPropertyDetailsModal(parcelInfo);
+    } catch (error) {
+        console.error('Error loading property details:', error);
+        document.getElementById('propertyDetailsContent').innerHTML = '<div style="text-align: center; padding: 40px;">Error loading property details</div>';
+    }
+}
+
+// Open property details modal
+function openPropertyDetailsModal(parcelInfo) {
+    const modal = document.getElementById('propertyDetailsModal');
+    if (!modal) {
+        createPropertyDetailsModal();
+    }
+    
+    // Populate modal with property data
+    const detailsContent = document.getElementById('propertyDetailsContent');
+    detailsContent.innerHTML = `
+        <h3>${parcelInfo.address}</h3>
+        <div class="details-section">
+            <h4>Property Information</h4>
+            <div class="detail-row">
+                <span class="detail-label">Parcel ID:</span>
+                <span class="detail-value">${parcelInfo.parcelId || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Neighborhood:</span>
+                <span class="detail-value">${parcelInfo.neighborhood || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Property Class:</span>
+                <span class="detail-value">${parcelInfo.propertyClass || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Year Built:</span>
+                <span class="detail-value">${parcelInfo.yearBuilt || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Building Style:</span>
+                <span class="detail-value">${parcelInfo.buildingStyle || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Total Floor Area:</span>
+                <span class="detail-value">${parcelInfo.totalFloorArea || 'N/A'} sq ft</span>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <h4>Owner Information</h4>
+            <div class="detail-row">
+                <span class="detail-label">Owner:</span>
+                <span class="detail-value">${parcelInfo.owner.fullName || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Mailing Address:</span>
+                <span class="detail-value">${parcelInfo.owner.fullMailingAddress || 'N/A'}</span>
+            </div>
+            <div class="owner-actions">
+                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
+                    🔍 Find Other Properties by Owner
+                </button>
+                <button class="btn btn-outline" onclick="searchByMailingAddress('${parcelInfo.owner.fullMailingAddress}')">
+                    📍 Find Properties at Mailing Address
+                </button>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <h4>Tax Assessment</h4>
+            <div class="detail-row">
+                <span class="detail-label">Assessed Value:</span>
+                <span class="detail-value">$${parcelInfo.assessedValue.toLocaleString()}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Taxable Value:</span>
+                <span class="detail-value">$${parcelInfo.taxableValue.toLocaleString()}</span>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <h4>Last Sale</h4>
+            <div class="detail-row">
+                <span class="detail-label">Sale Date:</span>
+                <span class="detail-value">${parcelInfo.lastSale.date || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Sale Price:</span>
+                <span class="detail-value">${parcelInfo.lastSale.price ? '$' + parcelInfo.lastSale.price.toLocaleString() : 'N/A'}</span>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <h4>Lot Information</h4>
+            <div class="detail-row">
+                <span class="detail-label">Frontage:</span>
+                <span class="detail-value">${parcelInfo.lotSize.frontage || 'N/A'} ft</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Depth:</span>
+                <span class="detail-value">${parcelInfo.lotSize.depth || 'N/A'} ft</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Total Acreage:</span>
+                <span class="detail-value">${parcelInfo.totalAcreage || 'N/A'} acres</span>
+            </div>
+        </div>
+        
+        <div class="details-section">
+            <h4>Location Details</h4>
+            <div class="detail-row">
+                <span class="detail-label">Ward:</span>
+                <span class="detail-value">${parcelInfo.ward || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Council District:</span>
+                <span class="detail-value">${parcelInfo.councilDistrict || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('propertyDetailsModal').style.display = 'block';
+}
+
+// Create property details modal if it doesn't exist
+function createPropertyDetailsModal() {
+    const modalHTML = `
+        <div id="propertyDetailsModal" class="modal">
+            <div class="modal-content property-details-modal">
+                <span class="close" onclick="closePropertyDetailsModal()">&times;</span>
+                <h2>Property Details</h2>
+                <div id="propertyDetailsContent"></div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Close property details modal
+function closePropertyDetailsModal() {
+    document.getElementById('propertyDetailsModal').style.display = 'none';
+}
+
+// Search for properties by owner
+async function searchByOwner(ownerName) {
+    if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+        alert('Property search service not available');
+        return;
+    }
+    
+    // Show loading state
+    showLoading();
+    
+    try {
+        const properties = await window.parcelAPIService.searchByOwner(ownerName);
+        displayOwnerResults(properties, `Properties owned by ${ownerName}`);
+    } catch (error) {
+        console.error('Error searching by owner:', error);
+        alert('Error searching for properties');
+    }
+}
+
+// Search for properties by mailing address
+async function searchByMailingAddress(mailingAddress) {
+    if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+        alert('Property search service not available');
+        return;
+    }
+    
+    // Show loading state
+    showLoading();
+    
+    try {
+        const properties = await window.parcelAPIService.searchByMailingAddress(mailingAddress);
+        displayOwnerResults(properties, `Properties with mailing address: ${mailingAddress}`);
+    } catch (error) {
+        console.error('Error searching by mailing address:', error);
+        alert('Error searching for properties');
+    }
+}
+
+// Display owner search results
+function displayOwnerResults(properties, title) {
+    closePropertyDetailsModal();
+    
+    // Show results section
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultCount = document.getElementById('resultCount');
+    
+    resultCount.textContent = properties.length;
+    resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px;">${title}</h3>`;
+    
+    if (properties.length === 0) {
+        resultsContainer.innerHTML += `
+            <div class="no-results">
+                <p>No other properties found.</p>
+            </div>
+        `;
+    } else {
+        properties.forEach(parcel => {
+            // Create simplified property object for display
+            const property = {
+                address: parcel.address,
+                city: 'Detroit',
+                state: 'MI',
+                zip: parcel.zipCode,
+                price: parcel.assessedValue || 0,
+                yearBuilt: parcel.yearBuilt,
+                propertyType: 'single-family',
+                estimatedRehab: 8000,
+                bedrooms: 3,
+                bathrooms: 1,
+                sqft: parcel.totalFloorArea || 1200
+            };
+            
+            const card = createPropertyCard(property);
+            resultsContainer.appendChild(card);
+        });
+    }
+    
+    resultsSection.style.display = 'block';
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 // Export functions for chatbot
 window.displayResults = displayResults;
 window.searchProperties = searchProperties;
+window.viewPropertyDetails = viewPropertyDetails;
+window.searchByOwner = searchByOwner;
+window.searchByMailingAddress = searchByMailingAddress;
 
 // Proforma Analysis Functions
 let proformaCalculator = null;

@@ -14,11 +14,17 @@ const CONFIG = {
         }
     },
     
+    // Supabase configuration for parcel data
+    // These are public keys safe to expose
+    SUPABASE_URL: 'YOUR_SUPABASE_PROJECT_URL',
+    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+    
     // Feature flags
     FEATURES: {
         USE_MOCK_DATA_FALLBACK: true,
         ENABLE_CHATBOT: true,
-        SHOW_API_STATUS: true
+        SHOW_API_STATUS: true,
+        ENABLE_PARCEL_DATA: false // Set to true when Supabase is configured
     },
     
     // Business rules
