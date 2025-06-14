@@ -215,9 +215,6 @@ function createPropertyCard(property) {
     // Get parcel data if available (will be populated asynchronously)
     let parcelInfo = null;
     
-    // Store property reference for async update
-    property._cardElement = card;
-    
     const card = document.createElement('div');
     card.className = 'property-result-card';
     
