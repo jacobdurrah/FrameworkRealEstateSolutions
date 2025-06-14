@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-This document provides detailed architectural diagrams and service definitions for the real estate investment platform's microservices architecture.
+This document provides detailed architectural diagrams and service definitions for Framework Real Estate Solutions' AI-powered real estate investment platform. The architecture is designed to support automated property analysis, WhatsApp-based interactions, and affordable housing operations at scale.
 
 ## System Architecture Diagram
 
@@ -33,6 +33,9 @@ graph TB
         VAL[Valuation AI Service]
         NLP[NLP Service]
         ANALYTICS[Analytics Service]
+        CV[Computer Vision Service]
+        WHATSAPP[WhatsApp Assistant]
+        MARKET[Market Monitor Service]
     end
 
     subgraph "Integration Services"
@@ -251,6 +254,7 @@ endpoints:
   - POST /valuations/arv
   - GET /market/analysis
   - POST /comparables/analyze
+  - POST /valuations/component-costs
 events:
   publishes:
     - valuation.completed
@@ -258,6 +262,98 @@ events:
   subscribes:
     - property.created
     - market.data.updated
+    - walkthrough.completed
+```
+
+### 7. Computer Vision Service
+```yaml
+service: computer-vision-service
+port: 3007
+dependencies:
+  - tensorflow
+  - redis
+  - s3
+endpoints:
+  - POST /analyze/property-photos
+  - POST /analyze/component-condition
+  - GET /analysis/:propertyId
+  - POST /compare/before-after
+events:
+  publishes:
+    - photo.analysis.completed
+    - condition.assessed
+  subscribes:
+    - property.photos.uploaded
+    - analysis.requested
+```
+
+### 8. WhatsApp Assistant Service
+```yaml
+service: whatsapp-assistant-service
+port: 3008
+dependencies:
+  - twilio
+  - redis
+  - rabbitmq
+endpoints:
+  - POST /webhook/whatsapp
+  - GET /conversations/:phoneNumber
+  - POST /reports/generate
+  - GET /reports/:reportId
+events:
+  publishes:
+    - analysis.requested
+    - report.generated
+    - conversation.completed
+  subscribes:
+    - analysis.completed
+    - report.ready
+```
+
+### 9. Market Monitor Service
+```yaml
+service: market-monitor-service
+port: 3009
+dependencies:
+  - postgresql
+  - redis
+  - elasticsearch
+endpoints:
+  - POST /monitor/start
+  - GET /monitor/status
+  - GET /opportunities/latest
+  - POST /alerts/configure
+  - GET /market/trends
+events:
+  publishes:
+    - listing.found
+    - opportunity.identified
+    - market.update
+  subscribes:
+    - monitor.configured
+    - analysis.completed
+```
+
+### 10. Audio Processing Service
+```yaml
+service: audio-processing-service
+port: 3010
+dependencies:
+  - redis
+  - s3
+  - openai
+endpoints:
+  - POST /transcribe/walkthrough
+  - GET /transcripts/:id
+  - POST /extract/conditions
+  - POST /parse/components
+events:
+  publishes:
+    - transcription.completed
+    - conditions.extracted
+  subscribes:
+    - audio.uploaded
+    - walkthrough.started
 ```
 
 ## Database Schema per Service
@@ -281,6 +377,9 @@ CREATE TABLE property_service.properties (
     lot_size DECIMAL(10,2),
     location GEOGRAPHY(POINT),
     features JSONB,
+    section8_approved BOOLEAN DEFAULT FALSE,
+    target_rent DECIMAL(10,2),
+    fmr_compliant BOOLEAN,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -304,6 +403,26 @@ CREATE TABLE property_service.market_data (
     recorded_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Section 8 FMR Reference Table
+CREATE TABLE property_service.section8_fmr (
+    id UUID PRIMARY KEY,
+    year INTEGER,
+    bedrooms INTEGER,
+    fmr_amount DECIMAL(10,2),
+    payment_standard DECIMAL(10,2),
+    utility_allowance DECIMAL(10,2),
+    effective_date DATE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insert current Detroit FMR values
+INSERT INTO property_service.section8_fmr (year, bedrooms, fmr_amount, payment_standard) VALUES
+(2024, 0, 715, 715),
+(2024, 1, 858, 858),
+(2024, 2, 1024, 1024),
+(2024, 3, 1329, 1329),
+(2024, 4, 1628, 1628);
 ```
 
 ### Deal Service Schema
@@ -381,6 +500,132 @@ CREATE TABLE financial_service.budgets (
     spent_amount DECIMAL(12,2),
     period_start DATE,
     period_end DATE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### AI Services Schema
+```sql
+-- Computer Vision Service Schema
+CREATE SCHEMA cv_service;
+
+CREATE TABLE cv_service.property_analyses (
+    id UUID PRIMARY KEY,
+    property_id UUID NOT NULL,
+    photo_url VARCHAR(500),
+    component VARCHAR(100),
+    condition VARCHAR(50), -- excellent, good, fair, poor
+    confidence_score DECIMAL(3,2),
+    issues_detected JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE cv_service.component_conditions (
+    id UUID PRIMARY KEY,
+    property_id UUID NOT NULL,
+    component_name VARCHAR(100),
+    condition_score INTEGER, -- 0-100
+    replacement_needed BOOLEAN,
+    repair_priority VARCHAR(20), -- high, medium, low
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- WhatsApp Assistant Schema
+CREATE SCHEMA whatsapp_service;
+
+CREATE TABLE whatsapp_service.conversations (
+    id UUID PRIMARY KEY,
+    phone_number VARCHAR(20),
+    property_address TEXT,
+    analysis_id UUID,
+    report_url VARCHAR(500),
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE whatsapp_service.messages (
+    id UUID PRIMARY KEY,
+    conversation_id UUID REFERENCES whatsapp_service.conversations(id),
+    direction VARCHAR(10), -- inbound, outbound
+    message_type VARCHAR(20), -- text, voice, image
+    content TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Market Monitor Schema
+CREATE SCHEMA market_monitor;
+
+CREATE TABLE market_monitor.tracked_listings (
+    id UUID PRIMARY KEY,
+    source VARCHAR(50), -- zillow, redfin, mls
+    external_id VARCHAR(100),
+    address JSONB,
+    list_price DECIMAL(12,2),
+    property_data JSONB,
+    score DECIMAL(5,2),
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE market_monitor.opportunities (
+    id UUID PRIMARY KEY,
+    listing_id UUID REFERENCES market_monitor.tracked_listings(id),
+    score DECIMAL(5,2),
+    roi_estimate DECIMAL(5,2),
+    rehab_estimate DECIMAL(12,2),
+    strategy VARCHAR(50),
+    alert_sent BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Audio Processing Schema
+CREATE SCHEMA audio_service;
+
+CREATE TABLE audio_service.walkthroughs (
+    id UUID PRIMARY KEY,
+    property_id UUID NOT NULL,
+    audio_url VARCHAR(500),
+    transcript TEXT,
+    duration_seconds INTEGER,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE audio_service.extracted_conditions (
+    id UUID PRIMARY KEY,
+    walkthrough_id UUID REFERENCES audio_service.walkthroughs(id),
+    component VARCHAR(100),
+    condition VARCHAR(50),
+    notes TEXT,
+    confidence DECIMAL(3,2),
+    timestamp_seconds INTEGER,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Component Pricing Schema
+CREATE SCHEMA pricing_service;
+
+CREATE TABLE pricing_service.component_costs (
+    id UUID PRIMARY KEY,
+    component_name VARCHAR(100),
+    unit VARCHAR(50), -- sqft, unit, linear ft
+    material_cost DECIMAL(10,2),
+    labor_cost DECIMAL(10,2),
+    total_cost DECIMAL(10,2),
+    vendor VARCHAR(200),
+    last_updated TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE pricing_service.cost_history (
+    id UUID PRIMARY KEY,
+    component_id UUID REFERENCES pricing_service.component_costs(id),
+    old_cost DECIMAL(10,2),
+    new_cost DECIMAL(10,2),
+    reason TEXT,
+    updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT NOW()
 );
 ```

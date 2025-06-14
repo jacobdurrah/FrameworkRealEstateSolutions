@@ -131,7 +131,13 @@ To increase affordable housing opportunities in Detroit by acquiring, rehabilita
 
 **Rental Income Strategy:**
 
-* Competitive below-market rents
+* Rents aligned with Section 8 Fair Market Rents (FMR):
+  - Studio: $715/month
+  - 1BR: $858/month
+  - 2BR: $1,024/month  
+  - 3BR: $1,329/month
+  - 4BR: $1,628/month
+* Accept Housing Choice Vouchers (Section 8)
 * Focus on tenant stability and long-term occupancy
 * Build property management systems and processes
 * Track social impact metrics alongside financial metrics
@@ -168,7 +174,9 @@ To increase affordable housing opportunities in Detroit by acquiring, rehabilita
 * Properties suitable for immediate occupancy
 
 **Social Impact Metrics:**
-* Affordability: Rent ≤ 30% of area median income
+* Affordability: Rents within Section 8 FMR limits
+* Rent burden: Target ≤ 30% of tenant income
+* Section 8 voucher acceptance rate
 * Community benefit score
 * Proximity to services and transportation
 * Potential for long-term tenant stability

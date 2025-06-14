@@ -1,7 +1,7 @@
 # Real Estate Investment Technology Platform - Implementation Plan
 
 ## Executive Summary
-This document outlines the comprehensive implementation plan for a scalable real estate investment technology platform using microservices architecture. The platform will enable real estate investors to manage the entire property lifecycle from acquisition to exit.
+This document outlines the comprehensive implementation plan for Framework Real Estate Solutions' scalable real estate investment technology platform using microservices architecture. The platform combines traditional real estate expertise with cutting-edge AI technology to automate property analysis, rehab estimation, and investment decision-making. The system will enable Framework Detroit to manage the entire property lifecycle from acquisition to exit while maintaining their mission of affordable housing and community revitalization.
 
 ## Table of Contents
 1. [Technical Architecture](#technical-architecture)
@@ -13,7 +13,9 @@ This document outlines the comprehensive implementation plan for a scalable real
 7. [Timeline and Resources](#timeline-and-resources)
 8. [Critical Success Factors](#critical-success-factors)
 9. [Dynamic Business Plan Storage](#dynamic-business-plan-storage)
-10. [Additional Recommendations](#additional-recommendations)
+10. [AI-Powered Features](#ai-powered-features)
+11. [WhatsApp AI Assistant](#whatsapp-ai-assistant)
+12. [Additional Recommendations](#additional-recommendations)
 
 ## Technical Architecture
 
@@ -302,111 +304,124 @@ CREATE INDEX idx_voice_interactions_contractor ON voice_interactions(contractor_
 
 ## Development Phases
 
-### Phase 1: Foundation (Months 1-3)
-**Goal**: Core infrastructure and basic property management
+### Phase 1: Foundation & MVP (Months 1-2)
+**Goal**: Launch WhatsApp AI Assistant and basic platform
 
 1. **Infrastructure Setup**
-   - Kubernetes cluster configuration
-   - CI/CD pipeline setup
+   - Cloud hosting setup (AWS/GCP)
+   - WhatsApp Business API integration
    - Basic monitoring and logging
    - Development/staging environments
 
 2. **Core Services**
    - User authentication service
-   - Property service (CRUD operations)
+   - Property service (focused on $50K-$100K range)
+   - WhatsApp AI Assistant (MVP version)
    - Basic financial tracking
    - API gateway setup
 
-3. **Frontend Foundation**
-   - Next.js application setup
-   - Authentication flow
-   - Basic property listing/search
-   - Responsive design system
+3. **AI Integration**
+   - Zillow API integration
+   - Detroit Open Data integration
+   - Basic property analysis engine
+   - Report generation service
 
-**Deliverables**: Working platform with user login and basic property management
+**Deliverables**: Working WhatsApp assistant for property analysis + basic web platform
 
-### Phase 2: Deal Management (Months 3-5)
-**Goal**: Complete deal pipeline functionality
+### Phase 2: Enhanced AI & Audio Processing (Months 2-3)
+**Goal**: Add computer vision and audio walkthrough capabilities
+
+1. **Computer Vision Integration**
+   - Property photo analysis
+   - Condition scoring system
+   - Automated scope of work generation
+   - Integration with Restb.ai or custom model
+
+2. **Audio Processing**
+   - Otter.ai integration
+   - Transcript parsing for property conditions
+   - Priority system (audio overrides photos)
+   - Structured data extraction
+
+3. **Enhanced Reporting**
+   - Component-level cost breakdown
+   - Visual condition reports
+   - Customizable scope of work
+   - Pro forma with multiple scenarios
+
+**Deliverables**: Full AI-powered property analysis with audio and visual inputs
+
+### Phase 3: Deal Management & Automation (Months 3-4)
+**Goal**: Complete deal pipeline and market monitoring
 
 1. **Deal Services**
    - Deal management service
    - Document generation service
-   - Basic CRM functionality
+   - CRM functionality
    - Workflow automation
 
-2. **Financial Enhancement**
+2. **Market Monitoring**
+   - Automated listing scanner
+   - Property scoring algorithm
+   - Daily/weekly opportunity reports
+   - Integration with deal pipeline
+
+3. **Financial Enhancement**
    - P&L tracking
-   - ROI calculations
-   - Budget management
-   - Basic reporting
+   - Portfolio analytics
+   - Budget vs actual tracking
+   - Investor reporting
 
-3. **Integration Layer**
-   - MLS integration
+**Deliverables**: Automated deal flow with market monitoring
+
+### Phase 4: Platform Enhancement & Scale (Months 4-6)
+**Goal**: Full platform features and team collaboration
+
+1. **Enhanced Platform**
+   - Comprehensive web dashboard
+   - Mobile app (React Native)
+   - Team collaboration features
+   - Document management system
+
+2. **Advanced AI Features**
+   - Learning from completed projects
+   - Predictive maintenance scheduling
+   - Dynamic pricing updates
+   - Market trend analysis
+
+3. **Integration Expansion**
    - Baselane integration
-   - Payment processing
+   - QuickBooks sync
+   - Contractor marketplace
+   - Insurance quote automation
 
-**Deliverables**: Full deal management pipeline with document generation
+**Deliverables**: Complete platform with advanced features
 
-### Phase 3: AI & Intelligence (Months 5-7)
-**Goal**: AI-powered features and automation
+### Phase 5: Community Impact & Scale (Months 6-12)
+**Goal**: Affordable housing focus and community features
 
-1. **AI Services**
-   - Voice agent service
-   - Valuation AI service
-   - Document parsing AI
-   - Natural language processing
+1. **Affordable Housing Tools**
+   - Tenant portal for applications
+   - Section 8 voucher verification system
+   - Income verification automation
+   - HUD compliance tracking
+   - Rent reasonableness documentation
+   - Community partner integration
+   - Impact reporting dashboard
 
-2. **Analytics Platform**
-   - Custom dashboards
-   - Market analysis
-   - Predictive analytics
-   - Performance metrics
+2. **Portfolio Optimization**
+   - Multi-property management
+   - Maintenance scheduling AI
+   - Tenant satisfaction tracking
+   - Financial runway projections
 
-3. **Automation**
-   - Automated bid requests
-   - Smart notifications
-   - Workflow triggers
+3. **External Offerings**
+   - AI analysis API for partners
+   - White-label solutions
+   - Community training programs
+   - Open data initiatives
 
-**Deliverables**: AI-powered valuation and voice agent capabilities
-
-### Phase 4: Construction Management (Months 7-9)
-**Goal**: Complete construction and rehab management
-
-1. **Construction Service**
-   - Contractor management
-   - Bid tracking system
-   - Progress monitoring
-   - Photo documentation
-
-2. **Communication Hub**
-   - Automated scheduling
-   - Team collaboration
-   - Document sharing
-   - Mobile app features
-
-**Deliverables**: Full construction management suite
-
-### Phase 5: Advanced Features (Months 9-12)
-**Goal**: Portfolio management and scaling features
-
-1. **Portfolio Management**
-   - Multi-property dashboard
-   - Performance analytics
-   - Market alerts
-   - Exit strategy optimization
-
-2. **Business Operations**
-   - Dynamic SOP management
-   - Employee management
-   - Advanced reporting
-   - API marketplace
-
-3. **Commercial Support**
-   - Commercial property features
-   - Advanced financing options
-   - Institutional features
-
-**Deliverables**: Complete platform with all planned features
+**Deliverables**: Platform optimized for affordable housing mission at scale
 
 ## Third-Party Integrations
 
@@ -452,13 +467,17 @@ CREATE INDEX idx_voice_interactions_contractor ON voice_interactions(contractor_
 
 1. **Core Functionality**
    - User authentication and roles
-   - Basic property search and listing
+   - Basic property search and listing (focus on $50K-$100K range)
+   - WhatsApp AI Assistant (basic version)
    - Simple deal tracking
    - Basic financial tracking
    - Document upload/storage
+   - Automated property valuation
 
 2. **Essential Integrations**
-   - MLS data feed
+   - Zillow API for property data
+   - Detroit Open Data for parcel information
+   - WhatsApp Business API
    - Basic payment processing
    - Email notifications
 
@@ -466,6 +485,7 @@ CREATE INDEX idx_voice_interactions_contractor ON voice_interactions(contractor_
    - Web application only
    - Basic dashboards
    - Essential reporting
+   - Property analysis reports
 
 ### Full Feature Set (12 months)
 
@@ -669,6 +689,114 @@ business_document:
    - Audit trail
    - Change approval workflow
    - Read/write separation
+
+## AI-Powered Features
+
+### 1. Computer Vision Property Analysis
+- **Technology**: TensorFlow/PyTorch models, Restb.ai API
+- **Features**:
+  - Analyze property photos to detect conditions
+  - Identify renovation needs (roof damage, water stains, outdated fixtures)
+  - Generate condition scores for each component
+  - Support for before/after photo comparison
+
+### 2. Component-Based Cost Estimation
+- **Master Component List**:
+  - Roof, HVAC, Plumbing, Electrical, Windows, Flooring, Kitchen, Bathroom
+  - Each component broken into subcomponents with cost per square foot
+  - Condition multipliers: Excellent (0%), Good (30%), Fair (60%), Poor (100%)
+  - Section 8 Housing Quality Standards (HQS) compliance tracking
+- **Dynamic Pricing**:
+  - Integration with Home Depot/Lowe's APIs for material costs
+  - Manual override for contractor-specific pricing
+  - Historical cost tracking for accuracy improvement
+  - Budget constraints for Section 8 rent limits
+
+### 3. Audio Walkthrough Processing
+- **Technology**: Otter.ai API, OpenAI Whisper
+- **Features**:
+  - Real-time transcription of property walkthroughs
+  - NLP extraction of component conditions
+  - Priority override: Audio input supersedes photo analysis
+  - Structured data extraction from unstructured speech
+
+### 4. Automated Market Monitoring
+- **Continuous Scanning**:
+  - Monitor Zillow, Redfin, MLS for new listings
+  - Auto-analyze properties in target neighborhoods
+  - Score based on Framework's criteria (ROI >30%, max rehab $10K, rent within Section 8 FMR)
+- **Alert System**:
+  - Email/SMS notifications for high-potential properties
+  - Daily/weekly summary reports
+  - Integration with deal pipeline
+
+## WhatsApp AI Assistant
+
+### Architecture
+```
+User → WhatsApp → Twilio API → Backend Service → AI Processing → Report Generation → Response
+```
+
+### Core Features
+
+1. **Input Processing**
+   - Accept property address via WhatsApp message
+   - Support for voice messages (converted to text)
+   - Handle follow-up questions and refinements
+
+2. **Data Collection Pipeline**
+   ```python
+   # Pseudocode for data collection
+   async def collect_property_data(address):
+       zillow_data = await fetch_zillow_api(address)
+       detroit_data = await fetch_detroit_parcel_data(address)
+       photos = await extract_property_photos(zillow_data)
+       comps = await get_comparable_sales(address)
+       return consolidate_data(zillow_data, detroit_data, photos, comps)
+   ```
+
+3. **Analysis Engine**
+   - Property condition assessment via computer vision
+   - Automated scope of work generation
+   - Financial pro forma calculation
+   - Strategy recommendation (flip vs hold)
+
+4. **Report Generation**
+   - Branded PDF/Web report with:
+     - Property details and photos
+     - Condition assessment by component
+     - Itemized rehab costs
+     - Financial projections
+     - Investment recommendation
+   - Shareable link format: `frameworkdetroit.com/analysis/[property-id]`
+
+### Implementation Phases
+
+**Phase 1 - Basic Assistant (Week 1-4)**
+- Address lookup and basic property data
+- Simple valuation based on comps
+- Text-only responses
+
+**Phase 2 - Photo Analysis (Week 5-8)**
+- Computer vision integration
+- Condition scoring
+- Visual report generation
+
+**Phase 3 - Audio Integration (Week 9-12)**
+- Voice message support
+- Walkthrough transcript processing
+- Dynamic scope updates
+
+**Phase 4 - Advanced Features (Month 4+)**
+- Bulk property analysis
+- Market trend integration
+- Learning from completed projects
+
+### Security & Compliance
+- Phone number whitelist for access control
+- Data encryption in transit and at rest
+- API rate limiting
+- Audit trail for all queries
 
 ## Additional Recommendations
 

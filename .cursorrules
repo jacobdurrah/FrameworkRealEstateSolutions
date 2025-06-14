@@ -133,25 +133,35 @@ Always start by creating a clear, scalable directory structure before writing an
 ## Technology Stack Recommendations
 
 ### Frontend
-- React/Next.js for modern, SEO-friendly applications
-- TypeScript for type safety
+- Next.js 14 with TypeScript for SEO and performance
 - Tailwind CSS for rapid UI development
 - React Query for data fetching and caching
-- Zustand or Redux Toolkit for state management
+- Zustand for lightweight state management
+- Socket.io for real-time updates
 
 ### Backend
-- Node.js with Express or NestJS
+- Node.js with TypeScript
+- Express.js for REST APIs
 - PostgreSQL for relational data (properties, users, transactions)
+- MongoDB for unstructured data (documents, reports)
 - Redis for caching and session management
 - JWT for authentication
-- Stripe or similar for payment processing
+
+### AI/ML Stack
+- OpenAI GPT-4 for natural language processing
+- TensorFlow.js for property valuation models
+- Restb.ai for property photo analysis
+- Whisper API for audio transcription
+- Pinecone for vector search
 
 ### Real Estate Specific Tools
-- Mapbox or Google Maps for property mapping
-- Cloudinary for image optimization and storage
-- SendGrid or AWS SES for transactional emails
-- Twilio for SMS notifications
-- PDF generation libraries for contracts/reports
+- Zillow API for property data
+- Detroit Open Data API for parcel information
+- Mapbox for property mapping
+- Twilio for WhatsApp integration
+- Otter.ai for walkthrough transcription
+- DocuSign for e-signatures
+- Baselane for property management
 
 ## Common Real Estate Features to Implement
 
@@ -302,3 +312,83 @@ if (!property.isActive) {
    - Load properties within viewport only
    - Cache map tiles
    - Debounce map movement events
+
+## AI Development Guidelines
+
+### WhatsApp Assistant Development
+1. **Message Processing**
+   - Implement message queuing for scalability
+   - Add timeout handling (max 2 minutes per analysis)
+   - Support for voice messages via Whisper API
+   - Graceful error handling with user-friendly messages
+
+2. **Report Generation**
+   - Use branded templates for consistency
+   - Generate both PDF and web versions
+   - Include confidence scores for all estimates
+   - Add disclaimer about AI-generated content
+
+3. **Data Priority**
+   - User input (audio/text) overrides photo analysis
+   - Recent data overrides historical data
+   - Manual overrides stored for learning
+
+### Computer Vision Guidelines
+1. **Photo Analysis**
+   - Process maximum 20 photos per property
+   - Resize images before analysis (max 1024px)
+   - Cache analysis results for 30 days
+   - Track confidence scores for each component
+
+2. **Component Detection**
+   - Roof, HVAC, Plumbing, Electrical, Windows, Flooring
+   - Condition scores: Excellent (0%), Good (30%), Fair (60%), Poor (100%)
+   - Flag critical safety issues immediately
+
+### Cost Estimation
+1. **Component Pricing**
+   - Base costs per square foot/unit
+   - Labor costs separate from materials
+   - Regional adjustments for Detroit market
+   - Contractor-specific pricing overrides
+
+2. **Accuracy Tracking**
+   - Compare estimates to actual costs
+   - Adjust models based on historical data
+   - Monthly recalibration of pricing
+
+### Market Monitoring
+1. **Property Scanning**
+   - Check new listings every 4 hours
+   - Focus on $50K-$100K range
+   - Score based on ROI potential
+   - Auto-analyze high-scoring properties
+
+2. **Alert System**
+   - Immediate alerts for >40% ROI potential
+   - Daily digest of opportunities
+   - Weekly market trend reports
+
+## Affordable Housing Focus
+
+### Development Priorities
+1. Focus on properties requiring <$10K rehabilitation
+2. Target rent levels at or below Section 8 Fair Market Rents (FMR) for Detroit
+   - 1BR: $858/month
+   - 2BR: $1,024/month
+   - 3BR: $1,329/month
+   - 4BR: $1,628/month
+3. Prioritize proximity to services and transportation
+4. Track social impact metrics alongside financial metrics
+
+### Tenant Considerations
+1. Flexible credit requirements
+2. Income verification focused on stability
+3. Fair housing compliance in all features
+4. Multi-language support planning
+
+### Community Integration
+1. Partner with Detroit Housing Coalition
+2. Track neighborhood improvement metrics
+3. Report on families housed and stability
+4. Open data sharing where appropriate
