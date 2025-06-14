@@ -203,7 +203,7 @@ function searchProperties(criteria) {
 }
 
 // Display search results
-function displayResults(properties) {
+async function displayResults(properties) {
     const resultsSection = document.getElementById('resultsSection');
     const resultsContainer = document.getElementById('resultsContainer');
     const resultCount = document.getElementById('resultCount');
@@ -234,9 +234,28 @@ function displayResults(properties) {
         return;
     }
     
-    // Display each property
+    // Load parcel data for all properties if enabled
+    let parcelDataMap = {};
+    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
+        window.parcelAPIService && window.parcelAPIService.isReady()) {
+        
+        console.log('Loading parcel data for search results...');
+        const addresses = properties.map(p => p.address);
+        
+        try {
+            // Use batch loading for efficiency
+            parcelDataMap = await window.parcelAPIService.batchLoadParcels(addresses);
+            console.log(`Loaded parcel data for ${Object.keys(parcelDataMap).length} of ${addresses.length} properties`);
+        } catch (error) {
+            console.error('Error loading parcel data:', error);
+        }
+    }
+    
+    // Display each property with parcel data
     properties.forEach(property => {
-        const propertyCard = createPropertyCard(property);
+        // Attach parcel data to property if available
+        const parcelData = parcelDataMap[property.address] || null;
+        const propertyCard = createPropertyCard(property, parcelData);
         resultsContainer.appendChild(propertyCard);
     });
     
@@ -245,15 +264,15 @@ function displayResults(properties) {
 }
 
 // Create property card element
-function createPropertyCard(property) {
+function createPropertyCard(property, parcelData = null) {
     const totalInvestment = property.price + property.estimatedRehab;
     const monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate || 1329;
     const annualRent = monthlyRent * 12;
     const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
     const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
     
-    // Get pre-loaded parcel data
-    const parcelInfo = preloadedParcelData[property.address] || null;
+    // Use provided parcel data or check pre-loaded data
+    const parcelInfo = parcelData || preloadedParcelData[property.address] || null;
     
     // Enhanced debug logging
     console.group(`Creating card for ${property.address}`);
@@ -500,7 +519,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (resultsContainer && resultsContainer.children.length > 0) {
                 console.log('Refreshing search results with parcel data...');
                 const currentResults = window.lastSearchResults || mockProperties.slice(0, 6);
-                displayResults(currentResults);
+                // Don't call displayResults here as it will re-fetch parcel data
+                // displayResults(currentResults);
             }
         } else {
             console.warn('Parcel API service not available after waiting');
@@ -752,7 +772,8 @@ function displayOwnerResults(properties, title) {
                 sqft: parcel.totalFloorArea || 1200
             };
             
-            const card = createPropertyCard(property);
+            // Pass the parcel data directly since we already have it
+            const card = createPropertyCard(property, parcel);
             resultsContainer.appendChild(card);
         });
     }
@@ -993,6 +1014,13 @@ function updateHoldProjection(projection) {
 // Update metric explanations
 function updateMetricExplanations() {
     const container = document.getElementById('metricExplanations');
+    
+    // Check if the container exists before proceeding
+    if (!container) {
+        console.warn('metricExplanations element not found - skipping metric explanations update');
+        return;
+    }
+    
     const results = proformaCalculator.results;
     const data = proformaCalculator.data;
     

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Property Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .test-btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        #results { margin-top: 20px; padding: 20px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>Property Finder Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Check Parcel API</h2>
+        <button class="test-btn" onclick="testParcelAPI()">Test Parcel API</button>
+        <div id="parcelAPIResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Search Properties</h2>
+        <button class="test-btn" onclick="testSearch()">Search Properties</button>
+        <div id="searchResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Test Analyze Button</h2>
+        <button class="test-btn" onclick="testAnalyze()">Test Analyze</button>
+        <div id="analyzeResult"></div>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Test parcel API
+        async function testParcelAPI() {
+            const resultDiv = document.getElementById('parcelAPIResult');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Check if parcel API is ready
+                const isReady = window.parcelAPIService && window.parcelAPIService.isReady();
+                resultDiv.innerHTML = `<p>Parcel API Ready: ${isReady ? '<span class="success">YES</span>' : '<span class="error">NO</span>'}</p>`;
+                
+                if (isReady) {
+                    // Test a specific address
+                    const testAddress = '442 CHANDLER';
+                    const data = await window.parcelAPIService.getParcelByAddress(testAddress);
+                    if (data) {
+                        resultDiv.innerHTML += `<p class="success">✓ Found data for ${testAddress}: Owner - ${data.owner.fullName}</p>`;
+                    } else {
+                        resultDiv.innerHTML += `<p class="error">✗ No data found for ${testAddress}</p>`;
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test property search
+        async function testSearch() {
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.innerHTML = 'Searching...';
+            
+            try {
+                // Simulate search
+                const mockProperties = [
+                    { address: '442 CHANDLER', price: 68500, estimatedRehab: 8000 },
+                    { address: '444 HORTON', price: 52000, estimatedRehab: 9500 }
+                ];
+                
+                // Call displayResults
+                await window.displayResults(mockProperties);
+                resultDiv.innerHTML = '<p class="success">✓ Search completed - check results section</p>';
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test analyze button
+        function testAnalyze() {
+            const resultDiv = document.getElementById('analyzeResult');
+            resultDiv.innerHTML = 'Testing analyze...';
+            
+            try {
+                const testProperty = {
+                    address: '442 CHANDLER',
+                    city: 'Detroit',
+                    state: 'MI',
+                    zip: '48202',
+                    price: 68500,
+                    bedrooms: 3,
+                    bathrooms: 1,
+                    sqft: 2514,
+                    yearBuilt: 1912,
+                    estimatedRehab: 8000,
+                    monthlyRent: 1329
+                };
+                
+                // Call analyzeProperty
+                window.analyzeProperty(testProperty);
+                resultDiv.innerHTML = '<p class="success">✓ Analyze function called - check for proforma modal</p>';
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Wait for scripts to load
+        window.addEventListener('DOMContentLoaded', () => {
+            const scriptsLoaded = setInterval(() => {
+                if (window.parcelAPIService && window.displayResults && window.analyzeProperty) {
+                    clearInterval(scriptsLoaded);
+                    document.getElementById('results').innerHTML = '<p class="success">All scripts loaded successfully!</p>';
+                }
+            }, 500);
+            
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(scriptsLoaded);
+                if (!window.parcelAPIService || !window.displayResults || !window.analyzeProperty) {
+                    document.getElementById('results').innerHTML = '<p class="error">Some scripts failed to load</p>';
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
