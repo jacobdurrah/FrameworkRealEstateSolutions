@@ -106,3 +106,4 @@ Desktop.ini
 # Claude/Cursor specific
 .claude/
 .cursor/
+.vercel

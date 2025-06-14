@@ -8,7 +8,7 @@
     "agent": "node src/services/agent/index.js",
     "test": "jest",
     "lint": "eslint .",
-    "dev": "vercel dev",
+    "dev": "node test-local.js",
     "deploy": "vercel --prod"
   },
   "dependencies": {

@@ -1,5 +1,32 @@
 # Deployment Guide for Framework Real Estate Solutions
 
+## 🎉 Deployment Complete!
+
+Your backend has been successfully deployed to Vercel:
+- **Backend URL**: `https://framework-realestate-iyd9sncv6-jacob-durrahs-projects.vercel.app`
+- **API Base URL**: `https://framework-realestate-iyd9sncv6-jacob-durrahs-projects.vercel.app/api`
+
+### ⚠️ Important: Authentication Required
+
+Your Vercel deployment has authentication protection enabled. To access the API:
+
+1. **Visit the API URL directly** in your browser:
+   https://framework-realestate-iyd9sncv6-jacob-durrahs-projects.vercel.app/api/properties/search
+   
+2. **Authenticate with Vercel** when prompted
+
+3. **Then your website will work** as the authentication cookie will be set
+
+### To Disable Authentication (Optional):
+
+1. Go to your [Vercel Dashboard](https://vercel.com/dashboard)
+2. Select the `framework-realestate-api` project
+3. Go to Settings → General
+4. Find "Password Protection" or "Vercel Authentication"
+5. Disable it for public access
+
+---
+
 ## Overview
 This guide explains how to deploy the Framework Real Estate Solutions website with its secure backend API.
 
