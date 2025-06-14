@@ -4,7 +4,7 @@
 const ZILLOW_CONFIG = {
     baseUrl: 'https://zillow-com1.p.rapidapi.com',
     headers: {
-        'X-RapidAPI-Key': '', // To be filled with actual API key
+        'X-RapidAPI-Key': 'b6e96933b5msh0a4e833d17de153p1ab4d5jsn99e015d5c751',
         'X-RapidAPI-Host': 'zillow-com1.p.rapidapi.com'
     }
 };
@@ -300,13 +300,8 @@ function mapPropertyType(type) {
 
 // Initialize API on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if config.js exists and has API keys
-    if (window.API_CONFIG && window.API_CONFIG.ZILLOW_API_KEY && window.API_CONFIG.ZILLOW_API_KEY !== 'your_zillow_api_key_here') {
-        setApiKey(window.API_CONFIG.ZILLOW_API_KEY);
-    } else {
-        // Fall back to loading saved keys from localStorage
-        loadSavedApiKey();
-    }
+    // API key is now embedded directly
+    localStorage.setItem('zillow_configured', 'true');
 });
 
 // Export functions for use in property-finder.js
