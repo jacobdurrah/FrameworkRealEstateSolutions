@@ -1,66 +1,157 @@
 # Framework Real Estate Solutions
 
-A comprehensive framework for building real estate applications and solutions.
+A modern real estate investment platform focused on Detroit's affordable housing market, providing comprehensive tools for property analysis and investment decisions.
 
-## Overview
+## 🏠 Overview
 
-Framework Real Estate Solutions provides a robust foundation for developing real estate applications, including property management systems, listing platforms, and agent tools.
+Framework Real Estate Solutions helps investors find and analyze properties in Detroit that meet specific investment criteria: acquisition price between $50,000-$100,000 with maximum $10,000 rehabilitation costs. Our platform combines real-time property searches with comprehensive financial analysis tools.
 
-## Features
+## ✨ Features
 
-- Property listing management
-- Client relationship management (CRM)
-- Document management
-- Financial calculations and reporting
-- Integration capabilities with MLS systems
-- Mobile-responsive design
+### Property Finder with Detroit Parcel Data
+- **370,000+ Property Records**: Access comprehensive Detroit parcel data
+- **Smart Search**: Find properties matching investment criteria
+- **Owner Information**: View property ownership and mailing addresses
+- **Neighborhood Data**: See property neighborhoods and districts
+- **Portfolio Discovery**: Find all properties owned by the same owner
+- **Tax Assessments**: View assessed and taxable values
 
-## Getting Started
+### Advanced Investment Analysis
+- **Professional Proforma Calculator**: 
+  - Calculate Cap Rate, Cash on Cash Return, DSCR, ROI, GRM
+  - 5-year investment projections with appreciation
+  - Educational explanations for each metric
+  - Export analysis as PDF or email reports
+- **Section 8 Rent Limits**: Current HUD payment standards for Detroit
+- **Quick ROI Calculator**: Instant investment return calculations
 
-### Prerequisites
+### Modern User Experience
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- **Real-time Updates**: Property data loads asynchronously for fast browsing
+- **WhatsApp Integration**: Direct communication for property inquiries
+- **Interactive Chatbot**: AI assistant for property searches and questions
 
-- Node.js (v14 or higher)
-- Git
-- Database (PostgreSQL recommended)
+## 🚀 Getting Started
 
-### Installation
+### View Live Site
+Visit: https://jacobdurrah.github.io/FrameworkRealEstateSolutions/
 
-```bash
-# Clone the repository
-git clone [repository-url]
+### For Local Development
 
-# Navigate to project directory
-cd Framework-Realestate-Solutions
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jacobdurrah/FrameworkRealEstateSolutions.git
+   cd FrameworkRealEstateSolutions
+   ```
 
-# Install dependencies
-npm install
+2. **Configure APIs (Optional)**
+   - Copy `.env.example` to `.env`
+   - Add your API keys for enhanced property data
 
-# Set up environment variables
-cp .env.example .env
+3. **Run locally**
+   ```bash
+   # Using Python
+   python -m http.server 8000
+   
+   # Or using Node.js
+   npx http-server
+   ```
 
-# Run the application
-npm start
-```
+4. **Open in browser**
+   ```
+   http://localhost:8000
+   ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 /
-├── src/               # Source code
-├── tests/             # Test files
-├── docs/              # Documentation
-├── config/            # Configuration files
-└── scripts/           # Utility scripts
+├── index.html              # Homepage
+├── property-finder.html    # Property search tool
+├── affordable-housing.html # Current listings
+├── js/
+│   ├── property-finder.js  # Search functionality
+│   ├── proforma-calculator.js # Investment calculations
+│   ├── parcel-api.js      # Parcel data integration
+│   └── app-config.js      # Configuration
+├── css/
+│   ├── style.css          # Main styles
+│   ├── property-finder.css # Property finder styles
+│   └── proforma.css       # Calculator styles
+├── backend-scripts/       # Data management tools
+│   ├── upload-parcel-data.js
+│   └── schema.sql
+└── docs/
+    └── proforma-formulas.md # Financial formulas documentation
 ```
 
-## Contributing
+## 🔧 Technology Stack
 
-Please read our contributing guidelines before submitting pull requests.
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3
+- **Database**: Supabase (PostgreSQL) for parcel data
+- **Hosting**: GitHub Pages
+- **APIs**: Supabase REST API for property data
+- **Architecture**: Serverless, API-first design
 
-## License
+## 📊 Parcel Data Integration
+
+The platform integrates with Detroit's public parcel data:
+- 370,000+ property records
+- Real-time API queries with caching
+- Indexed searches by address, owner, neighborhood
+- Comprehensive property details including ownership, tax values, and sale history
+
+## 🛠️ Advanced Features
+
+### Proforma Analysis Includes:
+- Net Operating Income (NOI)
+- Cap Rate with market benchmarks
+- Cash on Cash Return calculations
+- Debt Service Coverage Ratio (DSCR)
+- Gross Rent Multiplier (GRM)
+- Total Return on Investment (ROI)
+- 5-year cash flow projections
+- Buy & Hold, BRRRR, and Fix & Flip strategies
+
+### Investment Criteria:
+- Purchase Price: $50,000 - $100,000
+- Max Rehab Cost: $10,000
+- Target Location: Detroit neighborhoods
+- Property Types: Single-family homes
+- Focus: Section 8 rental opportunities
+
+## 📱 Mobile Features
+
+- Touch-optimized interface
+- Fast loading with lazy data fetching
+- Offline capability for saved analyses
+- Progressive enhancement approach
+
+## 🔒 Security & Privacy
+
+- No sensitive data stored client-side
+- Secure API communications
+- Public data only (no private information)
+- HTTPS enforced on production
+
+## 🤝 Contributing
+
+We welcome contributions! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
 
 This project is proprietary software. All rights reserved.
 
-## Contact
+## 📞 Contact
 
-For questions or support, please contact the development team.
+Framework Real Estate Solutions  
+📱 WhatsApp: +1 (313) 451-7107  
+🌐 Website: https://jacobdurrah.github.io/FrameworkRealEstateSolutions/
+
+---
+
+Built with ❤️ for Detroit's housing future

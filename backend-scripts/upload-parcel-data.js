@@ -9,7 +9,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const { createClient } = require('@supabase/supabase-js');
 const pLimit = require('p-limit');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: './.env' });
 
 // Configuration
 const BATCH_SIZE = 1000; // Number of records to insert at once
