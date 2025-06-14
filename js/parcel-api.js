@@ -256,6 +256,56 @@ class ParcelAPIService {
         };
     }
 
+    // Batch load parcel data for multiple addresses
+    async batchLoadParcels(addresses) {
+        if (!this.isReady() || !addresses || addresses.length === 0) return {};
+
+        const results = {};
+        
+        // Check cache first
+        const uncachedAddresses = [];
+        for (const address of addresses) {
+            const normalizedAddress = this.normalizeAddress(address);
+            const cached = this.getFromCache(`address:${normalizedAddress}`);
+            if (cached) {
+                results[address] = cached;
+            } else {
+                uncachedAddresses.push(address);
+            }
+        }
+
+        // Load uncached addresses
+        if (uncachedAddresses.length > 0) {
+            try {
+                // Query for all addresses at once using OR conditions
+                const normalizedAddresses = uncachedAddresses.map(addr => this.normalizeAddress(addr));
+                
+                const { data, error } = await this.client
+                    .from('parcels')
+                    .select('*')
+                    .or(normalizedAddresses.map(addr => `address.eq.${addr}`).join(','));
+
+                if (!error && data) {
+                    // Process results
+                    for (const parcel of data) {
+                        const transformed = this.transformParcelData(parcel);
+                        const originalAddress = uncachedAddresses.find(addr => 
+                            this.normalizeAddress(addr) === this.normalizeAddress(parcel.address)
+                        );
+                        if (originalAddress) {
+                            results[originalAddress] = transformed;
+                            this.storeInCache(`address:${this.normalizeAddress(originalAddress)}`, transformed);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error in batch load:', error);
+            }
+        }
+
+        return results;
+    }
+
     // Get statistics about the data
     async getStats() {
         if (!this.isReady()) return null;

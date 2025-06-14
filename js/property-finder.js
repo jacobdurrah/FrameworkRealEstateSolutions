@@ -1,5 +1,8 @@
 // Property Finder JavaScript
 
+// Store for pre-loaded parcel data
+let preloadedParcelData = {};
+
 // Mock property data for demonstration
 // Based on real Detroit investment properties
 const mockProperties = [
@@ -144,6 +147,23 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', async 
     }
 });
 
+// Pre-load parcel data for mock properties
+async function preloadParcelData() {
+    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
+        window.parcelAPIService && window.parcelAPIService.isReady()) {
+        
+        const addresses = mockProperties.map(p => p.address);
+        console.log('Pre-loading parcel data for', addresses.length, 'properties...');
+        
+        try {
+            preloadedParcelData = await window.parcelAPIService.batchLoadParcels(addresses);
+            console.log('Pre-loaded parcel data:', Object.keys(preloadedParcelData).length, 'properties');
+        } catch (error) {
+            console.error('Error pre-loading parcel data:', error);
+        }
+    }
+}
+
 // Search properties based on criteria
 function searchProperties(criteria) {
     return mockProperties.filter(property => {
@@ -212,8 +232,8 @@ function createPropertyCard(property) {
     const estimatedROI = ((annualRent - (totalInvestment * 0.1)) / totalInvestment * 100).toFixed(1);
     const cashFlow = monthlyRent - (totalInvestment * 0.006); // Rough estimate
     
-    // Get parcel data if available (will be populated asynchronously)
-    let parcelInfo = null;
+    // Get pre-loaded parcel data
+    const parcelInfo = preloadedParcelData[property.address] || null;
     
     const card = document.createElement('div');
     card.className = 'property-result-card';
@@ -234,18 +254,26 @@ function createPropertyCard(property) {
         <div class="property-result-details">
             <h4 class="property-result-address">
                 ${property.address}
-                <span class="property-neighborhood" style="display: none;"></span>
+                ${parcelInfo && parcelInfo.neighborhood ? 
+                    `<span class="property-neighborhood">${parcelInfo.neighborhood}</span>` : ''}
             </h4>
             <p class="property-result-price">$${property.price.toLocaleString()}</p>
-            <div class="property-owner-info" style="display: none;">
+            ${parcelInfo ? `
+            <div class="property-owner-info">
                 <span class="owner-label">Owner:</span>
-                <span class="owner-name">Loading...</span>
+                <span class="owner-name">${parcelInfo.owner.fullName || 'Unknown'}</span>
             </div>
+            <div class="property-parcel-info">
+                <span class="parcel-label">Parcel ID:</span>
+                <span class="parcel-id">${parcelInfo.parcelId || 'N/A'}</span>
+            </div>
+            ` : ''}
             <div class="property-result-info">
                 <span>${property.bedrooms} bed</span>
                 <span>${property.bathrooms} bath</span>
                 <span>${sqft} sqft</span>
                 <span>Built ${property.yearBuilt}</span>
+                ${parcelInfo ? `<span>Assessed: $${(parcelInfo.assessedValue || 0).toLocaleString()}</span>` : ''}
             </div>
             <div class="property-result-analysis">
                 <div class="analysis-item">
@@ -273,47 +301,26 @@ function createPropertyCard(property) {
             </p>` : ''}
             <div class="property-result-actions">
                 <button class="btn btn-primary" onclick="analyzeProperty(${JSON.stringify(property).replace(/"/g, '&quot;')})">
-                    📊 Analyze Deal
+                    📊 Analyze
                 </button>
-                <button class="btn btn-outline btn-details" onclick="viewPropertyDetails('${property.address}')" style="display: none;">
-                    📋 View Details
+                ${parcelInfo ? `
+                <button class="btn btn-outline" onclick="viewPropertyDetails('${property.address}')">
+                    📋 Details
                 </button>
-                <button class="btn btn-outline btn-contact" onclick="contactAboutProperty('${property.address}')">
+                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
+                    👤 Owner Portfolio
+                </button>
+                <button class="btn btn-outline" onclick="searchByMailingAddress('${parcelInfo.owner.fullMailingAddress}')">
+                    📍 Address Search
+                </button>
+                ` : `
+                <button class="btn btn-outline" onclick="contactAboutProperty('${property.address}')">
                     📧 Inquire
                 </button>
+                `}
             </div>
         </div>
     `;
-    
-    // Asynchronously load parcel data if enabled
-    if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA && 
-        window.parcelAPIService && window.parcelAPIService.isReady()) {
-        
-        window.parcelAPIService.getParcelByAddress(property.address).then(parcelData => {
-            if (parcelData && card.parentElement) { // Check if card is still in DOM
-                // Update neighborhood
-                const neighborhoodEl = card.querySelector('.property-neighborhood');
-                if (parcelData.neighborhood) {
-                    neighborhoodEl.textContent = parcelData.neighborhood;
-                    neighborhoodEl.style.display = 'inline-block';
-                }
-                
-                // Update owner info
-                const ownerInfoEl = card.querySelector('.property-owner-info');
-                const ownerNameEl = card.querySelector('.owner-name');
-                if (parcelData.owner.fullName) {
-                    ownerNameEl.textContent = parcelData.owner.fullName;
-                    ownerInfoEl.style.display = 'flex';
-                }
-                
-                // Show details button, hide contact button
-                card.querySelector('.btn-details').style.display = 'inline-block';
-                card.querySelector('.btn-contact').style.display = 'none';
-            }
-        }).catch(err => {
-            console.error('Error loading parcel data:', err);
-        });
-    }
     
     return card;
 }
@@ -368,7 +375,7 @@ document.getElementById('roiCalculator')?.addEventListener('submit', function(e)
 });
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Set default max price
     const maxPriceInput = document.getElementById('maxPrice');
     if (maxPriceInput && !maxPriceInput.value) {
@@ -378,14 +385,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize parcel API service if enabled
     if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA) {
         if (window.parcelAPIService && !window.parcelAPIService.isReady()) {
-            window.parcelAPIService.init(
+            const success = await window.parcelAPIService.init(
                 window.APP_CONFIG.SUPABASE_URL,
                 window.APP_CONFIG.SUPABASE_ANON_KEY
-            ).then(success => {
-                if (success) {
-                    console.log('Parcel API service initialized');
+            );
+            if (success) {
+                console.log('Parcel API service initialized');
+                // Pre-load parcel data for mock properties
+                await preloadParcelData();
+                
+                // Test some lookups
+                console.log('Testing parcel lookups...');
+                const testAddresses = ['442 CHANDLER', '444 HORTON', '420 E FERRY'];
+                for (const addr of testAddresses) {
+                    const data = preloadedParcelData[addr];
+                    if (data) {
+                        console.log(`✓ ${addr}:`, data.owner.fullName, '-', data.neighborhood);
+                    } else {
+                        console.log(`✗ ${addr}: No data found`);
+                    }
                 }
-            });
+            }
         }
     }
 });
@@ -636,12 +656,54 @@ function displayOwnerResults(properties, title) {
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Test function to verify parcel data
+async function testParcelData() {
+    console.log('=== Testing Parcel Data Integration ===');
+    
+    if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
+        console.log('❌ Parcel API service not ready');
+        return;
+    }
+    
+    // Test addresses from our mock properties
+    const testCases = [
+        { address: '442 CHANDLER', expected: 'GLOVER, RONALD L' },
+        { address: '444 HORTON', expected: 'FEDER,FEDER HOSKING LIVING T et al' },
+        { address: '420 E FERRY', expected: 'MAUSI, SHAHIDA A' },
+        { address: '246 E EUCLID', expected: 'REID, LILLIE MAY' },
+        { address: '235 MELBOURNE', expected: 'PERRY, FREDA L' },
+        { address: '231 CHANDLER', expected: 'MAISON DETROIT LLC' }
+    ];
+    
+    console.log('Testing individual lookups...');
+    for (const test of testCases) {
+        try {
+            const data = await window.parcelAPIService.getParcelByAddress(test.address);
+            if (data) {
+                console.log(`✓ ${test.address}: Found owner "${data.owner.fullName}" in ${data.neighborhood}`);
+            } else {
+                console.log(`✗ ${test.address}: No data found`);
+            }
+        } catch (error) {
+            console.log(`✗ ${test.address}: Error - ${error.message}`);
+        }
+    }
+    
+    console.log('\nTesting batch load...');
+    const addresses = testCases.map(t => t.address);
+    const batchData = await window.parcelAPIService.batchLoadParcels(addresses);
+    console.log(`Batch loaded ${Object.keys(batchData).length} of ${addresses.length} properties`);
+    
+    console.log('=== Test Complete ===');
+}
+
 // Export functions for chatbot
 window.displayResults = displayResults;
 window.searchProperties = searchProperties;
 window.viewPropertyDetails = viewPropertyDetails;
 window.searchByOwner = searchByOwner;
 window.searchByMailingAddress = searchByMailingAddress;
+window.testParcelData = testParcelData;
 
 // Proforma Analysis Functions
 let proformaCalculator = null;

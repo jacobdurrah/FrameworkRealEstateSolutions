@@ -199,14 +199,22 @@
 }
 
 .property-result-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
 }
 
 .property-result-actions .btn {
-    flex: 1;
     padding: var(--spacing-sm);
     font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.property-result-actions .btn-primary {
+    grid-column: 1 / -1;
 }
 
 .property-result-actions .btn-primary {
@@ -453,20 +461,25 @@
 }
 
 /* Property Owner Info */
-.property-owner-info {
+.property-owner-info,
+.property-parcel-info {
     display: flex;
     gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
     font-size: 0.875rem;
     color: var(--dark-gray);
 }
 
-.owner-label {
+.owner-label,
+.parcel-label {
     font-weight: 500;
+    min-width: 80px;
 }
 
-.owner-name {
+.owner-name,
+.parcel-id {
     color: var(--primary-black);
+    flex: 1;
 }
 
 /* Property Details Modal */
