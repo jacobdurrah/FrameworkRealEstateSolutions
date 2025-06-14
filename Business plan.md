@@ -15,7 +15,7 @@
  *(Includes project portfolio, pipeline, investor contact portal, and blog.)*
 
 **Mission Statement:**  
-To restore and revitalize Detroit neighborhoods through thoughtful rehabbing of residential properties—preserving historic character, creating long-term value, and building sustainable equity for all stakeholders. While profitability drives the business, Framework seeks opportunities to align investment goals with community development when possible.
+To increase affordable housing opportunities in Detroit by acquiring, rehabilitating, and providing quality homes at accessible price points. Framework Real Estate Solutions focuses on properties in the $50,000-$100,000 acquisition range with minimal rehabilitation needs ($10,000 or less) to maintain affordability while ensuring safe, dignified housing for Detroit residents. Our stabilization phase prioritizes building a sustainable portfolio while serving the community's housing needs.
 
 ---
 
@@ -69,39 +69,39 @@ To restore and revitalize Detroit neighborhoods through thoughtful rehabbing of 
 
 ## **IV. Strategic Focus Areas**
 
-### **Top Priority SNF Neighborhoods**
+### **Initial Stabilization Phase Focus**
 
-* **Islandview / Greater Villages** – Near the waterfront, strong momentum, proximity to Belle Isle
+**Target Acquisition Range:** $50,000 - $100,000  
+**Maximum Rehabilitation Budget:** $10,000 per property  
+**Focus:** Affordable housing for Detroit residents
 
-* **Fitzgerald** – Target for land reuse, strong comps, near University of Detroit Mercy
+### **First Property**
+* **Address:** 15852 Wabash, Detroit, Michigan  
+* **Purchase Price:** $53,000  
+* **Target Rehabilitation:** Under $10,000  
+* **Strategy:** Provide quality affordable housing
 
-* **Russell Woods / Nardin Park** – Historic homes, growing investor interest
+### **Target Neighborhoods for Affordable Housing**
 
-* **Bagley / University District** – High-quality homes near Avenue of Fashion
-
-* **Jefferson Chalmers** – Waterfront, resilient infrastructure upgrades
-
-* **North End / Milwaukee Junction** – Downtown-adjacent, strong arts and mixed-use potential
-
-### **Secondary Target Neighborhoods**
-
-* **Warrendale** – Affordable, suburban layout
-
-* **East Warren / Cadieux** – Community investment corridor
-
-* **Campau / Banglatown** – Culturally vibrant with mixed-use potential
-
-* **Gratiot / 7 Mile** – Gateway district with growing rehab activity
+* Properties near Detroit Housing Coalition facilities
+* Areas with strong community support systems
+* Neighborhoods with access to public transportation
+* Districts with established community organizations
 
 ### **Property Type Focus**
 
-* Single-family homes and duplexes
+* Single-family homes requiring minimal rehabilitation
+* Properties that can be quickly brought to market
+* DLBA properties meeting our price criteria
+* Homes suitable for working families and individuals
 
-* DLBA, MLS, and off-market deals
+### **Community Engagement Strategy**
 
-* Rehab budgets of $30K–$100K
-
-* Flip or BRRRR based on deal profile
+* Partner with Detroit Housing Coalition
+* Distribute flyers at community spaces
+* Competitive pricing below market rates
+* Flexible qualification criteria for tenants
+* Focus on long-term stable tenancies
 
 ---
 
@@ -122,23 +122,25 @@ To restore and revitalize Detroit neighborhoods through thoughtful rehabbing of 
 
 ## **VI. Profit Model & Developer Fee Structure**
 
-**Developer Fee:**
+**Stabilization Phase Model:**
 
-* Minimum 10% of total project costs
+* Focus on portfolio building over immediate profits
+* Reinvest rental income into additional acquisitions
+* Minimal developer fees during stabilization (5% or deferred)
+* Priority on sustainable cash flow and community impact
 
-* Paid before profit distribution (can be deferred if agreed upon)
+**Rental Income Strategy:**
 
-**Example Profit Distribution (Based on $100K net profit):**
-
-* Developer Fee (10%): $10K each
-
-* Remaining Profit: 50/50 split
+* Competitive below-market rents
+* Focus on tenant stability and long-term occupancy
+* Build property management systems and processes
+* Track social impact metrics alongside financial metrics
 
 **Capital Contributions:**
 
 * Tracked in a shared ledger
-
-* Preferred returns or prorated splits for capital partners (if applicable)
+* Initial capital focused on acquisitions and minimal rehab
+* Reinvestment strategy for portfolio growth
 
 ---
 
@@ -155,57 +157,69 @@ To restore and revitalize Detroit neighborhoods through thoughtful rehabbing of 
 
 ---
 
-## **VIII. Metrics for Deal Approval**
+## **VIII. Metrics for Deal Approval (Stabilization Phase)**
 
-* Return on Cost: \> 30%
+**Acquisition Criteria:**
+* Purchase Price: $50,000 - $100,000
+* Maximum Rehab: $10,000
+* Move-in ready or minimal repairs needed
+* Rent-to-Value: ≥ 0.8% (adjusted for affordability)
+* No major structural issues
+* Properties suitable for immediate occupancy
 
-* Net Margin: ≥ 20%
-
-* Rehab Timeline: ≤ 5 months
-
-* Exit Timeline: ≤ 9 months
-
-* Rent-to-Value: ≥ 0.9%
-
-* No major foundation issues unless in budget
-
-* Internal Neighborhood Score: Pass
+**Social Impact Metrics:**
+* Affordability: Rent ≤ 30% of area median income
+* Community benefit score
+* Proximity to services and transportation
+* Potential for long-term tenant stability
 
 ---
 
 ## **IX. Branding & Marketing**
 
-**Marketing Channels:**
+**Community-Focused Marketing:**
 
-* Instagram: @FrameworkDetroit
+* Partner with Detroit Housing Coalition for referrals
+* Flyer distribution at community centers and churches
+* Word-of-mouth through satisfied tenants
+* Community event participation
+* Direct outreach to local organizations
 
-* Monthly investor updates
+**Digital Presence:**
 
-* Website with project case studies
+* Simple website with available properties
+* Phone hotline for inquiries
+* Email list for property alerts
+* Facebook page for community engagement
 
-* Google My Business \+ SEO
+**Messaging Focus:**
 
-**Future Tools (Optional):**
-
-* Drone walkthroughs
-
-* Construction timelines \+ before/after media
-
-* Event sponsorships
+* "Quality Affordable Housing for Detroit Families"
+* "Your Partner in Finding a Home"
+* "Building Community, One Home at a Time"
 
 ---
 
 ## **X. Long-Term Vision (3–5 Years)**
 
-* 20+ doors held or sold
+**Phase 1 (Year 1): Stabilization**
+* Acquire 10-15 properties in target price range
+* Establish property management systems
+* Build community partnerships
+* Achieve 95%+ occupancy rate
 
-* Launch investor fund or hybrid capital pool
+**Phase 2 (Years 2-3): Expansion**
+* Scale to 30-50 properties
+* Develop in-house maintenance team
+* Launch tenant support programs
+* Explore CDFI partnerships for favorable financing
 
-* In-house project management or GC license
-
-* Ground-up infill construction (duplex/triplex)
-
-* Public/private partnerships for city-owned lots
+**Phase 3 (Years 4-5): Community Impact**
+* 75+ unit portfolio
+* Homeownership pathways for tenants
+* Workforce development programs
+* Mixed-income development opportunities
+* Measurable community impact reporting
 
 ---
 
@@ -217,15 +231,17 @@ To restore and revitalize Detroit neighborhoods through thoughtful rehabbing of 
 
 3. Open Baseline business accounts
 
-4. Set up shared Google Workspace and Notion
+4. Complete acquisition of 15852 Wabash property
 
-5. Purchase domain and launch website
+5. Establish relationship with Detroit Housing Coalition
 
-6. Identify and underwrite 2–3 deals
+6. Create and print property flyers for community distribution
 
-7. Reach out to preferred lenders (Kiavi, Roc360, Host, CDFIs)
+7. Set up basic property management systems
 
-8. Build contractor database
+8. Identify next 2-3 properties in target range
 
-9. Assign roles from Section V
+9. Build network of affordable contractors for minor repairs
+
+10. Develop tenant screening process focused on stability over credit scores
 
