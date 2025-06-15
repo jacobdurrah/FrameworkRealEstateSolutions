@@ -10,23 +10,41 @@ Framework Real Estate Solutions helps investors find and analyze properties in D
 
 ### Property Finder with Detroit Parcel Data
 - **370,000+ Property Records**: Access comprehensive Detroit parcel data
-- **Smart Search**: Find properties matching investment criteria
-- **Owner Information**: View property ownership and mailing addresses
+- **Multiple Search Methods**: 
+  - Search by investment criteria (price, beds, property type)
+  - Search by specific address
+  - Search by owner name (e.g., "SMITH, JOHN" or "LLC")
+  - Search by parcel ID
+- **Enhanced Property Cards**:
+  - Shows if property is listed for sale or not
+  - Displays estimated market value (2x assessed) for non-listed properties
+  - Last sale date, price, and years owned
+  - Tax status (Taxable/Exempt)
+  - Property condition (Improved/Vacant)
+  - Direct Zillow links for property photos
+- **Owner Information**: View property ownership and find owner's portfolio
 - **Neighborhood Data**: See property neighborhoods and districts
-- **Portfolio Discovery**: Find all properties owned by the same owner
 - **Tax Assessments**: View assessed and taxable values
 
 ### Advanced Investment Analysis
 - **Professional Proforma Calculator**: 
   - Calculate Cap Rate, Cash on Cash Return, DSCR, ROI, GRM
   - 5-year investment projections with appreciation
-  - Educational explanations for each metric
+  - Educational explanations for each metric (6th grade level)
   - Export analysis as PDF or email reports
+- **BRRRR Strategy Calculator**: 
+  - Calculate refinance potential at 75% LTV
+  - See cash back and money left in deal
+  - Project new monthly payments and cash flow
 - **Section 8 Rent Limits**: Current HUD payment standards for Detroit
 - **Quick ROI Calculator**: Instant investment return calculations
 
 ### Modern User Experience
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- **Mobile-First Design**: 
+  - Responsive hamburger menu navigation
+  - Touch-optimized property cards
+  - Works perfectly on all devices
+- **Professional Branding**: Updated Framework logo and visual identity
 - **Real-time Updates**: Property data loads asynchronously for fast browsing
 - **WhatsApp Integration**: Direct communication for property inquiries
 - **Interactive Chatbot**: AI assistant for property searches and questions
@@ -82,7 +100,10 @@ Visit: https://jacobdurrah.github.io/FrameworkRealEstateSolutions/
 │   ├── upload-parcel-data.js
 │   └── schema.sql
 └── docs/
-    └── proforma-formulas.md # Financial formulas documentation
+    ├── proforma-formulas.md # Financial formulas documentation
+    ├── PROPERTY_API_GUIDE.md # API integration guide
+    ├── BLOCK_ANALYSIS_GUIDE.md # Spatial analysis documentation
+    └── TAX_STATUS_DATA_FLOW.md # Tax status data explanation
 ```
 
 ## 🔧 Technology Stack
@@ -111,7 +132,10 @@ The platform integrates with Detroit's public parcel data:
 - Gross Rent Multiplier (GRM)
 - Total Return on Investment (ROI)
 - 5-year cash flow projections
-- Buy & Hold, BRRRR, and Fix & Flip strategies
+- **Investment Strategies**:
+  - Buy & Hold with long-term projections
+  - BRRRR with refinance calculator
+  - Fix & Flip (coming soon)
 
 ### Investment Criteria:
 - Purchase Price: $50,000 - $100,000
@@ -122,9 +146,10 @@ The platform integrates with Detroit's public parcel data:
 
 ## 📱 Mobile Features
 
-- Touch-optimized interface
+- Hamburger menu navigation for easy mobile access
+- Touch-optimized property cards and forms
 - Fast loading with lazy data fetching
-- Offline capability for saved analyses
+- Responsive design that adapts to all screen sizes
 - Progressive enhancement approach
 
 ## 🔒 Security & Privacy
@@ -153,5 +178,14 @@ Framework Real Estate Solutions
 🌐 Website: https://jacobdurrah.github.io/FrameworkRealEstateSolutions/
 
 ---
+
+## 🆕 Recent Updates (January 2025)
+
+- **Mobile Navigation**: Added hamburger menu for better mobile experience
+- **Enhanced Property Cards**: Now show market value estimates, sale history, and years owned
+- **BRRRR Calculator**: Fully functional refinance analysis tool
+- **Tax Status Display**: Fixed to show actual tax status (Taxable/Exempt)
+- **Owner Search**: Added format examples for better user experience
+- **Removed Block Search**: Simplified interface by removing complex spatial search
 
 Built with ❤️ for Detroit's housing future
