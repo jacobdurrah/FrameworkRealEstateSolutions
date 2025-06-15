@@ -115,16 +115,26 @@ class SalesAPIService {
 
     // Get all transactions where person was buyer or seller
     async getAllTransactionsByPerson(personName) {
-        if (!this.isReady() || !personName) return [];
+        console.log('getAllTransactionsByPerson called with:', personName);
+        
+        if (!this.isReady() || !personName) {
+            console.log('Not ready or no person name provided');
+            return [];
+        }
 
         const normalizedName = personName.trim().toUpperCase();
+        console.log('Normalized name:', normalizedName);
         const cacheKey = `transactions:person:${normalizedName}`;
         
         // Check cache
         const cached = this.getFromCache(cacheKey);
-        if (cached) return cached;
+        if (cached) {
+            console.log('Returning cached results:', cached.length, 'transactions');
+            return cached;
+        }
 
         try {
+            console.log('Querying for grantor transactions...');
             // Get transactions where person was seller (grantor)
             const { data: sellerData, error: sellerError } = await this.client
                 .from('sales_transactions')
@@ -132,12 +142,43 @@ class SalesAPIService {
                 .ilike('grantor', `%${normalizedName}%`)
                 .order('sale_date', { ascending: false });
 
+            console.log('Grantor query result:', sellerData?.length || 0, 'records', sellerError ? 'Error: ' + sellerError.message : '');
+
+            console.log('Querying for grantee transactions...');
             // Get transactions where person was buyer (grantee)
             const { data: buyerData, error: buyerError } = await this.client
                 .from('sales_transactions')
                 .select('*')
                 .ilike('grantee', `%${normalizedName}%`)
                 .order('sale_date', { ascending: false });
+
+            console.log('Grantee query result:', buyerData?.length || 0, 'records', buyerError ? 'Error: ' + buyerError.message : '');
+
+            // If no results with grantor/grantee, try seller_name/buyer_name
+            let sellerDataAlt = [];
+            let buyerDataAlt = [];
+            
+            if ((!sellerData || sellerData.length === 0) && (!buyerData || buyerData.length === 0)) {
+                console.log('No results with grantor/grantee, trying seller_name/buyer_name...');
+                
+                const { data: sellerAlt, error: sellerAltError } = await this.client
+                    .from('sales_transactions')
+                    .select('*')
+                    .ilike('seller_name', `%${normalizedName}%`)
+                    .order('sale_date', { ascending: false });
+                    
+                const { data: buyerAlt, error: buyerAltError } = await this.client
+                    .from('sales_transactions')
+                    .select('*')
+                    .ilike('buyer_name', `%${normalizedName}%`)
+                    .order('sale_date', { ascending: false });
+                    
+                console.log('Alt seller_name query:', sellerAlt?.length || 0, 'records');
+                console.log('Alt buyer_name query:', buyerAlt?.length || 0, 'records');
+                
+                sellerDataAlt = sellerAlt || [];
+                buyerDataAlt = buyerAlt || [];
+            }
 
             if (sellerError) {
                 console.error('Error fetching seller transactions:', sellerError);
@@ -151,8 +192,9 @@ class SalesAPIService {
             const seen = new Set();
 
             // Add seller transactions
-            if (sellerData) {
-                sellerData.forEach(transaction => {
+            const allSellerData = [...(sellerData || []), ...sellerDataAlt];
+            if (allSellerData.length > 0) {
+                allSellerData.forEach(transaction => {
                     transaction.role = 'seller';
                     const key = `${transaction.street_address || transaction.property_address}-${transaction.sale_date}`;
                     if (!seen.has(key)) {
@@ -163,8 +205,9 @@ class SalesAPIService {
             }
 
             // Add buyer transactions
-            if (buyerData) {
-                buyerData.forEach(transaction => {
+            const allBuyerData = [...(buyerData || []), ...buyerDataAlt];
+            if (allBuyerData.length > 0) {
+                allBuyerData.forEach(transaction => {
                     transaction.role = 'buyer';
                     const key = `${transaction.street_address || transaction.property_address}-${transaction.sale_date}`;
                     if (!seen.has(key)) {
@@ -176,6 +219,11 @@ class SalesAPIService {
 
             // Sort by date descending
             allTransactions.sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date));
+
+            console.log(`Total transactions found: ${allTransactions.length}`);
+            if (allTransactions.length > 0) {
+                console.log('Sample transaction:', allTransactions[0]);
+            }
 
             this.storeInCache(cacheKey, allTransactions);
             return allTransactions;
@@ -197,12 +245,15 @@ class SalesAPIService {
         if (cached) return cached;
 
         try {
+            console.log(`Getting owner statistics for: ${normalizedName}`);
             // Get from the seller_statistics view
             const { data, error } = await this.client
                 .from('seller_statistics')
                 .select('*')
                 .eq('seller_name_normalized', normalizedName)
                 .single();
+            
+            console.log('Owner statistics result:', data, error?.message);
 
             if (error && error.code !== 'PGRST116') { // Not found is ok
                 console.error('Error fetching owner statistics:', error);

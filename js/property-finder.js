@@ -809,7 +809,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             // Initialize sales API service if available
+            console.log('Checking for SalesAPIService:', typeof window.SalesAPIService);
+            console.log('Available on window:', Object.keys(window).filter(k => k.toLowerCase().includes('sales')));
+            
             if (window.SalesAPIService) {
+                console.log('Creating new SalesAPIService instance...');
                 window.salesAPIService = new window.SalesAPIService();
                 const salesSuccess = await window.salesAPIService.init(
                     window.APP_CONFIG.SUPABASE_URL,
@@ -817,9 +821,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 );
                 if (salesSuccess) {
                     console.log('Sales API service initialized successfully');
+                    console.log('Sales API ready:', window.salesAPIService.isReady());
                 } else {
                     console.error('Failed to initialize sales API service');
                 }
+            } else {
+                console.warn('SalesAPIService class not found on window');
             }
             
             // If we have an active search, refresh it to show parcel data
@@ -1347,8 +1354,23 @@ async function searchByOwner(ownerName, openInNewTab = false) {
         
         // Also fetch sales transactions if sales API is available
         let transactions = [];
+        console.log('Checking sales API availability:');
+        console.log('- window.salesAPIService exists:', !!window.salesAPIService);
+        console.log('- salesAPIService.isReady():', window.salesAPIService?.isReady());
+        
         if (window.salesAPIService && window.salesAPIService.isReady()) {
-            transactions = await window.salesAPIService.getAllTransactionsByPerson(ownerName);
+            console.log(`Fetching transactions for owner: ${ownerName}`);
+            try {
+                transactions = await window.salesAPIService.getAllTransactionsByPerson(ownerName);
+                console.log(`Found ${transactions.length} transactions for ${ownerName}`);
+                if (transactions.length > 0) {
+                    console.log('First transaction:', transactions[0]);
+                }
+            } catch (error) {
+                console.error('Error fetching transactions:', error);
+            }
+        } else {
+            console.warn('Sales API service not available or not ready');
         }
         
         if (properties.length > 0 || transactions.length > 0) {
