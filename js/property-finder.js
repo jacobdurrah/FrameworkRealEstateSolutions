@@ -398,7 +398,12 @@ function createPropertyCard(property, parcelData = null) {
         </div>
         <div class="property-result-details">
             <h4 class="property-result-address">
-                ${property.address}
+                <a href="https://www.zillow.com/homes/${encodeURIComponent(property.address)}_rb/" 
+                   target="_blank"
+                   title="View on Zillow">
+                    ${property.address}
+                    <span style="font-size: 0.75rem; margin-left: 4px; opacity: 0.7;">↗</span>
+                </a>
                 ${parcelInfo && parcelInfo.neighborhood ? 
                     `<span class="property-neighborhood">${parcelInfo.neighborhood}</span>` : ''}
             </h4>
