@@ -63,7 +63,7 @@ class SalesAPIService {
             const { data, error } = await this.client
                 .from('sales_transactions')
                 .select('*')
-                .ilike('seller_name', `%${normalizedName}%`)
+                .ilike('grantor', `%${normalizedName}%`)
                 .order('sale_date', { ascending: false })
                 .limit(100);
 
@@ -96,7 +96,7 @@ class SalesAPIService {
             const { data, error } = await this.client
                 .from('sales_transactions')
                 .select('*')
-                .ilike('property_address', `%${normalizedAddress}%`)
+                .ilike('street_address', `%${normalizedAddress}%`)
                 .order('sale_date', { ascending: false });
 
             if (error) {
@@ -125,18 +125,18 @@ class SalesAPIService {
         if (cached) return cached;
 
         try {
-            // Get transactions where person was seller
+            // Get transactions where person was seller (grantor)
             const { data: sellerData, error: sellerError } = await this.client
                 .from('sales_transactions')
                 .select('*')
-                .ilike('seller_name', `%${normalizedName}%`)
+                .ilike('grantor', `%${normalizedName}%`)
                 .order('sale_date', { ascending: false });
 
-            // Get transactions where person was buyer
+            // Get transactions where person was buyer (grantee)
             const { data: buyerData, error: buyerError } = await this.client
                 .from('sales_transactions')
                 .select('*')
-                .ilike('buyer_name', `%${normalizedName}%`)
+                .ilike('grantee', `%${normalizedName}%`)
                 .order('sale_date', { ascending: false });
 
             if (sellerError) {
@@ -154,7 +154,7 @@ class SalesAPIService {
             if (sellerData) {
                 sellerData.forEach(transaction => {
                     transaction.role = 'seller';
-                    const key = `${transaction.property_address}-${transaction.sale_date}`;
+                    const key = `${transaction.street_address || transaction.property_address}-${transaction.sale_date}`;
                     if (!seen.has(key)) {
                         seen.add(key);
                         allTransactions.push(transaction);
@@ -166,7 +166,7 @@ class SalesAPIService {
             if (buyerData) {
                 buyerData.forEach(transaction => {
                     transaction.role = 'buyer';
-                    const key = `${transaction.property_address}-${transaction.sale_date}`;
+                    const key = `${transaction.street_address || transaction.property_address}-${transaction.sale_date}`;
                     if (!seen.has(key)) {
                         seen.add(key);
                         allTransactions.push(transaction);
@@ -257,10 +257,10 @@ class SalesAPIService {
 
             // Apply filters based on criteria
             if (criteria.sellerName) {
-                query = query.ilike('seller_name', `%${criteria.sellerName}%`);
+                query = query.ilike('grantor', `%${criteria.sellerName}%`);
             }
             if (criteria.buyerName) {
-                query = query.ilike('buyer_name', `%${criteria.buyerName}%`);
+                query = query.ilike('grantee', `%${criteria.buyerName}%`);
             }
             if (criteria.minPrice) {
                 query = query.gte('sale_price', criteria.minPrice);

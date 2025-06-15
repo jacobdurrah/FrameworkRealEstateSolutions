@@ -1441,11 +1441,11 @@ function displayOwnerTransactions(transactions, ownerName) {
         transactionCard.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                 <h4 style="margin: 0; font-size: 1.125rem; color: var(--primary-black);">
-                    <a href="https://www.zillow.com/homes/${encodeURIComponent(transaction.property_address || transaction.address || '')}_rb/" 
+                    <a href="https://www.zillow.com/homes/${encodeURIComponent(transaction.street_address || transaction.property_address || '')}_rb/" 
                        target="_blank"
                        style="color: inherit; text-decoration: none;"
                        title="View on Zillow">
-                        ${transaction.property_address || transaction.address || 'Address Not Available'}
+                        ${transaction.street_address || transaction.property_address || 'Address Not Available'}
                         <span style="font-size: 0.75rem; margin-left: 4px; opacity: 0.7;">↗</span>
                     </a>
                 </h4>
@@ -1466,11 +1466,11 @@ function displayOwnerTransactions(transactions, ownerName) {
                 </div>
                 <div>
                     <span style="color: var(--medium-gray);">Grantor (Seller):</span><br>
-                    <strong>${transaction.seller_name || transaction.grantor || 'Unknown'}</strong>
+                    <strong>${transaction.grantor || transaction.seller_name || 'Unknown'}</strong>
                 </div>
                 <div>
                     <span style="color: var(--medium-gray);">Grantee (Buyer):</span><br>
-                    <strong>${transaction.buyer_name || transaction.grantee || 'Unknown'}</strong>
+                    <strong>${transaction.grantee || transaction.buyer_name || 'Unknown'}</strong>
                 </div>
                 ${transaction.sale_terms ? `
                 <div style="grid-column: 1 / -1;">
@@ -1496,76 +1496,88 @@ function displayOwnerTransactions(transactions, ownerName) {
             <div id="${detailsId}" style="display: none; border-top: 1px solid var(--light-gray); padding-top: 15px; margin-top: 10px;">
                 <h5 style="margin: 0 0 10px 0; color: var(--primary-black); font-size: 1rem;">Complete Transaction Details</h5>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.813rem;">
-                    ${transaction.id ? `
+                    ${transaction.sales_id ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Transaction ID:</span><br>
-                        <strong>${transaction.id}</strong>
+                        <span style="color: var(--medium-gray);">Sales ID:</span><br>
+                        <strong>${transaction.sales_id}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.parcel_id ? `
+                    ${transaction.parcel_number ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Parcel ID:</span><br>
-                        <strong>${transaction.parcel_id}</strong>
+                        <span style="color: var(--medium-gray);">Parcel Number:</span><br>
+                        <strong>${transaction.parcel_number}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.sale_terms ? `
+                    ${transaction.sale_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Sale Number:</span><br>
+                        <strong>${transaction.sale_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Number:</span><br>
+                        <strong>${transaction.street_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_prefix ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Prefix:</span><br>
+                        <strong>${transaction.street_prefix}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_name ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Name:</span><br>
+                        <strong>${transaction.street_name}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.unit_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Unit Number:</span><br>
+                        <strong>${transaction.unit_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.liber_page ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Liber Page:</span><br>
+                        <strong>${transaction.liber_page}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.terms_of_sale ? `
                     <div style="grid-column: 1 / -1;">
-                        <span style="color: var(--medium-gray);">Additional Sale Terms:</span><br>
-                        <strong>${transaction.sale_terms}</strong>
+                        <span style="color: var(--medium-gray);">Terms of Sale:</span><br>
+                        <strong>${transaction.terms_of_sale}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.data_source ? `
-                    <div style="grid-column: 1 / -1;">
-                        <span style="color: var(--medium-gray);">Data Source:</span><br>
-                        <strong>${transaction.data_source}</strong>
-                    </div>
-                    ` : ''}
-                    ${transaction.year_built ? `
+                    ${transaction.sale_verification ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Year Built:</span><br>
-                        <strong>${transaction.year_built}</strong>
+                        <span style="color: var(--medium-gray);">Sale Verification:</span><br>
+                        <strong>${transaction.sale_verification}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.property_type ? `
+                    ${transaction.sale_instrument ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Property Type:</span><br>
-                        <strong>${transaction.property_type}</strong>
+                        <span style="color: var(--medium-gray);">Sale Instrument:</span><br>
+                        <strong>${transaction.sale_instrument}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.property_use ? `
+                    ${transaction.property_transfer_percentage ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Property Use:</span><br>
-                        <strong>${transaction.property_use}</strong>
+                        <span style="color: var(--medium-gray);">Property Transfer Percentage:</span><br>
+                        <strong>${transaction.property_transfer_percentage}%</strong>
                     </div>
                     ` : ''}
-                    ${transaction.square_feet ? `
+                    ${transaction.property_class_code ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Square Feet:</span><br>
-                        <strong>${transaction.square_feet.toLocaleString()}</strong>
+                        <span style="color: var(--medium-gray);">Property Class Code:</span><br>
+                        <strong>${transaction.property_class_code}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.lot_size ? `
+                    ${transaction.ecf_neighborhood ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Lot Size:</span><br>
-                        <strong>${transaction.lot_size}</strong>
-                    </div>
-                    ` : ''}
-                    ${transaction.bedrooms ? `
-                    <div>
-                        <span style="color: var(--medium-gray);">Bedrooms:</span><br>
-                        <strong>${transaction.bedrooms}</strong>
-                    </div>
-                    ` : ''}
-                    ${transaction.bathrooms ? `
-                    <div>
-                        <span style="color: var(--medium-gray);">Bathrooms:</span><br>
-                        <strong>${transaction.bathrooms}</strong>
-                    </div>
-                    ` : ''}
-                    ${transaction.property_zip ? `
-                    <div>
-                        <span style="color: var(--medium-gray);">ZIP Code:</span><br>
-                        <strong>${transaction.property_zip}</strong>
+                        <span style="color: var(--medium-gray);">ECF Neighborhood:</span><br>
+                        <strong>${transaction.ecf_neighborhood}</strong>
                     </div>
                     ` : ''}
                     ${(transaction.x_coordinate && transaction.y_coordinate) ? `
@@ -1574,16 +1586,22 @@ function displayOwnerTransactions(transactions, ownerName) {
                         <strong>X: ${transaction.x_coordinate}, Y: ${transaction.y_coordinate}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.created_at ? `
+                    ${transaction.esri_oid ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Record Created:</span><br>
-                        <strong>${new Date(transaction.created_at).toLocaleDateString()}</strong>
+                        <span style="color: var(--medium-gray);">ESRI OID:</span><br>
+                        <strong>${transaction.esri_oid}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.updated_at ? `
+                    ${transaction.grantor ? `
                     <div>
-                        <span style="color: var(--medium-gray);">Last Updated:</span><br>
-                        <strong>${new Date(transaction.updated_at).toLocaleDateString()}</strong>
+                        <span style="color: var(--medium-gray);">Grantor (Full):</span><br>
+                        <strong>${transaction.grantor}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.grantee ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Grantee (Full):</span><br>
+                        <strong>${transaction.grantee}</strong>
                     </div>
                     ` : ''}
                 </div>
