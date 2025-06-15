@@ -116,100 +116,7 @@ const mockProperties = [
     }
 ];
 
-// Property search form handler
-document.getElementById('propertySearchForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    // Reset pagination
-    currentPage = 1;
-    
-    // Get form values
-    const formData = new FormData(this);
-    const searchCriteria = {
-        neighborhood: formData.get('neighborhood'),
-        zipCode: formData.get('zipCode'),
-        minPrice: parseInt(formData.get('minPrice')) || 0,
-        maxPrice: parseInt(formData.get('maxPrice')) || 100000,
-        minBeds: parseInt(formData.get('minBeds')) || 0,
-        maxRehab: parseInt(formData.get('maxRehab')) || 999999,
-        minROI: parseFloat(formData.get('minROI')) || 0,
-        propertyStatus: formData.get('propertyStatus'),
-        propertyType: formData.get('propertyType'),
-        yearBuilt: parseInt(formData.get('yearBuilt')) || 0,
-        minSqft: parseInt(formData.get('minSqft')) || 0,
-        ownerType: formData.get('ownerType')
-    };
-    
-    // Store criteria for load more
-    currentSearchCriteria = searchCriteria;
-    
-    // Show loading state
-    showLoading();
-    
-    try {
-        // Check if API is available
-        if (window.propertyAPI && window.propertyAPI.isApiConfigured()) {
-            // Use real API
-            const results = await window.propertyAPI.searchPropertiesWithAPI(searchCriteria);
-            allSearchResults = results;
-            displayResultsWithPagination();
-        } else {
-            // Fall back to mock data
-            setTimeout(async () => {
-                const results = await searchPropertiesEnhanced(searchCriteria);
-                allSearchResults = results;
-                displayResultsWithPagination();
-            }, 1000);
-        }
-    } catch (error) {
-        console.error('Search error:', error);
-        // Fall back to mock data on error
-        const results = await searchPropertiesEnhanced(searchCriteria);
-        allSearchResults = results;
-        displayResultsWithPagination();
-    }
-});
-
-// Address search form handler
-document.getElementById('addressSearchForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const address = document.getElementById('addressInput').value;
-    if (!address) return;
-    
-    showLoading();
-    await searchByAddress(address);
-});
-
-// Owner search form handler
-document.getElementById('ownerSearchForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const ownerName = document.getElementById('ownerName').value;
-    if (!ownerName) return;
-    
-    showLoading();
-    await searchByOwner(ownerName, false); // false = don't open in new tab
-});
-
-// Parcel search form handler
-document.getElementById('parcelSearchForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const parcelId = document.getElementById('parcelId').value;
-    if (!parcelId) return;
-    
-    showLoading();
-    await searchByParcelId(parcelId);
-});
-
-// Block search form handler
-document.getElementById('blockSearchForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const address = document.getElementById('blockAddress').value;
-    const radius = document.getElementById('blockRadius').value;
-    if (!address) return;
-    
-    showLoading();
-    await searchByBlock(address, radius);
-});
+// Form handlers moved to DOMContentLoaded to ensure DOM is ready
 
 // Removed preloadParcelData function - using API directly instead
 
@@ -217,16 +124,21 @@ document.getElementById('blockSearchForm')?.addEventListener('submit', async fun
 async function searchPropertiesEnhanced(criteria) {
     let results = [];
     
-    // If we have parcel API, search the database
-    if (window.parcelAPIService && window.parcelAPIService.isReady() && criteria.neighborhood) {
+    // If we have parcel API, search the database by price range
+    if (window.parcelAPIService && window.parcelAPIService.isReady()) {
         try {
-            const { data, error } = await window.parcelAPIService.client
+            let query = window.parcelAPIService.client
                 .from('parcels')
                 .select('*')
-                .ilike('neighborhood', `%${criteria.neighborhood}%`)
                 .gte('assessed_value', criteria.minPrice / 2) // Market value is 2x assessed
-                .lte('assessed_value', criteria.maxPrice / 2)
-                .limit(100);
+                .lte('assessed_value', criteria.maxPrice / 2);
+            
+            // Add ZIP code filter if provided
+            if (criteria.zipCode) {
+                query = query.eq('zip_code', criteria.zipCode);
+            }
+            
+            const { data, error } = await query.limit(100);
                 
             if (data && !error) {
                 // Transform parcel data to property format
@@ -258,10 +170,6 @@ async function searchPropertiesEnhanced(criteria) {
     const mockResults = mockProperties.filter(property => {
         // Calculate metrics for filtering
         const rehab = property.estimatedRehab || 8000;
-        const totalInvestment = property.price + rehab;
-        const monthlyRent = property.monthlyRent || 1329;
-        const annualRent = monthlyRent * 12;
-        const cashOnCash = (annualRent * 0.7 / totalInvestment) * 100; // Rough estimate
         
         // Apply all filters
         return (
@@ -272,8 +180,6 @@ async function searchPropertiesEnhanced(criteria) {
             property.bedrooms >= criteria.minBeds &&
             // Rehab cost
             rehab <= criteria.maxRehab &&
-            // ROI
-            cashOnCash >= criteria.minROI &&
             // Property type
             property.propertyType === criteria.propertyType &&
             // Year built
@@ -854,6 +760,109 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     } else {
         console.log('Parcel data feature is disabled');
+    }
+    
+    // Add all form event listeners here to ensure DOM is ready
+    console.log('Setting up form event listeners...');
+    
+    // Property search form handler
+    const propertySearchForm = document.getElementById('propertySearchForm');
+    if (propertySearchForm) {
+        propertySearchForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset pagination
+            currentPage = 1;
+            
+            // Get form values
+            const formData = new FormData(this);
+            const searchCriteria = {
+                zipCode: formData.get('zipCode'),
+                minPrice: parseInt(formData.get('minPrice')) || 0,
+                maxPrice: parseInt(formData.get('maxPrice')) || 100000,
+                minBeds: parseInt(formData.get('minBeds')) || 0,
+                maxRehab: parseInt(formData.get('maxRehab')) || 999999,
+                propertyStatus: formData.get('propertyStatus'),
+                propertyType: formData.get('propertyType'),
+                yearBuilt: parseInt(formData.get('yearBuilt')) || 0,
+                minSqft: parseInt(formData.get('minSqft')) || 0,
+                ownerType: formData.get('ownerType')
+            };
+            
+            // Store criteria for load more
+            currentSearchCriteria = searchCriteria;
+            
+            // Show loading state
+            showLoading();
+            
+            try {
+                // Check if API is available
+                if (window.propertyAPI && window.propertyAPI.isApiConfigured()) {
+                    // Use real API
+                    const results = await window.propertyAPI.searchPropertiesWithAPI(searchCriteria);
+                    allSearchResults = results;
+                    displayResultsWithPagination();
+                } else {
+                    // Fall back to mock data
+                    setTimeout(async () => {
+                        const results = await searchPropertiesEnhanced(searchCriteria);
+                        allSearchResults = results;
+                        displayResultsWithPagination();
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                // Fall back to mock data on error
+                const results = await searchPropertiesEnhanced(searchCriteria);
+                allSearchResults = results;
+                displayResultsWithPagination();
+            }
+        });
+        console.log('Property search form handler attached');
+    } else {
+        console.error('Property search form not found!');
+    }
+    
+    // Address search form handler
+    const addressSearchForm = document.getElementById('addressSearchForm');
+    if (addressSearchForm) {
+        addressSearchForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const address = document.getElementById('addressInput').value;
+            if (!address) return;
+            
+            showLoading();
+            await searchByAddress(address);
+        });
+        console.log('Address search form handler attached');
+    }
+    
+    // Owner search form handler
+    const ownerSearchForm = document.getElementById('ownerSearchForm');
+    if (ownerSearchForm) {
+        ownerSearchForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const ownerName = document.getElementById('ownerName').value;
+            if (!ownerName) return;
+            
+            showLoading();
+            await searchByOwner(ownerName, false); // false = don't open in new tab
+        });
+        console.log('Owner search form handler attached');
+    }
+    
+    // Parcel search form handler
+    const parcelSearchForm = document.getElementById('parcelSearchForm');
+    if (parcelSearchForm) {
+        parcelSearchForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const parcelId = document.getElementById('parcelId').value;
+            if (!parcelId) return;
+            
+            showLoading();
+            await searchByParcelId(parcelId);
+        });
+        console.log('Parcel search form handler attached');
     }
     
     console.groupEnd();
