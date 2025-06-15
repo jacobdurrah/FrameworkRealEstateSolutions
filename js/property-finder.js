@@ -494,9 +494,11 @@ function createPropertyCard(property, parcelData = null) {
                 <button class="btn btn-outline" onclick="viewPropertyDetails('${property.address}', ${JSON.stringify(parcelInfo).replace(/"/g, '&quot;')})">
                     📋 Details
                 </button>
-                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
+                ${parcelInfo.owner.fullName && parcelInfo.owner.fullName.trim() ? `
+                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}')">
                     👤 Owner Portfolio
                 </button>
+                ` : ''}
                 ` : `
                 <button class="btn btn-outline" onclick="contactAboutProperty('${property.address}')">
                     📧 Inquire
@@ -1043,6 +1045,11 @@ async function searchByBlock(address, radius) {
 
 // Search for properties by owner (updated to handle tab vs new window)
 async function searchByOwner(ownerName, openInNewTab = true) {
+    if (!ownerName || ownerName.trim() === '') {
+        alert('Owner name is not available for this property');
+        return;
+    }
+    
     if (!window.parcelAPIService || !window.parcelAPIService.isReady()) {
         alert('Property search service not available');
         return;
