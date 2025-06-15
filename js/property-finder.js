@@ -1331,7 +1331,7 @@ async function searchByOwner(ownerName, openInNewTab = false) {
     }
 }
 
-// Display owner's transaction history
+// Display owner's transaction history with expandable details
 function displayOwnerTransactions(transactions, ownerName) {
     const resultsSection = document.getElementById('resultsSection');
     
@@ -1342,12 +1342,12 @@ function displayOwnerTransactions(transactions, ownerName) {
         <h3 style="margin-bottom: 20px; text-align: center; color: var(--primary-black);">
             Previous Transactions (${transactions.length} found)
         </h3>
-        <div class="transactions-container" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));">
+        <div class="transactions-container" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));">
     `;
     
     const transactionsContainer = transactionsDiv.querySelector('.transactions-container');
     
-    transactions.forEach(transaction => {
+    transactions.forEach((transaction, index) => {
         const transactionCard = document.createElement('div');
         transactionCard.className = 'transaction-card';
         transactionCard.style.cssText = `
@@ -1356,7 +1356,7 @@ function displayOwnerTransactions(transactions, ownerName) {
             padding: 20px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            cursor: pointer;
+            position: relative;
         `;
         
         // Format sale date
@@ -1371,14 +1371,17 @@ function displayOwnerTransactions(transactions, ownerName) {
         const roleBadgeColor = transaction.role === 'buyer' ? '#28a745' : '#dc3545';
         const roleText = transaction.role === 'buyer' ? 'Purchased' : 'Sold';
         
+        // Create unique ID for this transaction's details
+        const detailsId = `transaction-details-${index}`;
+        
         transactionCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                <h4 style="margin: 0; font-size: 1rem; color: var(--primary-black);">
-                    <a href="https://www.zillow.com/homes/${encodeURIComponent(transaction.property_address)}_rb/" 
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <h4 style="margin: 0; font-size: 1.125rem; color: var(--primary-black);">
+                    <a href="https://www.zillow.com/homes/${encodeURIComponent(transaction.property_address || transaction.address || '')}_rb/" 
                        target="_blank"
                        style="color: inherit; text-decoration: none;"
                        title="View on Zillow">
-                        ${transaction.property_address}
+                        ${transaction.property_address || transaction.address || 'Address Not Available'}
                         <span style="font-size: 0.75rem; margin-left: 4px; opacity: 0.7;">↗</span>
                     </a>
                 </h4>
@@ -1387,29 +1390,132 @@ function displayOwnerTransactions(transactions, ownerName) {
                 </span>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.875rem;">
+            <!-- Summary Information -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.875rem; margin-bottom: 15px;">
                 <div>
                     <span style="color: var(--medium-gray);">Sale Date:</span><br>
                     <strong>${formattedDate}</strong>
                 </div>
                 <div>
                     <span style="color: var(--medium-gray);">Sale Price:</span><br>
-                    <strong style="color: var(--accent-green);">$${transaction.sale_price.toLocaleString()}</strong>
+                    <strong style="color: var(--accent-green);">$${(transaction.sale_price || 0).toLocaleString()}</strong>
                 </div>
-                ${transaction.role === 'buyer' ? `
                 <div>
-                    <span style="color: var(--medium-gray);">Sold By:</span><br>
-                    <strong>${transaction.seller_name || 'Unknown'}</strong>
+                    <span style="color: var(--medium-gray);">Grantor (Seller):</span><br>
+                    <strong>${transaction.grantor || transaction.seller_name || 'Unknown'}</strong>
                 </div>
-                ` : `
                 <div>
-                    <span style="color: var(--medium-gray);">Sold To:</span><br>
-                    <strong>${transaction.buyer_name || 'Unknown'}</strong>
+                    <span style="color: var(--medium-gray);">Grantee (Buyer):</span><br>
+                    <strong>${transaction.grantee || transaction.buyer_name || 'Unknown'}</strong>
                 </div>
-                `}
+                ${transaction.terms_of_sale ? `
                 <div>
-                    <span style="color: var(--medium-gray);">Document Type:</span><br>
-                    <strong>${transaction.sale_type || 'Standard Sale'}</strong>
+                    <span style="color: var(--medium-gray);">Terms of Sale:</span><br>
+                    <strong>${transaction.terms_of_sale}</strong>
+                </div>
+                ` : ''}
+                ${transaction.sale_instrument ? `
+                <div>
+                    <span style="color: var(--medium-gray);">Sale Instrument:</span><br>
+                    <strong>${transaction.sale_instrument}</strong>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- View Details Button -->
+            <button onclick="toggleTransactionDetails('${detailsId}')" 
+                    style="background: var(--accent-gold); color: var(--primary-black); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600; width: 100%; margin-bottom: 10px;">
+                View Full Details
+            </button>
+            
+            <!-- Expandable Details Section -->
+            <div id="${detailsId}" style="display: none; border-top: 1px solid var(--light-gray); padding-top: 15px; margin-top: 10px;">
+                <h5 style="margin: 0 0 10px 0; color: var(--primary-black); font-size: 1rem;">Complete Transaction Details</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.813rem;">
+                    ${transaction.sale_id ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Sales ID:</span><br>
+                        <strong>${transaction.sale_id}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.parcel_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Parcel Number:</span><br>
+                        <strong>${transaction.parcel_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Number:</span><br>
+                        <strong>${transaction.street_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_prefix ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Prefix:</span><br>
+                        <strong>${transaction.street_prefix}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.street_name ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Street Name:</span><br>
+                        <strong>${transaction.street_name}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.unit_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Unit Number:</span><br>
+                        <strong>${transaction.unit_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.sale_number ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Sale Number:</span><br>
+                        <strong>${transaction.sale_number}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.liber_page ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Liber Page:</span><br>
+                        <strong>${transaction.liber_page}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.sale_verification ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Sale Verification:</span><br>
+                        <strong>${transaction.sale_verification}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.property_transfer_percentage ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Transfer Percentage:</span><br>
+                        <strong>${transaction.property_transfer_percentage}%</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.property_class_code ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Property Class Code:</span><br>
+                        <strong>${transaction.property_class_code}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.ecf_neighborhood ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">ECF Neighborhood:</span><br>
+                        <strong>${transaction.ecf_neighborhood}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.esri_oid ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">ESRI OID:</span><br>
+                        <strong>${transaction.esri_oid}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.x && transaction.y ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Coordinates:</span><br>
+                        <strong>X: ${transaction.x}, Y: ${transaction.y}</strong>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -1430,6 +1536,22 @@ function displayOwnerTransactions(transactions, ownerName) {
     
     transactionsDiv.innerHTML += '</div>';
     resultsSection.appendChild(transactionsDiv);
+}
+
+// Toggle transaction details visibility
+window.toggleTransactionDetails = function(detailsId) {
+    const detailsDiv = document.getElementById(detailsId);
+    const button = event.target;
+    
+    if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+        button.textContent = 'Hide Details';
+        button.style.background = 'var(--medium-gray)';
+    } else {
+        detailsDiv.style.display = 'none';
+        button.textContent = 'View Full Details';
+        button.style.background = 'var(--accent-gold)';
+    }
 }
 
 // Search for properties by mailing address
