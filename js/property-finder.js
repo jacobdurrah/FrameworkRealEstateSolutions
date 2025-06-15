@@ -462,7 +462,7 @@ async function createPropertyCard(property, parcelData = null) {
     }
     
     // Handle property info display
-    const sqft = property.squareFeet || property.sqft || 'N/A';
+    // sqft already declared above
     
     card.innerHTML = `
         <div class="property-result-image">
