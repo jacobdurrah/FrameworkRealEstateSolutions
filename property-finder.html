@@ -29,9 +29,14 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
-                <img src="images/logo.svg" alt="Framework" class="logo-img">
+                <img src="images/framework-logo.png" alt="Framework Real Estate Solutions" class="logo-img">
             </a>
-            <div class="nav-menu">
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-menu" id="navMenu">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="affordable-housing.html" class="nav-link">Properties</a>
                 <a href="property-finder.html" class="nav-link active">Deal Finder</a>
@@ -97,10 +102,6 @@
                     <span class="tab-icon">📋</span>
                     Search by Parcel ID
                 </button>
-                <button class="search-tab" onclick="switchSearchType('block')">
-                    <span class="tab-icon">🏢</span>
-                    Search by Block
-                </button>
             </div>
 
             <!-- Criteria Search -->
@@ -164,6 +165,9 @@
                         <input type="text" id="ownerName" name="ownerName" 
                                placeholder="e.g., John Smith or Smith LLC" 
                                class="large-input">
+                        <small style="color: var(--medium-gray); margin-top: 0.5rem; display: block;">
+                            Format examples: "SMITH, JOHN" or "DETROIT LAND BANK" or "LLC"
+                        </small>
                     </div>
                     <div class="search-options">
                         <label>
@@ -189,27 +193,6 @@
                 </form>
             </div>
 
-            <!-- Block Search -->
-            <div class="search-card search-type-content" id="searchBlock" style="display: none;">
-                <h3>Search Properties on Block</h3>
-                <form id="blockSearchForm" class="search-form">
-                    <div class="form-group">
-                        <label for="blockAddress">Reference Address on Block</label>
-                        <input type="text" id="blockAddress" name="blockAddress" 
-                               placeholder="Enter any address on the block" 
-                               class="large-input">
-                    </div>
-                    <div class="form-group">
-                        <label for="blockRadius">Search Radius</label>
-                        <select id="blockRadius" name="blockRadius">
-                            <option value="250">250 feet (same block)</option>
-                            <option value="500" selected>500 feet (nearby)</option>
-                            <option value="1000">1000 feet (neighborhood)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-search">Search Block</button>
-                </form>
-            </div>
         </div>
     </section>
 
@@ -576,7 +559,56 @@
                     </div>
                     
                     <div id="strategyBrrrr" class="strategy-content compact">
-                        <p>Coming soon...</p>
+                        <div class="brrrr-calculator">
+                            <h4>BRRRR Strategy Analysis</h4>
+                            <div class="brrrr-grid">
+                                <div class="brrrr-phase">
+                                    <h5>1. Buy & Rehab</h5>
+                                    <div class="brrrr-item">
+                                        <span>Purchase Price:</span>
+                                        <span id="brrrrPurchase">$0</span>
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>Rehab Cost:</span>
+                                        <span id="brrrrRehab">$0</span>
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>Total Investment:</span>
+                                        <span id="brrrrTotal">$0</span>
+                                    </div>
+                                </div>
+                                <div class="brrrr-phase">
+                                    <h5>2. Refinance</h5>
+                                    <div class="brrrr-item">
+                                        <span>After Repair Value:</span>
+                                        <input type="number" id="brrrrARV" class="brrrr-input" placeholder="Est. ARV">
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>LTV (75%):</span>
+                                        <span id="brrrrLoanAmount">$0</span>
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>Cash Back:</span>
+                                        <span id="brrrrCashBack" class="highlight">$0</span>
+                                    </div>
+                                </div>
+                                <div class="brrrr-phase">
+                                    <h5>3. Final Numbers</h5>
+                                    <div class="brrrr-item">
+                                        <span>Money Left In:</span>
+                                        <span id="brrrrMoneyLeft">$0</span>
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>New Monthly Payment:</span>
+                                        <span id="brrrrNewPayment">$0</span>
+                                    </div>
+                                    <div class="brrrr-item">
+                                        <span>Monthly Cash Flow:</span>
+                                        <span id="brrrrCashFlow">$0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -599,5 +631,25 @@
     <script src="js/proforma-calculator.js"></script>
     <script src="js/property-finder.js"></script>
     <script src="js/property-chatbot.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('navMenu');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            navMenu.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const navMenu = document.getElementById('navMenu');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            const navbar = document.querySelector('.navbar');
+            
+            if (!navbar.contains(event.target) && navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
+                menuToggle.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>

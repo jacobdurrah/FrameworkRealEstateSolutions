@@ -318,7 +318,19 @@ async function displayResults(properties, title = null) {
 
 // Create property card element
 function createPropertyCard(property, parcelData = null) {
-    const price = property.price || property.zestimate || 0;
+    // Determine if property is from database (not listed for sale)
+    const isFromDatabase = !property.price && parcelData && parcelData.assessedValue;
+    
+    // For database properties, use market value (2x assessed value)
+    let displayPrice = property.price || property.zestimate || 0;
+    let priceLabel = 'Listed Price';
+    
+    if (isFromDatabase && parcelData) {
+        displayPrice = parcelData.assessedValue * 2; // Market value estimate
+        priceLabel = 'Est. Market Value';
+    }
+    
+    const price = displayPrice;
     const rehabEstimate = property.estimatedRehab || 8000; // Default rehab estimate
     const totalInvestment = price + rehabEstimate;
     const monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate || 1329;
@@ -366,6 +378,15 @@ function createPropertyCard(property, parcelData = null) {
     let imageContent = '<span>Photo Coming Soon</span>';
     if (property.images && property.images.length > 0) {
         imageContent = `<img src="${property.images[0]}" alt="${property.address}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    } else if (isFromDatabase && property.address) {
+        // For database properties, create a Zillow search URL for the image
+        const zillowSearchUrl = `https://www.zillow.com/homes/${encodeURIComponent(property.address)}_rb/`;
+        imageContent = `
+            <div style="padding: 20px; text-align: center;">
+                <span style="display: block; margin-bottom: 10px;">📷 Photo Coming Soon</span>
+                <a href="${zillowSearchUrl}" target="_blank" style="font-size: 0.75rem; color: var(--accent-gold);">View on Zillow</a>
+            </div>
+        `;
     }
     
     // Handle property info display
@@ -381,7 +402,15 @@ function createPropertyCard(property, parcelData = null) {
                 ${parcelInfo && parcelInfo.neighborhood ? 
                     `<span class="property-neighborhood">${parcelInfo.neighborhood}</span>` : ''}
             </h4>
-            <p class="property-result-price">$${property.price.toLocaleString()}</p>
+            ${isFromDatabase ? `
+            <div class="not-listed-badge">
+                <span class="status-badge" style="background-color: #fff3cd; color: #856404;">Not Listed for Sale</span>
+            </div>
+            ` : ''}
+            <p class="property-result-price">
+                <span style="font-size: 0.75rem; color: var(--medium-gray); display: block;">${priceLabel}</span>
+                $${price.toLocaleString()}
+            </p>
             ${parcelInfo ? `
             <div class="property-owner-info">
                 <span class="owner-label">Owner:</span>
@@ -391,6 +420,16 @@ function createPropertyCard(property, parcelData = null) {
                 <span class="parcel-label">Parcel ID:</span>
                 <span class="parcel-id">${parcelInfo.parcelId || 'N/A'}</span>
             </div>
+            ${parcelInfo.lastSale && parcelInfo.lastSale.date ? `
+            <div class="property-sale-info">
+                <span class="sale-label">Last Sale:</span>
+                <span class="sale-details">
+                    ${parcelInfo.lastSale.date ? new Date(parcelInfo.lastSale.date).toLocaleDateString() : 'N/A'}
+                    ${parcelInfo.lastSale.price ? ` - $${parcelInfo.lastSale.price.toLocaleString()}` : ''}
+                    ${parcelInfo.lastSale.date ? ` (${calculateYearsOwned(parcelInfo.lastSale.date)} years)` : ''}
+                </span>
+            </div>
+            ` : ''}
             ` : ''}
             <div class="property-result-info">
                 <span>${property.bedrooms} bed</span>
@@ -401,13 +440,15 @@ function createPropertyCard(property, parcelData = null) {
             </div>
             ${parcelInfo ? `
             <div class="property-status-badges">
-                ${parcelInfo.taxStatus === 'Current' ? 
-                    '<span class="status-badge tax-current">Tax Current</span>' : 
-                    '<span class="status-badge tax-delinquent">Tax Delinquent</span>'}
-                ${parcelInfo.buildingStatus === 'Occupied' ? 
-                    '<span class="status-badge owner-occupied">Occupied</span>' : 
-                    parcelInfo.buildingStatus === 'Vacant' ?
-                    '<span class="status-badge vacant">Vacant</span>' : ''}
+                ${parcelInfo.taxStatus ? 
+                    (parcelInfo.taxStatus === 'TAXABLE' ? 
+                        '<span class="status-badge tax-current">Taxable</span>' : 
+                        '<span class="status-badge tax-exempt">Tax Exempt</span>') 
+                    : ''}
+                ${parcelInfo.propertyClass && parcelInfo.propertyClass.includes('VACANT') ? 
+                    '<span class="status-badge vacant">Vacant</span>' : 
+                    parcelInfo.propertyClass && parcelInfo.propertyClass.includes('IMPROVED') ?
+                    '<span class="status-badge owner-occupied">Improved</span>' : ''}
             </div>
             ` : ''}
             <div class="property-metrics">
@@ -450,9 +491,6 @@ function createPropertyCard(property, parcelData = null) {
                 </button>
                 <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
                     👤 Owner Portfolio
-                </button>
-                <button class="btn btn-outline" onclick="searchByMailingAddress('${parcelInfo.owner.fullMailingAddress}')">
-                    📍 Address Search
                 </button>
                 ` : `
                 <button class="btn btn-outline" onclick="contactAboutProperty('${property.address}')">
@@ -657,6 +695,14 @@ function calculateMonthlyPayment(principal, annualRate, years) {
     
     return principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
            (Math.pow(1 + monthlyRate, numPayments) - 1);
+}
+
+// Calculate years owned from sale date
+function calculateYearsOwned(saleDate) {
+    const sale = new Date(saleDate);
+    const now = new Date();
+    const years = (now - sale) / (1000 * 60 * 60 * 24 * 365.25);
+    return years.toFixed(1);
 }
 
 // Extract street address from full address
@@ -1537,6 +1583,11 @@ function switchStrategy(strategy) {
         content.classList.remove('active');
     });
     document.getElementById(`strategy${strategy.charAt(0).toUpperCase() + strategy.slice(1)}`).classList.add('active');
+    
+    // Initialize BRRRR calculator if switching to it
+    if (strategy === 'brrrr') {
+        updateBRRRRCalculator();
+    }
 }
 
 // Action buttons
@@ -1587,4 +1638,80 @@ window.saveProforma = saveProforma;
 window.exportProforma = exportProforma;
 window.emailProforma = emailProforma;
 window.resetProforma = resetProforma;
+
+// BRRRR Calculator Functions
+function updateBRRRRCalculator() {
+    if (!proformaCalculator || !proformaCalculator.data) return;
+    
+    const data = proformaCalculator.data;
+    const results = proformaCalculator.results;
+    
+    // Update initial values
+    document.getElementById('brrrrPurchase').textContent = proformaCalculator.formatCurrency(data.purchasePrice);
+    document.getElementById('brrrrRehab').textContent = proformaCalculator.formatCurrency(data.rehabCost);
+    document.getElementById('brrrrTotal').textContent = proformaCalculator.formatCurrency(data.purchasePrice + data.rehabCost);
+    
+    // Set up ARV input if not already set
+    const arvInput = document.getElementById('brrrrARV');
+    if (!arvInput.value) {
+        // Default ARV to 2x the total investment as a starting point
+        arvInput.value = Math.round((data.purchasePrice + data.rehabCost) * 2);
+    }
+    
+    // Add event listener if not already added
+    if (!arvInput.hasAttribute('data-listener-added')) {
+        arvInput.addEventListener('input', calculateBRRRR);
+        arvInput.setAttribute('data-listener-added', 'true');
+    }
+    
+    // Calculate initial BRRRR numbers
+    calculateBRRRR();
+}
+
+function calculateBRRRR() {
+    if (!proformaCalculator || !proformaCalculator.data) return;
+    
+    const data = proformaCalculator.data;
+    const totalInvestment = data.purchasePrice + data.rehabCost;
+    const arv = parseFloat(document.getElementById('brrrrARV').value) || 0;
+    
+    // Calculate refinance at 75% LTV
+    const loanAmount = arv * 0.75;
+    const cashBack = Math.min(loanAmount, totalInvestment); // Can't get more than invested
+    const moneyLeftIn = totalInvestment - cashBack;
+    
+    // Calculate new payment based on refinanced amount
+    const monthlyRate = 7.5 / 100 / 12; // Assuming 7.5% rate
+    const numPayments = 30 * 12; // 30-year term
+    const newPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                      (Math.pow(1 + monthlyRate, numPayments) - 1);
+    
+    // Get current rental income and expenses from proforma
+    const monthlyRent = data.monthlyRent;
+    const monthlyExpenses = proformaCalculator.results.totalMonthlyExpenses;
+    const newCashFlow = monthlyRent - monthlyExpenses - newPayment;
+    
+    // Update display
+    document.getElementById('brrrrLoanAmount').textContent = proformaCalculator.formatCurrency(loanAmount);
+    document.getElementById('brrrrCashBack').textContent = proformaCalculator.formatCurrency(cashBack);
+    document.getElementById('brrrrMoneyLeft').textContent = proformaCalculator.formatCurrency(moneyLeftIn);
+    document.getElementById('brrrrNewPayment').textContent = proformaCalculator.formatCurrency(newPayment);
+    document.getElementById('brrrrCashFlow').textContent = proformaCalculator.formatCurrency(newCashFlow);
+    
+    // Color code cash flow
+    const cashFlowElement = document.getElementById('brrrrCashFlow');
+    if (newCashFlow >= 0) {
+        cashFlowElement.style.color = 'var(--accent-green)';
+    } else {
+        cashFlowElement.style.color = '#dc3545';
+    }
+    
+    // Color code money left in
+    const moneyLeftElement = document.getElementById('brrrrMoneyLeft');
+    if (moneyLeftIn <= 10000) {
+        moneyLeftElement.style.color = 'var(--accent-green)';
+    } else {
+        moneyLeftElement.style.color = 'var(--primary-black)';
+    }
+}
 

@@ -240,6 +240,7 @@ class ParcelAPIService {
             totalFloorArea: dbRecord.total_floor_area,
             assessedValue: dbRecord.assessed_value || 0,
             taxableValue: dbRecord.taxable_value || 0,
+            taxStatus: dbRecord.tax_status || dbRecord.tax_status_description || null,
             neighborhood: dbRecord.neighborhood,
             ward: dbRecord.ward,
             councilDistrict: dbRecord.council_district,

@@ -813,3 +813,47 @@
         grid-template-columns: repeat(6, 1fr);
     }
 }
+
+/* BRRRR Calculator */
+.brrrr-calculator {
+    padding: var(--spacing-md);
+}
+
+.brrrr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.brrrr-phase {
+    background-color: var(--off-white);
+    padding: var(--spacing-md);
+    border-radius: 8px;
+}
+
+.brrrr-phase h5 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-black);
+    font-weight: 600;
+}
+
+.brrrr-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.brrrr-input {
+    width: 100px;
+    padding: 2px 8px;
+    border: 1px solid var(--light-gray);
+    border-radius: 4px;
+    text-align: right;
+}
+
+.brrrr-item .highlight {
+    color: var(--accent-green);
+    font-weight: 600;
+}

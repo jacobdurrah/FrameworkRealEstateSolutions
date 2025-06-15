@@ -462,7 +462,8 @@
 
 /* Property Owner Info */
 .property-owner-info,
-.property-parcel-info {
+.property-parcel-info,
+.property-sale-info {
     display: flex;
     gap: var(--spacing-xs);
     margin-bottom: var(--spacing-xs);
@@ -471,15 +472,21 @@
 }
 
 .owner-label,
-.parcel-label {
+.parcel-label,
+.sale-label {
     font-weight: 500;
     min-width: 80px;
 }
 
 .owner-name,
-.parcel-id {
+.parcel-id,
+.sale-details {
     color: var(--primary-black);
     flex: 1;
+}
+
+.not-listed-badge {
+    margin-bottom: var(--spacing-sm);
 }
 
 /* Property Details Modal */
@@ -702,6 +709,11 @@
 .status-badge.tax-delinquent {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.status-badge.tax-exempt {
+    background-color: #e2e3e5;
+    color: #383d41;
 }
 
 .status-badge.owner-occupied {
