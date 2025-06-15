@@ -251,11 +251,49 @@ class ProformaCalculator {
     // Load property data
     loadProperty(property) {
         this.propertyData = property;
+        
+        // Initialize estimators if not already loaded
+        if (!window.RehabEstimator) {
+            console.warn('RehabEstimator not loaded, using defaults');
+        }
+        if (!window.RentEstimator) {
+            console.warn('RentEstimator not loaded, using defaults');
+        }
+        
+        // Get property details
+        const sqft = property.sqft || property.squareFeet || 1200; // Default sqft
+        const bedrooms = property.bedrooms || 3;
+        const bathrooms = property.bathrooms || 1;
+        
+        // Estimate rent if not provided
+        let monthlyRent = property.monthlyRent || property.estimatedRent;
+        if (!monthlyRent && window.RentEstimator) {
+            const rentEstimator = new window.RentEstimator();
+            monthlyRent = rentEstimator.estimate(bedrooms, 'single-family', property.rentZestimate);
+        }
+        monthlyRent = monthlyRent || 1329; // Fallback to default
+        
+        // Estimate rehab if not provided (default to cosmetic)
+        let rehabBudget = property.estimatedRehab;
+        if (!rehabBudget && window.RehabEstimator) {
+            const rehabEstimator = new window.RehabEstimator();
+            rehabBudget = rehabEstimator.estimate(sqft, bedrooms, bathrooms, 'cosmetic');
+        }
+        rehabBudget = rehabBudget || 8000; // Fallback to default
+        
+        // Set data
         this.data.purchasePrice = property.price || 0;
-        this.data.monthlyRent = property.monthlyRent || property.estimatedRent || 0;
-        this.data.rehabBudget = property.estimatedRehab || 8000;
+        this.data.monthlyRent = monthlyRent;
+        this.data.rehabBudget = rehabBudget;
         this.data.propertyTax = Math.round((property.price * 0.025) / 12) || 150; // 2.5% annually
-        this.data.afterRepairValue = property.afterRepairValue || (property.price * 1.3); // Default to 30% above purchase
+        this.data.afterRepairValue = property.afterRepairValue || Math.round(property.price * 1.3); // Default to 30% above purchase
+        
+        // Store property details for later use
+        this.propertyDetails = {
+            sqft: sqft,
+            bedrooms: bedrooms,
+            bathrooms: bathrooms
+        };
         
         // Update input fields
         if (document.getElementById('purchasePrice')) {

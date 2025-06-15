@@ -3,6 +3,12 @@
 // Remove preloaded data - we'll use API directly
 // let preloadedParcelData = {};
 
+// Pagination state
+let currentPage = 1;
+const itemsPerPage = 12;
+let allSearchResults = [];
+let currentSearchCriteria = null;
+
 // Mock property data for demonstration
 // Based on real Detroit investment properties
 const mockProperties = [
@@ -114,14 +120,28 @@ const mockProperties = [
 document.getElementById('propertySearchForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // Reset pagination
+    currentPage = 1;
+    
     // Get form values
     const formData = new FormData(this);
     const searchCriteria = {
+        neighborhood: formData.get('neighborhood'),
         zipCode: formData.get('zipCode'),
+        minPrice: parseInt(formData.get('minPrice')) || 0,
         maxPrice: parseInt(formData.get('maxPrice')) || 100000,
         minBeds: parseInt(formData.get('minBeds')) || 0,
-        propertyType: formData.get('propertyType')
+        maxRehab: parseInt(formData.get('maxRehab')) || 999999,
+        minROI: parseFloat(formData.get('minROI')) || 0,
+        propertyStatus: formData.get('propertyStatus'),
+        propertyType: formData.get('propertyType'),
+        yearBuilt: parseInt(formData.get('yearBuilt')) || 0,
+        minSqft: parseInt(formData.get('minSqft')) || 0,
+        ownerType: formData.get('ownerType')
     };
+    
+    // Store criteria for load more
+    currentSearchCriteria = searchCriteria;
     
     // Show loading state
     showLoading();
@@ -131,19 +151,22 @@ document.getElementById('propertySearchForm')?.addEventListener('submit', async 
         if (window.propertyAPI && window.propertyAPI.isApiConfigured()) {
             // Use real API
             const results = await window.propertyAPI.searchPropertiesWithAPI(searchCriteria);
-            displayResults(results);
+            allSearchResults = results;
+            displayResultsWithPagination();
         } else {
             // Fall back to mock data
-            setTimeout(() => {
-                const results = searchProperties(searchCriteria);
-                displayResults(results);
+            setTimeout(async () => {
+                const results = await searchPropertiesEnhanced(searchCriteria);
+                allSearchResults = results;
+                displayResultsWithPagination();
             }, 1000);
         }
     } catch (error) {
         console.error('Search error:', error);
         // Fall back to mock data on error
-        const results = searchProperties(searchCriteria);
-        displayResults(results);
+        const results = await searchPropertiesEnhanced(searchCriteria);
+        allSearchResults = results;
+        displayResultsWithPagination();
     }
 });
 
@@ -190,25 +213,118 @@ document.getElementById('blockSearchForm')?.addEventListener('submit', async fun
 
 // Removed preloadParcelData function - using API directly instead
 
-// Search properties based on criteria
-function searchProperties(criteria) {
-    return mockProperties.filter(property => {
-        // Check if property meets Framework's criteria
-        const totalInvestment = property.price + property.estimatedRehab;
-        const meetsFrameworkCriteria = 
-            property.price >= 50000 && 
-            property.price <= 100000 && 
-            property.estimatedRehab <= 10000;
+// Enhanced search properties with new criteria
+async function searchPropertiesEnhanced(criteria) {
+    let results = [];
+    
+    // If we have parcel API, search the database
+    if (window.parcelAPIService && window.parcelAPIService.isReady() && criteria.neighborhood) {
+        try {
+            const { data, error } = await window.parcelAPIService.client
+                .from('parcels')
+                .select('*')
+                .ilike('neighborhood', `%${criteria.neighborhood}%`)
+                .gte('assessed_value', criteria.minPrice / 2) // Market value is 2x assessed
+                .lte('assessed_value', criteria.maxPrice / 2)
+                .limit(100);
+                
+            if (data && !error) {
+                // Transform parcel data to property format
+                results = data.map(parcel => {
+                    const parcelData = window.parcelAPIService.transformParcelData(parcel);
+                    return {
+                        address: parcelData.address,
+                        city: 'Detroit',
+                        state: 'MI',
+                        zip: parcelData.zipCode,
+                        price: parcelData.assessedValue * 2, // Market value estimate
+                        yearBuilt: parcelData.yearBuilt,
+                        propertyType: 'single-family',
+                        estimatedRehab: 8000,
+                        bedrooms: 3,
+                        bathrooms: 1,
+                        sqft: parcelData.totalFloorArea || 1200,
+                        monthlyRent: 1329,
+                        parcelData: parcelData
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('Database search error:', error);
+        }
+    }
+    
+    // Also search mock properties
+    const mockResults = mockProperties.filter(property => {
+        // Calculate metrics for filtering
+        const rehab = property.estimatedRehab || 8000;
+        const totalInvestment = property.price + rehab;
+        const monthlyRent = property.monthlyRent || 1329;
+        const annualRent = monthlyRent * 12;
+        const cashOnCash = (annualRent * 0.7 / totalInvestment) * 100; // Rough estimate
         
-        // Apply user search filters
-        const meetsSearchCriteria =
-            (!criteria.zipCode || property.zip.includes(criteria.zipCode)) &&
+        // Apply all filters
+        return (
+            // Price range
+            property.price >= criteria.minPrice &&
             property.price <= criteria.maxPrice &&
+            // Bedrooms
             property.bedrooms >= criteria.minBeds &&
-            property.propertyType === criteria.propertyType;
-        
-        return meetsFrameworkCriteria && meetsSearchCriteria;
+            // Rehab cost
+            rehab <= criteria.maxRehab &&
+            // ROI
+            cashOnCash >= criteria.minROI &&
+            // Property type
+            property.propertyType === criteria.propertyType &&
+            // Year built
+            property.yearBuilt >= criteria.yearBuilt &&
+            // Square footage
+            (property.sqft || property.squareFeet || 1200) >= criteria.minSqft &&
+            // ZIP code
+            (!criteria.zipCode || property.zip.includes(criteria.zipCode))
+        );
     });
+    
+    // Combine results and remove duplicates
+    const allResults = [...results, ...mockResults];
+    const uniqueResults = allResults.filter((property, index, self) =>
+        index === self.findIndex(p => p.address === property.address)
+    );
+    
+    return uniqueResults;
+}
+
+// Search properties based on criteria (legacy function for compatibility)
+function searchProperties(criteria) {
+    return searchPropertiesEnhanced(criteria);
+}
+
+// Display results with pagination
+async function displayResultsWithPagination() {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const propertiesToShow = allSearchResults.slice(0, endIndex);
+    
+    // Update counts
+    document.getElementById('showingCount').textContent = propertiesToShow.length;
+    document.getElementById('totalCount').textContent = allSearchResults.length;
+    
+    // Show/hide load more button
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    if (allSearchResults.length > endIndex) {
+        loadMoreContainer.style.display = 'block';
+    } else {
+        loadMoreContainer.style.display = 'none';
+    }
+    
+    // Use existing display function
+    await displayResults(propertiesToShow);
+}
+
+// Load more properties
+function loadMoreProperties() {
+    currentPage++;
+    displayResultsWithPagination();
 }
 
 // Display search results
@@ -225,26 +341,29 @@ async function displayResults(properties, title = null) {
     loadingSpinner.style.display = 'none';
     
     // Update result count
-    resultCount.textContent = properties.length;
+    resultCount.textContent = allSearchResults.length || properties.length;
     
-    // Clear previous results
-    resultsContainer.innerHTML = '';
-    
-    // Add custom title if provided
-    if (title) {
-        resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px; text-align: center;">${title}</h3>`;
+    // Clear previous results only if it's a new search (page 1)
+    if (currentPage === 1) {
+        resultsContainer.innerHTML = '';
+        
+        // Add custom title if provided
+        if (title) {
+            resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px; text-align: center;">${title}</h3>`;
+        }
     }
     
     // Show results section
     resultsSection.style.display = 'block';
     
-    if (properties.length === 0) {
+    if (properties.length === 0 && currentPage === 1) {
         resultsContainer.innerHTML += `
             <div class="no-results">
                 <p>No properties found matching your criteria.</p>
                 <p>Try adjusting your search parameters.</p>
             </div>
         `;
+        document.getElementById('loadMoreContainer').style.display = 'none';
         return;
     }
     
@@ -305,9 +424,10 @@ async function displayResults(properties, title = null) {
     }
     
     // Display each property with parcel data
-    properties.forEach(property => {
+    const startIndex = currentPage > 1 ? (currentPage - 1) * itemsPerPage : 0;
+    properties.slice(startIndex).forEach(property => {
         // Attach parcel data to property if available
-        const parcelData = parcelDataMap[property.address] || null;
+        const parcelData = parcelDataMap[property.address] || property.parcelData || null;
         const propertyCard = createPropertyCard(property, parcelData);
         resultsContainer.appendChild(propertyCard);
     });
@@ -331,9 +451,33 @@ function createPropertyCard(property, parcelData = null) {
     }
     
     const price = displayPrice;
-    const rehabEstimate = property.estimatedRehab || 8000; // Default rehab estimate
+    
+    // Get property details
+    const sqft = property.squareFeet || property.sqft || parcelData?.totalFloorArea || 1200;
+    const bedrooms = property.bedrooms || 3;
+    const bathrooms = property.bathrooms || 1;
+    
+    // Estimate rehab costs
+    let rehabEstimate = property.estimatedRehab;
+    let rehabTooltip = '';
+    if (!rehabEstimate && window.RehabEstimator) {
+        const rehabEstimator = new window.RehabEstimator();
+        rehabEstimate = rehabEstimator.estimate(sqft, bedrooms, bathrooms, 'cosmetic');
+        rehabTooltip = rehabEstimator.getTooltip(sqft, bedrooms, bathrooms, 'cosmetic');
+    }
+    rehabEstimate = rehabEstimate || 8000; // Fallback
+    
+    // Estimate rent
+    let monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate;
+    let rentTooltip = '';
+    if (!monthlyRent && window.RentEstimator) {
+        const rentEstimator = new window.RentEstimator();
+        monthlyRent = rentEstimator.estimate(bedrooms, 'single-family', property.rentZestimate);
+        rentTooltip = rentEstimator.getTooltip(bedrooms, monthlyRent);
+    }
+    monthlyRent = monthlyRent || 1329; // Fallback
+    
     const totalInvestment = price + rehabEstimate;
-    const monthlyRent = property.monthlyRent || property.estimatedRent || property.rentZestimate || 1329;
     const annualRent = monthlyRent * 12;
     
     // Calculate key metrics
@@ -479,6 +623,14 @@ function createPropertyCard(property, parcelData = null) {
                     <span class="metric-label">Total Investment</span>
                     <span class="metric-value">$${totalInvestment.toLocaleString()}</span>
                 </div>
+                <div class="metric-item" ${rentTooltip ? `title="${rentTooltip.replace(/\n/g, '&#10;')}"` : ''}>
+                    <span class="metric-label">Est. Monthly Rent</span>
+                    <span class="metric-value">$${monthlyRent.toLocaleString()}</span>
+                </div>
+                <div class="metric-item" ${rehabTooltip ? `title="${rehabTooltip.replace(/\n/g, '&#10;')}"` : ''}>
+                    <span class="metric-label">Est. Rehab Cost</span>
+                    <span class="metric-value">$${rehabEstimate.toLocaleString()}</span>
+                </div>
             </div>
             ${property.description ? `<p style="margin-bottom: var(--spacing-md); font-size: 0.875rem; color: var(--dark-gray);">
                 ${property.description}
@@ -495,7 +647,7 @@ function createPropertyCard(property, parcelData = null) {
                     📋 Details
                 </button>
                 ${parcelInfo.owner.fullName && parcelInfo.owner.fullName.trim() ? `
-                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}')">
+                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}', false)">
                     👤 Owner Portfolio
                 </button>
                 ` : ''}
@@ -839,10 +991,10 @@ function openPropertyDetailsModal(parcelInfo, fullAddress = null) {
                 <span class="detail-value">${parcelInfo.owner.fullMailingAddress || 'N/A'}</span>
             </div>
             <div class="owner-actions">
-                <button class="btn btn-outline" onclick="searchByOwner('${parcelInfo.owner.fullName}')">
+                <button class="btn btn-outline" onclick="closePropertyDetailsModal(); searchByOwner('${parcelInfo.owner.fullName}', false)">
                     🔍 Find Other Properties by Owner
                 </button>
-                <button class="btn btn-outline" onclick="searchByMailingAddress('${parcelInfo.owner.fullMailingAddress}')">
+                <button class="btn btn-outline" onclick="closePropertyDetailsModal(); searchByMailingAddress('${parcelInfo.owner.fullMailingAddress}')">
                     📍 Find Properties at Mailing Address
                 </button>
             </div>
@@ -920,7 +1072,10 @@ function createPropertyDetailsModal() {
 
 // Close property details modal
 function closePropertyDetailsModal() {
-    document.getElementById('propertyDetailsModal').style.display = 'none';
+    const modal = document.getElementById('propertyDetailsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 // Search by property address
@@ -1044,7 +1199,7 @@ async function searchByBlock(address, radius) {
 }
 
 // Search for properties by owner (updated to handle tab vs new window)
-async function searchByOwner(ownerName, openInNewTab = true) {
+async function searchByOwner(ownerName, openInNewTab = false) {
     if (!ownerName || ownerName.trim() === '') {
         alert('Owner name is not available for this property');
         return;
@@ -1055,37 +1210,39 @@ async function searchByOwner(ownerName, openInNewTab = true) {
         return;
     }
     
+    // Show loading state
+    showLoading();
+    
     try {
         const properties = await window.parcelAPIService.searchByOwner(ownerName);
         
-        if (openInNewTab) {
-            // Original behavior - open in new tab/window
-            displayOwnerResults(properties, `Properties owned by ${ownerName}`);
+        if (properties.length > 0) {
+            // Convert parcel data to property format
+            const formattedProperties = properties.map(parcel => ({
+                address: parcel.address,
+                city: 'Detroit',
+                state: 'MI',
+                zip: parcel.zipCode,
+                price: parcel.assessedValue * 2 || 0, // Market value = 2x assessed
+                yearBuilt: parcel.yearBuilt,
+                propertyType: 'single-family',
+                estimatedRehab: 8000,
+                bedrooms: 3,
+                bathrooms: 1,
+                sqft: parcel.totalFloorArea || 1200,
+                monthlyRent: 1329,
+                parcelData: parcel
+            }));
+            
+            // Reset pagination and store results
+            currentPage = 1;
+            allSearchResults = formattedProperties;
+            
+            // Display using pagination system
+            displayResultsWithPagination();
         } else {
-            // New behavior - display in current results
-            if (properties.length > 0) {
-                // Convert parcel data to property format
-                const formattedProperties = properties.map(parcel => ({
-                    address: parcel.address,
-                    city: 'Detroit',
-                    state: 'MI',
-                    zip: parcel.zipCode,
-                    price: parcel.assessedValue || 0,
-                    yearBuilt: parcel.yearBuilt,
-                    propertyType: 'single-family',
-                    estimatedRehab: 8000,
-                    bedrooms: 3,
-                    bathrooms: 1,
-                    sqft: parcel.totalFloorArea || 1200,
-                    monthlyRent: 1329,
-                    parcelData: parcel
-                }));
-                
-                displayResults(formattedProperties, `Properties owned by ${ownerName}`);
-            } else {
-                alert('No properties found for this owner');
-                hideLoading();
-            }
+            alert('No properties found for this owner');
+            hideLoading();
         }
     } catch (error) {
         console.error('Error searching by owner:', error);
@@ -1106,57 +1263,44 @@ async function searchByMailingAddress(mailingAddress) {
     
     try {
         const properties = await window.parcelAPIService.searchByMailingAddress(mailingAddress);
-        displayOwnerResults(properties, `Properties with mailing address: ${mailingAddress}`);
-    } catch (error) {
-        console.error('Error searching by mailing address:', error);
-        alert('Error searching for properties');
-    }
-}
-
-// Display owner search results
-function displayOwnerResults(properties, title) {
-    closePropertyDetailsModal();
-    
-    // Show results section
-    const resultsSection = document.getElementById('resultsSection');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const resultCount = document.getElementById('resultCount');
-    
-    resultCount.textContent = properties.length;
-    resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px;">${title}</h3>`;
-    
-    if (properties.length === 0) {
-        resultsContainer.innerHTML += `
-            <div class="no-results">
-                <p>No other properties found.</p>
-            </div>
-        `;
-    } else {
-        properties.forEach(parcel => {
-            // Create simplified property object for display
-            const property = {
+        
+        if (properties.length > 0) {
+            // Convert parcel data to property format
+            const formattedProperties = properties.map(parcel => ({
                 address: parcel.address,
                 city: 'Detroit',
                 state: 'MI',
                 zip: parcel.zipCode,
-                price: parcel.assessedValue || 0,
+                price: parcel.assessedValue * 2 || 0, // Market value = 2x assessed
                 yearBuilt: parcel.yearBuilt,
                 propertyType: 'single-family',
                 estimatedRehab: 8000,
                 bedrooms: 3,
                 bathrooms: 1,
-                sqft: parcel.totalFloorArea || 1200
-            };
+                sqft: parcel.totalFloorArea || 1200,
+                monthlyRent: 1329,
+                parcelData: parcel
+            }));
             
-            // Pass the parcel data directly since we already have it
-            const card = createPropertyCard(property, parcel);
-            resultsContainer.appendChild(card);
-        });
+            // Reset pagination and store results
+            currentPage = 1;
+            allSearchResults = formattedProperties;
+            
+            // Display using pagination system with custom title
+            document.getElementById('resultsContainer').innerHTML = `<h3 style="width: 100%; margin-bottom: 20px; text-align: center;">Properties with mailing address: ${mailingAddress}</h3>`;
+            displayResultsWithPagination();
+        } else {
+            alert('No properties found at this mailing address');
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Error searching by mailing address:', error);
+        alert('Error searching for properties');
+        hideLoading();
     }
-    
-    resultsSection.style.display = 'block';
-    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// Removed displayOwnerResults - now using main display system with pagination
 
 // Test function to verify parcel data
 async function testParcelData() {
@@ -1316,6 +1460,7 @@ window.switchSearchType = switchSearchType;
 window.searchByAddress = searchByAddress;
 window.searchByParcelId = searchByParcelId;
 window.searchByBlock = searchByBlock;
+window.loadMoreProperties = loadMoreProperties;
 
 // Proforma Analysis Functions
 let proformaCalculator = null;
