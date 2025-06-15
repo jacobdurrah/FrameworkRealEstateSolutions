@@ -48,11 +48,6 @@ async function searchPropertiesZillow(params) {
         if (!response.ok) {
             if (response.status === 401) {
                 console.error('API authentication required - Vercel protection is enabled');
-                const apiStatus = document.getElementById('apiStatus');
-                if (apiStatus) {
-                    apiStatus.textContent = '⚠ API Protected - See Console for Fix';
-                    apiStatus.className = 'api-status disconnected';
-                }
                 console.log('%c⚠ Vercel Authentication Enabled', 'color: orange; font-size: 16px; font-weight: bold;');
                 console.log('%cTo fix this:', 'color: blue; font-size: 14px;');
                 console.log('%c1. Go to https://vercel.com/dashboard', 'color: green; font-size: 12px;');
@@ -277,12 +272,6 @@ async function searchPropertiesWithAPI(searchParams) {
         return [];
     } catch (error) {
         console.error('Zillow search failed, using mock data:', error);
-        // Show user-friendly message
-        const apiStatus = document.getElementById('apiStatus');
-        if (apiStatus) {
-            apiStatus.textContent = '⚠ API Limit Reached - Using Demo Data';
-            apiStatus.className = 'api-status disconnected';
-        }
         return searchProperties(searchParams); // Falls back to mock data
     }
 }
