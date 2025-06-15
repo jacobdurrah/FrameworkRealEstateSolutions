@@ -593,12 +593,113 @@ async function createPropertyCard(property, parcelData = null) {
 }
 
 // View sales history for an owner
-function viewSalesHistory(ownerName) {
+async function viewSalesHistory(ownerName, propertyAddress = null) {
     if (!ownerName) return;
     
-    // Open sales history page with owner parameter
-    const url = `sales-history.html?owner=${encodeURIComponent(ownerName)}`;
-    window.open(url, '_blank');
+    // Find the property card that was clicked
+    const clickedElement = event.currentTarget;
+    const propertyCard = clickedElement.closest('.property-card');
+    
+    if (!propertyCard) {
+        // Fallback to opening in new page if we can't find the card
+        const url = `sales-history.html?owner=${encodeURIComponent(ownerName)}`;
+        window.open(url, '_blank');
+        return;
+    }
+    
+    // Check if sales history section already exists
+    let salesHistorySection = propertyCard.querySelector('.sales-history-section');
+    
+    if (salesHistorySection) {
+        // Toggle visibility
+        if (salesHistorySection.style.display === 'none') {
+            salesHistorySection.style.display = 'block';
+        } else {
+            salesHistorySection.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Create sales history section
+    salesHistorySection = document.createElement('div');
+    salesHistorySection.className = 'sales-history-section';
+    salesHistorySection.innerHTML = '<div class="loading-spinner-small">Loading sales history...</div>';
+    
+    // Insert after property details
+    const propertyDetails = propertyCard.querySelector('.property-details');
+    if (propertyDetails) {
+        propertyDetails.insertAdjacentElement('afterend', salesHistorySection);
+    } else {
+        propertyCard.appendChild(salesHistorySection);
+    }
+    
+    try {
+        // Fetch sales transactions
+        const transactions = await window.salesAPIService.getAllTransactionsByPerson(ownerName);
+        
+        if (transactions && transactions.length > 0) {
+            // Sort by date descending
+            transactions.sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date));
+            
+            // Create HTML for transactions
+            let html = '<div class="sales-history-content">';
+            html += '<h4 style="margin: 10px 0; font-size: 16px; color: var(--primary-color);">Transaction History</h4>';
+            html += '<div class="transactions-list">';
+            
+            // Show up to 5 most recent transactions
+            const recentTransactions = transactions.slice(0, 5);
+            
+            recentTransactions.forEach(transaction => {
+                const saleDate = new Date(transaction.sale_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                const salePrice = transaction.sale_price ? 
+                    `$${transaction.sale_price.toLocaleString()}` : 
+                    'Price not disclosed';
+                
+                const role = transaction.role || 'seller';
+                const roleLabel = role === 'buyer' ? 'Bought' : 'Sold';
+                const roleClass = role === 'buyer' ? 'transaction-bought' : 'transaction-sold';
+                
+                html += `
+                    <div class="transaction-item ${roleClass}">
+                        <div class="transaction-header">
+                            <span class="transaction-role">${roleLabel}</span>
+                            <span class="transaction-date">${saleDate}</span>
+                        </div>
+                        <div class="transaction-address">${transaction.property_address || 'Address not available'}</div>
+                        <div class="transaction-details">
+                            <span class="transaction-price">${salePrice}</span>
+                            ${transaction.buyer_name && role === 'seller' ? 
+                                `<span class="transaction-party">to ${transaction.buyer_name}</span>` : 
+                                ''}
+                            ${transaction.seller_name && role === 'buyer' ? 
+                                `<span class="transaction-party">from ${transaction.seller_name}</span>` : 
+                                ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (transactions.length > 5) {
+                html += `<div class="transaction-more">... and ${transactions.length - 5} more transactions</div>`;
+            }
+            
+            html += '</div>';
+            html += `<button class="btn-view-all" onclick="window.open('sales-history.html?owner=${encodeURIComponent(ownerName)}', '_blank')">View All Transactions</button>`;
+            html += '</div>';
+            
+            salesHistorySection.innerHTML = html;
+        } else {
+            salesHistorySection.innerHTML = '<div class="no-sales-history">No transaction history found for this owner.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading sales history:', error);
+        salesHistorySection.innerHTML = '<div class="error-message">Error loading sales history. Please try again.</div>';
+    }
 }
 
 // Show loading state

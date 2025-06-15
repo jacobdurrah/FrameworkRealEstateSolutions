@@ -862,3 +862,138 @@
         width: 100%;
     }
 }
+
+/* Sales History Section Styles */
+.sales-history-section {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--light-gray);
+}
+
+.sales-history-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.sales-history-content h4 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.transaction-item {
+    background: white;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--light-gray);
+    transition: transform 0.2s ease;
+}
+
+.transaction-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+}
+
+.transaction-role {
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.transaction-sold .transaction-role {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.transaction-bought .transaction-role {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.transaction-date {
+    color: var(--medium-gray);
+    font-size: 0.875rem;
+}
+
+.transaction-address {
+    font-weight: 500;
+    color: var(--primary-black);
+    margin-bottom: var(--spacing-xs);
+}
+
+.transaction-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.transaction-price {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.transaction-party {
+    color: var(--medium-gray);
+    font-style: italic;
+}
+
+.transaction-more {
+    text-align: center;
+    color: var(--medium-gray);
+    font-style: italic;
+    padding: var(--spacing-sm) 0;
+    font-size: 0.875rem;
+}
+
+.btn-view-all {
+    width: 100%;
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.btn-view-all:hover {
+    background-color: var(--primary-dark);
+}
+
+.loading-spinner-small {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--medium-gray);
+}
+
+.no-sales-history,
+.error-message {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--medium-gray);
+    font-style: italic;
+}
+
+.error-message {
+    color: #d32f2f;
+}
