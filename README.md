@@ -187,5 +187,10 @@ Framework Real Estate Solutions
 - **Tax Status Display**: Fixed to show actual tax status (Taxable/Exempt)
 - **Owner Search**: Added format examples for better user experience
 - **Removed Block Search**: Simplified interface by removing complex spatial search
+- **Rehab Estimation**: Added 3-level rehab cost calculator (light, cosmetic, gut)
+- **Smart Rent Estimation**: Automatic rent estimates based on Section 8 FMR rates
+- **Enhanced Search**: Added neighborhood, ROI, rehab cost, and owner type filters
+- **Pagination**: Load More button for better performance with large result sets
+- **Owner Portfolio**: Fixed and improved owner property search functionality
 
 Built with ❤️ for Detroit's housing future

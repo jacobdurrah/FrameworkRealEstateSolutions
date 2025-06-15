@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View property sales history and transaction records in Detroit">
+    <title>Sales History - Framework Real Estate Solutions</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/property-finder.css">
+    <style>
+        /* Sales History Specific Styles */
+        .sales-hero {
+            padding: calc(80px + var(--spacing-xl)) 0 var(--spacing-xl);
+            background-color: var(--off-white);
+            text-align: center;
+        }
+
+        .owner-info-card {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            padding: var(--spacing-xl);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .owner-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .sales-timeline {
+            margin-top: var(--spacing-xl);
+        }
+
+        .sale-card {
+            background: var(--pure-white);
+            border: 1px solid var(--light-gray);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            border-radius: 8px;
+            transition: all var(--transition-normal);
+        }
+
+        .sale-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .sale-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .sale-address {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary-black);
+            text-decoration: none;
+        }
+
+        .sale-address:hover {
+            color: var(--accent-gold);
+        }
+
+        .sale-price {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+        .sale-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-sm);
+            font-size: 0.875rem;
+        }
+
+        .detail-item {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: var(--medium-gray);
+        }
+
+        .export-section {
+            margin-top: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .no-sales {
+            text-align: center;
+            padding: var(--spacing-xxl);
+            color: var(--medium-gray);
+        }
+
+        @media (max-width: 768px) {
+            .sale-header {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+    
+    <!-- Configuration -->
+    <script src="js/app-config.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="images/framework-logo.png" alt="Framework Real Estate Solutions" class="logo-img">
+            </a>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-menu" id="navMenu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="affordable-housing.html" class="nav-link">Properties</a>
+                <a href="property-finder.html" class="nav-link">Deal Finder</a>
+                <a href="index.html#contact" class="nav-link">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sales History Hero -->
+    <section class="sales-hero">
+        <div class="container">
+            <h1 class="page-title">Sales Transaction History</h1>
+            <p class="page-subtitle" id="pageSubtitle">Loading sales data...</p>
+        </div>
+    </section>
+
+    <!-- Owner Information -->
+    <section class="owner-section" id="ownerSection" style="display: none;">
+        <div class="container">
+            <div class="owner-info-card">
+                <h2 id="ownerName">Loading...</h2>
+                <div class="owner-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSales">0</div>
+                        <div class="stat-label">Total Sales</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalValue">$0</div>
+                        <div class="stat-label">Total Value</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgPrice">$0</div>
+                        <div class="stat-label">Average Price</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="yearsActive">0</div>
+                        <div class="stat-label">Years Active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sales Timeline -->
+    <section class="sales-timeline-section">
+        <div class="container">
+            <div class="sales-timeline" id="salesTimeline">
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner"></div>
+                    <p>Loading sales history...</p>
+                </div>
+            </div>
+            <div class="no-sales" id="noSales" style="display: none;">
+                <h3>No Sales History Found</h3>
+                <p>No transaction records found for this search.</p>
+                <a href="property-finder.html" class="btn btn-primary">Search Properties</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Export Section -->
+    <section class="export-section" id="exportSection" style="display: none;">
+        <div class="container">
+            <button class="btn btn-secondary" onclick="exportToCSV()">
+                📊 Export to CSV
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-modern">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="images/logo.svg" alt="Framework" class="footer-logo">
+                    <p>Creating exceptional living spaces in Detroit</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">Home</a>
+                    <a href="affordable-housing.html">Properties</a>
+                    <a href="property-finder.html">Deal Finder</a>
+                    <a href="index.html#contact">Contact</a>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2024 Framework Real Estate Solutions. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/main.js"></script>
+    <script src="js/sales-api.js"></script>
+    <script>
+        // Toggle mobile menu
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('navMenu');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            navMenu.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+        }
+
+        // Global sales data
+        let salesData = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Get parameters from URL
+            const params = new URLSearchParams(window.location.search);
+            const ownerName = params.get('owner');
+            const propertyAddress = params.get('property');
+            
+            // Initialize sales API
+            if (window.APP_CONFIG && window.salesAPIService) {
+                await window.salesAPIService.init(
+                    window.APP_CONFIG.SUPABASE_URL,
+                    window.APP_CONFIG.SUPABASE_ANON_KEY
+                );
+            }
+            
+            // Load sales data
+            if (ownerName) {
+                await loadOwnerSales(ownerName);
+            } else if (propertyAddress) {
+                await loadPropertySales(propertyAddress);
+            } else {
+                // Show recent sales
+                await loadRecentSales();
+            }
+        });
+
+        // Load sales by owner
+        async function loadOwnerSales(ownerName) {
+            try {
+                document.getElementById('pageSubtitle').textContent = `Sales history for ${ownerName}`;
+                document.getElementById('ownerName').textContent = ownerName;
+                document.getElementById('ownerSection').style.display = 'block';
+                
+                // Get sales data
+                const sales = await window.salesAPIService.getSalesByOwner(ownerName);
+                const stats = await window.salesAPIService.getOwnerStatistics(ownerName);
+                
+                // Update statistics
+                if (stats) {
+                    document.getElementById('totalSales').textContent = stats.total_sales || '0';
+                    document.getElementById('totalValue').textContent = `$${(stats.total_sales_value || 0).toLocaleString()}`;
+                    document.getElementById('avgPrice').textContent = `$${Math.round(stats.avg_sale_price || 0).toLocaleString()}`;
+                    document.getElementById('yearsActive').textContent = stats.years_active || '0';
+                } else if (sales.length > 0) {
+                    // Calculate stats from sales data
+                    const totalValue = sales.reduce((sum, sale) => sum + (sale.sale_price || 0), 0);
+                    const years = new Set(sales.map(s => new Date(s.sale_date).getFullYear())).size;
+                    
+                    document.getElementById('totalSales').textContent = sales.length;
+                    document.getElementById('totalValue').textContent = `$${totalValue.toLocaleString()}`;
+                    document.getElementById('avgPrice').textContent = `$${Math.round(totalValue / sales.length).toLocaleString()}`;
+                    document.getElementById('yearsActive').textContent = years;
+                }
+                
+                // Display sales
+                salesData = sales;
+                displaySales(sales);
+            } catch (error) {
+                console.error('Error loading owner sales:', error);
+                showError('Error loading sales history');
+            }
+        }
+
+        // Load sales by property
+        async function loadPropertySales(propertyAddress) {
+            try {
+                document.getElementById('pageSubtitle').textContent = `Transaction history for ${propertyAddress}`;
+                
+                // Get sales data
+                const sales = await window.salesAPIService.getSalesByProperty(propertyAddress);
+                
+                // Display sales
+                salesData = sales;
+                displaySales(sales);
+            } catch (error) {
+                console.error('Error loading property sales:', error);
+                showError('Error loading sales history');
+            }
+        }
+
+        // Load recent sales
+        async function loadRecentSales() {
+            try {
+                document.getElementById('pageSubtitle').textContent = 'Recent property sales in Detroit';
+                
+                // Get recent sales
+                const sales = await window.salesAPIService.getRecentSales(50);
+                
+                // Display sales
+                salesData = sales;
+                displaySales(sales);
+            } catch (error) {
+                console.error('Error loading recent sales:', error);
+                showError('Error loading sales history');
+            }
+        }
+
+        // Display sales in timeline
+        function displaySales(sales) {
+            const timeline = document.getElementById('salesTimeline');
+            const spinner = document.getElementById('loadingSpinner');
+            const noSales = document.getElementById('noSales');
+            const exportSection = document.getElementById('exportSection');
+            
+            spinner.style.display = 'none';
+            
+            if (!sales || sales.length === 0) {
+                noSales.style.display = 'block';
+                exportSection.style.display = 'none';
+                return;
+            }
+            
+            // Clear timeline
+            timeline.innerHTML = '';
+            exportSection.style.display = 'block';
+            
+            // Create sale cards
+            sales.forEach(sale => {
+                const card = createSaleCard(sale);
+                timeline.appendChild(card);
+            });
+        }
+
+        // Create sale card
+        function createSaleCard(sale) {
+            const card = document.createElement('div');
+            card.className = 'sale-card';
+            
+            const saleDate = new Date(sale.sale_date).toLocaleDateString();
+            const zillowUrl = `https://www.zillow.com/homes/${encodeURIComponent(sale.property_address)}_rb/`;
+            
+            card.innerHTML = `
+                <div class="sale-header">
+                    <div>
+                        <a href="${zillowUrl}" target="_blank" class="sale-address">
+                            📍 ${sale.property_address}
+                        </a>
+                        <div style="font-size: 0.875rem; color: var(--medium-gray); margin-top: 4px;">
+                            ${saleDate}
+                        </div>
+                    </div>
+                    <div class="sale-price">
+                        $${(sale.sale_price || 0).toLocaleString()}
+                    </div>
+                </div>
+                <div class="sale-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Seller:</span>
+                        <span>${sale.seller_name || 'Unknown'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Buyer:</span>
+                        <span>${sale.buyer_name || 'Unknown'}</span>
+                    </div>
+                    ${sale.bedrooms ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Bedrooms:</span>
+                        <span>${sale.bedrooms}</span>
+                    </div>
+                    ` : ''}
+                    ${sale.bathrooms ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Bathrooms:</span>
+                        <span>${sale.bathrooms}</span>
+                    </div>
+                    ` : ''}
+                    ${sale.square_feet ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Square Feet:</span>
+                        <span>${sale.square_feet.toLocaleString()}</span>
+                    </div>
+                    ` : ''}
+                    ${sale.year_built ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Year Built:</span>
+                        <span>${sale.year_built}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            if (!salesData || salesData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Date', 'Address', 'Seller', 'Buyer', 'Price', 'Bedrooms', 'Bathrooms', 'Sq Ft', 'Year Built'];
+            const rows = salesData.map(sale => [
+                new Date(sale.sale_date).toLocaleDateString(),
+                sale.property_address,
+                sale.seller_name,
+                sale.buyer_name,
+                sale.sale_price,
+                sale.bedrooms || '',
+                sale.bathrooms || '',
+                sale.square_feet || '',
+                sale.year_built || ''
+            ]);
+            
+            // Convert to CSV string
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ].join('\n');
+            
+            // Download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sales_history_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Show error message
+        function showError(message) {
+            const timeline = document.getElementById('salesTimeline');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            spinner.style.display = 'none';
+            timeline.innerHTML = `
+                <div class="no-sales">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                    <a href="property-finder.html" class="btn btn-primary">Back to Property Finder</a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

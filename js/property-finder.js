@@ -425,19 +425,22 @@ async function displayResults(properties, title = null) {
     
     // Display each property with parcel data
     const startIndex = currentPage > 1 ? (currentPage - 1) * itemsPerPage : 0;
-    properties.slice(startIndex).forEach(property => {
+    const propertiesToDisplay = properties.slice(startIndex);
+    
+    // Create cards asynchronously to handle sales history lookup
+    for (const property of propertiesToDisplay) {
         // Attach parcel data to property if available
         const parcelData = parcelDataMap[property.address] || property.parcelData || null;
-        const propertyCard = createPropertyCard(property, parcelData);
+        const propertyCard = await createPropertyCard(property, parcelData);
         resultsContainer.appendChild(propertyCard);
-    });
+    }
     
     // Scroll to results
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Create property card element
-function createPropertyCard(property, parcelData = null) {
+async function createPropertyCard(property, parcelData = null) {
     // Determine if property is from database (not listed for sale)
     const isFromDatabase = !property.price && parcelData && parcelData.assessedValue;
     
@@ -451,6 +454,25 @@ function createPropertyCard(property, parcelData = null) {
     }
     
     const price = displayPrice;
+    
+    // Check for sales history if we have owner name
+    let salesBadge = '';
+    if (parcelData && parcelData.owner && parcelData.owner.fullName && window.salesAPIService && window.salesAPIService.isReady()) {
+        try {
+            const ownerStats = await window.salesAPIService.getOwnerStatistics(parcelData.owner.fullName);
+            if (ownerStats && ownerStats.total_sales > 0) {
+                salesBadge = `
+                    <div class="sales-history-badge" 
+                         onclick="viewSalesHistory('${parcelData.owner.fullName.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}')"
+                         title="Click to view ${ownerStats.total_sales} previous sales by this owner">
+                        🏡 ${ownerStats.total_sales} Previous Sale${ownerStats.total_sales > 1 ? 's' : ''}
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error checking sales history:', error);
+        }
+    }
     
     // Get property details
     const sqft = property.squareFeet || property.sqft || parcelData?.totalFloorArea || 1200;
@@ -565,6 +587,7 @@ function createPropertyCard(property, parcelData = null) {
                 <span class="owner-label">Owner:</span>
                 <span class="owner-name">${parcelInfo.owner.fullName || 'Unknown'}</span>
             </div>
+            ${salesBadge}
             <div class="property-parcel-info">
                 <span class="parcel-label">Parcel ID:</span>
                 <span class="parcel-id">${parcelInfo.parcelId || 'N/A'}</span>
@@ -663,6 +686,15 @@ function createPropertyCard(property, parcelData = null) {
     return card;
 }
 
+// View sales history for an owner
+function viewSalesHistory(ownerName) {
+    if (!ownerName) return;
+    
+    // Open sales history page with owner parameter
+    const url = `sales-history.html?owner=${encodeURIComponent(ownerName)}`;
+    window.open(url, '_blank');
+}
+
 // Show loading state
 function showLoading() {
     const resultsSection = document.getElementById('resultsSection');
@@ -731,6 +763,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (window.APP_CONFIG && window.APP_CONFIG.FEATURES.ENABLE_PARCEL_DATA) {
         console.log('Parcel data is enabled, waiting for service...');
+        
+        // Initialize sales API service too
+        if (window.salesAPIService) {
+            console.log('Initializing sales API service...');
+            await window.salesAPIService.init(
+                window.APP_CONFIG.SUPABASE_URL,
+                window.APP_CONFIG.SUPABASE_ANON_KEY
+            );
+        }
         
         // Wait a bit for the service to be available
         let retries = 0;
@@ -1461,6 +1502,7 @@ window.searchByAddress = searchByAddress;
 window.searchByParcelId = searchByParcelId;
 window.searchByBlock = searchByBlock;
 window.loadMoreProperties = loadMoreProperties;
+window.viewSalesHistory = viewSalesHistory;
 
 // Proforma Analysis Functions
 let proformaCalculator = null;
