@@ -285,14 +285,32 @@ class ProformaCalculator {
         this.data.purchasePrice = property.price || 0;
         this.data.monthlyRent = monthlyRent;
         this.data.rehabBudget = rehabBudget;
-        this.data.propertyTax = Math.round((property.price * 0.025) / 12) || 150; // 2.5% annually
+        
+        // Calculate property tax based on assessed value if available
+        // Detroit property tax = 0.8 * assessed value (millage rate)
+        let monthlyPropertyTax = 150; // Default
+        if (property.parcelData && property.parcelData.assessedValue) {
+            // 0.8 millage rate on assessed value
+            const annualTax = property.parcelData.assessedValue * 0.8;
+            monthlyPropertyTax = Math.round(annualTax / 12);
+        } else if (property.assessedValue) {
+            // Direct assessed value on property
+            const annualTax = property.assessedValue * 0.8;
+            monthlyPropertyTax = Math.round(annualTax / 12);
+        } else {
+            // Fallback: estimate from purchase price (2.5% annually)
+            monthlyPropertyTax = Math.round((property.price * 0.025) / 12) || 150;
+        }
+        
+        this.data.propertyTax = monthlyPropertyTax;
         this.data.afterRepairValue = property.afterRepairValue || Math.round(property.price * 1.3); // Default to 30% above purchase
         
         // Store property details for later use
         this.propertyDetails = {
             sqft: sqft,
             bedrooms: bedrooms,
-            bathrooms: bathrooms
+            bathrooms: bathrooms,
+            assessedValue: property.parcelData?.assessedValue || property.assessedValue || null
         };
         
         // Update input fields

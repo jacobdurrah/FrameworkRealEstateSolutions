@@ -1472,10 +1472,10 @@ function displayOwnerTransactions(transactions, ownerName) {
                     <span style="color: var(--medium-gray);">Grantee (Buyer):</span><br>
                     <strong>${transaction.grantee || transaction.buyer_name || 'Unknown'}</strong>
                 </div>
-                ${transaction.sale_terms ? `
+                ${(transaction.sale_terms || transaction.terms_of_sale) ? `
                 <div style="grid-column: 1 / -1;">
                     <span style="color: var(--medium-gray);">Terms of Sale:</span><br>
-                    <strong>${transaction.sale_terms}</strong>
+                    <strong>${transaction.sale_terms || transaction.terms_of_sale}</strong>
                 </div>
                 ` : ''}
                 ${transaction.sale_instrument ? `
@@ -1544,10 +1544,10 @@ function displayOwnerTransactions(transactions, ownerName) {
                         <strong>${transaction.liber_page}</strong>
                     </div>
                     ` : ''}
-                    ${transaction.terms_of_sale ? `
+                    ${(transaction.sale_terms || transaction.terms_of_sale) ? `
                     <div style="grid-column: 1 / -1;">
-                        <span style="color: var(--medium-gray);">Terms of Sale:</span><br>
-                        <strong>${transaction.terms_of_sale}</strong>
+                        <span style="color: var(--medium-gray);">Additional Sale Terms:</span><br>
+                        <strong>${transaction.sale_terms || transaction.terms_of_sale}</strong>
                     </div>
                     ` : ''}
                     ${transaction.sale_verification ? `
