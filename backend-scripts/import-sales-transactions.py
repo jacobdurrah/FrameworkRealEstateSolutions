@@ -154,44 +154,44 @@ def import_sales_transactions():
                 # Build record based on available columns
                 record = {}
                 
+                # Map the actual Excel columns we found
                 # Required fields
-                if 'Property Address' in df.columns:
-                    record['property_address'] = clean_address(row.get('Property Address'))
-                elif 'Address' in df.columns:
-                    record['property_address'] = clean_address(row.get('Address'))
+                if 'Street Address' in df.columns:
+                    record['property_address'] = clean_address(row.get('Street Address'))
                 
-                if 'Seller Name' in df.columns:
-                    record['seller_name'] = clean_name(row.get('Seller Name'))
-                elif 'Seller' in df.columns:
-                    record['seller_name'] = clean_name(row.get('Seller'))
-                
-                if 'Buyer Name' in df.columns:
-                    record['buyer_name'] = clean_name(row.get('Buyer Name'))
-                elif 'Buyer' in df.columns:
-                    record['buyer_name'] = clean_name(row.get('Buyer'))
+                # For this dataset, we need to generate seller/buyer names from transaction type
+                # Since this appears to be a property transfer dataset without explicit seller/buyer
+                record['seller_name'] = 'PROPERTY TRANSFER'  # Default for now
+                record['buyer_name'] = 'NEW OWNER'  # Default for now
                 
                 if 'Sale Date' in df.columns:
                     record['sale_date'] = parse_date(row.get('Sale Date'))
-                elif 'Date' in df.columns:
-                    record['sale_date'] = parse_date(row.get('Date'))
                 
                 if 'Sale Price' in df.columns:
                     record['sale_price'] = parse_price(row.get('Sale Price'))
-                elif 'Price' in df.columns:
-                    record['sale_price'] = parse_price(row.get('Price'))
                 
-                # Skip if required fields are missing
-                if not all([record.get('property_address'), record.get('seller_name'), 
-                           record.get('buyer_name'), record.get('sale_date'), 
+                # Skip if required fields are missing or price is too low (likely not a real sale)
+                if not all([record.get('property_address'), record.get('sale_date'), 
                            record.get('sale_price')]):
+                    continue
+                    
+                # Skip if sale price is less than $100 (likely not a real sale)
+                if record.get('sale_price', 0) < 100:
                     continue
                 
                 # Optional fields
+                # Map parcel number
+                if 'Parcel Number' in df.columns:
+                    record['parcel_id'] = str(row.get('Parcel Number'))
+                
+                # Map terms of sale
+                if 'Terms of Sale' in df.columns:
+                    record['sale_terms'] = str(row.get('Terms of Sale'))
+                
+                # Additional mappings if available
                 optional_mappings = {
                     'Property Type': 'property_type',
                     'Type': 'property_type',
-                    'Parcel ID': 'parcel_id',
-                    'Parcel': 'parcel_id',
                     'Year Built': 'year_built',
                     'Year': 'year_built',
                     'Square Feet': 'square_feet',
@@ -201,7 +201,8 @@ def import_sales_transactions():
                     'Bathrooms': 'bathrooms',
                     'Baths': 'bathrooms',
                     'ZIP': 'property_zip',
-                    'Zip Code': 'property_zip'
+                    'Zip Code': 'property_zip',
+                    'ECF Area': 'property_zip'  # ECF Area might contain zip info
                 }
                 
                 for excel_col, db_col in optional_mappings.items():

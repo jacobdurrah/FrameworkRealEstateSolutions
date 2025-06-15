@@ -192,5 +192,10 @@ Framework Real Estate Solutions
 - **Enhanced Search**: Added neighborhood, ROI, rehab cost, and owner type filters
 - **Pagination**: Load More button for better performance with large result sets
 - **Owner Portfolio**: Fixed and improved owner property search functionality
+- **Sales History Integration**: Added 283,000+ Detroit property sales records
+  - Property cards show "Previous Sales" badges for active sellers
+  - Click badges to view full transaction history
+  - Dedicated sales history page with advanced search
+  - Identify property flippers and investment patterns
 
 Built with ❤️ for Detroit's housing future

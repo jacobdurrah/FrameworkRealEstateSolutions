@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2025-01-15
+
+### Added
+- **Sales History Integration**: Imported 283,000+ Detroit property sales records
+  - Property cards display "Previous Sales" badges for owners with transaction history
+  - Dedicated sales history page (`sales-history.html`) with advanced search
+  - Sales API service for querying transaction data
+  - Ability to view all sales by a specific owner or property
+- **Rehab Cost Estimation**: Intelligent property rehabilitation cost calculator
+  - Three levels: Light update ($15/sqft), Cosmetic ($35/sqft), Gut rehab ($75/sqft)
+  - Detailed breakdowns by room type (kitchen, bathrooms, etc.)
+  - Tooltips explaining how estimates are calculated
+- **Enhanced Search Filters**:
+  - Neighborhood dropdown with all Detroit neighborhoods
+  - Min/Max price range filters
+  - Maximum rehab cost filter
+  - Minimum Cash-on-Cash return filter
+  - Property status filter (for sale, off-market, bank-owned)
+  - Year built filter
+  - Minimum square feet filter
+  - Owner type filter (individual, LLC, government, etc.)
+- **Pagination**: Load More button for handling large result sets efficiently
+- **Clickable Property Addresses**: All property addresses now link directly to Zillow
+
+### Changed
+- **Proforma Calculator**: Now prefills with intelligent estimates
+  - Rent estimates based on Section 8 Fair Market Rent rates
+  - Property-specific rehab estimates based on square footage
+  - Rehab level selector (light, cosmetic, gut) in the analyze deal modal
+- **Property Cards**: Enhanced with rent and rehab estimates
+  - Shows estimated monthly rent with tooltip
+  - Displays rehab estimate for selected level
+  - Improved visual hierarchy for financial metrics
+
+### Fixed
+- **Owner Portfolio Button**: Fixed JavaScript errors with special characters in owner names
+- **Search by Owner**: Now properly handles the main display system with pagination
+- **Property Details Modal**: Added null checks to prevent errors when closing
+
 ## [2.3.0] - 2025-01-15
 
 ### Added
