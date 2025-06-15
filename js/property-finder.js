@@ -724,6 +724,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             console.groupEnd();
             
+            // Initialize sales API service if available
+            if (window.SalesAPIService) {
+                window.salesAPIService = new window.SalesAPIService();
+                const salesSuccess = await window.salesAPIService.init(
+                    window.APP_CONFIG.SUPABASE_URL,
+                    window.APP_CONFIG.SUPABASE_ANON_KEY
+                );
+                if (salesSuccess) {
+                    console.log('Sales API service initialized successfully');
+                } else {
+                    console.error('Failed to initialize sales API service');
+                }
+            }
+            
             // Add a test lookup for 2404 Pennsylvania
             console.group('Testing 2404 Pennsylvania lookup');
             try {
@@ -1264,9 +1278,16 @@ async function searchByOwner(ownerName, openInNewTab = false) {
     showLoading();
     
     try {
+        // Fetch properties owned by this person
         const properties = await window.parcelAPIService.searchByOwner(ownerName);
         
-        if (properties.length > 0) {
+        // Also fetch sales transactions if sales API is available
+        let transactions = [];
+        if (window.salesAPIService && window.salesAPIService.isReady()) {
+            transactions = await window.salesAPIService.getAllTransactionsByPerson(ownerName);
+        }
+        
+        if (properties.length > 0 || transactions.length > 0) {
             // Convert parcel data to property format
             const formattedProperties = properties.map(parcel => ({
                 address: parcel.address,
@@ -1288,10 +1309,19 @@ async function searchByOwner(ownerName, openInNewTab = false) {
             currentPage = 1;
             allSearchResults = formattedProperties;
             
+            // Display results with owner name in title
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `<h3 style="width: 100%; margin-bottom: 20px; text-align: center;">Portfolio for ${ownerName}</h3>`;
+            
             // Display using pagination system
-            displayResultsWithPagination();
+            await displayResultsWithPagination();
+            
+            // Add transactions section if we have any
+            if (transactions.length > 0) {
+                displayOwnerTransactions(transactions, ownerName);
+            }
         } else {
-            alert('No properties found for this owner');
+            alert('No properties or transactions found for this owner');
             hideLoading();
         }
     } catch (error) {
@@ -1299,6 +1329,107 @@ async function searchByOwner(ownerName, openInNewTab = false) {
         alert('Error searching for properties');
         hideLoading();
     }
+}
+
+// Display owner's transaction history
+function displayOwnerTransactions(transactions, ownerName) {
+    const resultsSection = document.getElementById('resultsSection');
+    
+    // Create transactions section
+    const transactionsDiv = document.createElement('div');
+    transactionsDiv.style.cssText = 'width: 100%; margin-top: 40px; clear: both;';
+    transactionsDiv.innerHTML = `
+        <h3 style="margin-bottom: 20px; text-align: center; color: var(--primary-black);">
+            Previous Transactions (${transactions.length} found)
+        </h3>
+        <div class="transactions-container" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));">
+    `;
+    
+    const transactionsContainer = transactionsDiv.querySelector('.transactions-container');
+    
+    transactions.forEach(transaction => {
+        const transactionCard = document.createElement('div');
+        transactionCard.className = 'transaction-card';
+        transactionCard.style.cssText = `
+            background: var(--pure-white);
+            border: 1px solid var(--light-gray);
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        `;
+        
+        // Format sale date
+        const saleDate = new Date(transaction.sale_date);
+        const formattedDate = saleDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+        
+        // Determine role badge color
+        const roleBadgeColor = transaction.role === 'buyer' ? '#28a745' : '#dc3545';
+        const roleText = transaction.role === 'buyer' ? 'Purchased' : 'Sold';
+        
+        transactionCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 1rem; color: var(--primary-black);">
+                    <a href="https://www.zillow.com/homes/${encodeURIComponent(transaction.property_address)}_rb/" 
+                       target="_blank"
+                       style="color: inherit; text-decoration: none;"
+                       title="View on Zillow">
+                        ${transaction.property_address}
+                        <span style="font-size: 0.75rem; margin-left: 4px; opacity: 0.7;">↗</span>
+                    </a>
+                </h4>
+                <span style="background-color: ${roleBadgeColor}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                    ${roleText}
+                </span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.875rem;">
+                <div>
+                    <span style="color: var(--medium-gray);">Sale Date:</span><br>
+                    <strong>${formattedDate}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--medium-gray);">Sale Price:</span><br>
+                    <strong style="color: var(--accent-green);">$${transaction.sale_price.toLocaleString()}</strong>
+                </div>
+                ${transaction.role === 'buyer' ? `
+                <div>
+                    <span style="color: var(--medium-gray);">Sold By:</span><br>
+                    <strong>${transaction.seller_name || 'Unknown'}</strong>
+                </div>
+                ` : `
+                <div>
+                    <span style="color: var(--medium-gray);">Sold To:</span><br>
+                    <strong>${transaction.buyer_name || 'Unknown'}</strong>
+                </div>
+                `}
+                <div>
+                    <span style="color: var(--medium-gray);">Document Type:</span><br>
+                    <strong>${transaction.sale_type || 'Standard Sale'}</strong>
+                </div>
+            </div>
+        `;
+        
+        // Add hover effect
+        transactionCard.onmouseenter = function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+        };
+        
+        transactionCard.onmouseleave = function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        };
+        
+        transactionsContainer.appendChild(transactionCard);
+    });
+    
+    transactionsDiv.innerHTML += '</div>';
+    resultsSection.appendChild(transactionsDiv);
 }
 
 // Search for properties by mailing address

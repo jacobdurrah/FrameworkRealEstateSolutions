@@ -113,6 +113,78 @@ class SalesAPIService {
         }
     }
 
+    // Get all transactions where person was buyer or seller
+    async getAllTransactionsByPerson(personName) {
+        if (!this.isReady() || !personName) return [];
+
+        const normalizedName = personName.trim().toUpperCase();
+        const cacheKey = `transactions:person:${normalizedName}`;
+        
+        // Check cache
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            // Get transactions where person was seller
+            const { data: sellerData, error: sellerError } = await this.client
+                .from('sales_transactions')
+                .select('*')
+                .ilike('seller_name', `%${normalizedName}%`)
+                .order('sale_date', { ascending: false });
+
+            // Get transactions where person was buyer
+            const { data: buyerData, error: buyerError } = await this.client
+                .from('sales_transactions')
+                .select('*')
+                .ilike('buyer_name', `%${normalizedName}%`)
+                .order('sale_date', { ascending: false });
+
+            if (sellerError) {
+                console.error('Error fetching seller transactions:', sellerError);
+            }
+            if (buyerError) {
+                console.error('Error fetching buyer transactions:', buyerError);
+            }
+
+            // Combine and deduplicate results
+            const allTransactions = [];
+            const seen = new Set();
+
+            // Add seller transactions
+            if (sellerData) {
+                sellerData.forEach(transaction => {
+                    transaction.role = 'seller';
+                    const key = `${transaction.property_address}-${transaction.sale_date}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        allTransactions.push(transaction);
+                    }
+                });
+            }
+
+            // Add buyer transactions
+            if (buyerData) {
+                buyerData.forEach(transaction => {
+                    transaction.role = 'buyer';
+                    const key = `${transaction.property_address}-${transaction.sale_date}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        allTransactions.push(transaction);
+                    }
+                });
+            }
+
+            // Sort by date descending
+            allTransactions.sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date));
+
+            this.storeInCache(cacheKey, allTransactions);
+            return allTransactions;
+        } catch (error) {
+            console.error('Error in getAllTransactionsByPerson:', error);
+            return [];
+        }
+    }
+
     // Get owner statistics
     async getOwnerStatistics(ownerName) {
         if (!this.isReady() || !ownerName) return null;
