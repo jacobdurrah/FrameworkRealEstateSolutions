@@ -1449,6 +1449,12 @@ function displayOwnerTransactions(transactions, ownerName) {
     const transactionsContainer = transactionsDiv.querySelector('.transactions-container');
     
     transactions.forEach((transaction, index) => {
+        // Debug log to see what fields are available
+        if (index === 0) {
+            console.log('Transaction data fields:', Object.keys(transaction));
+            console.log('First transaction:', transaction);
+        }
+        
         const transactionCard = document.createElement('div');
         transactionCard.className = 'transaction-card';
         transactionCard.style.cssText = `
@@ -1533,10 +1539,10 @@ function displayOwnerTransactions(transactions, ownerName) {
             <div id="${detailsId}" style="display: none; border-top: 1px solid var(--light-gray); padding-top: 15px; margin-top: 10px;">
                 <h5 style="margin: 0 0 10px 0; color: var(--primary-black); font-size: 1rem;">Complete Transaction Details</h5>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.813rem;">
-                    ${transaction.sale_id ? `
+                    ${(transaction.sale_id || transaction.sales_id) ? `
                     <div>
                         <span style="color: var(--medium-gray);">Sales ID:</span><br>
-                        <strong>${transaction.sale_id}</strong>
+                        <strong>${transaction.sale_id || transaction.sales_id}</strong>
                     </div>
                     ` : ''}
                     ${transaction.parcel_number ? `
@@ -1615,6 +1621,18 @@ function displayOwnerTransactions(transactions, ownerName) {
                     <div>
                         <span style="color: var(--medium-gray);">Coordinates:</span><br>
                         <strong>X: ${transaction.x}, Y: ${transaction.y}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.sale_terms ? `
+                    <div style="grid-column: 1 / -1;">
+                        <span style="color: var(--medium-gray);">Additional Sale Terms:</span><br>
+                        <strong>${transaction.sale_terms}</strong>
+                    </div>
+                    ` : ''}
+                    ${transaction.document_type ? `
+                    <div>
+                        <span style="color: var(--medium-gray);">Document Type:</span><br>
+                        <strong>${transaction.document_type}</strong>
                     </div>
                     ` : ''}
                 </div>
