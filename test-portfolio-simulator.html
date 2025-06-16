@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Simulator Test</title>
+</head>
+<body>
+    <h1>Testing Portfolio Simulator Integration</h1>
+    <div id="test-results"></div>
+
+    <script>
+        const tests = [];
+        const results = document.getElementById('test-results');
+
+        // Test 1: Check if portfolio simulator page exists
+        tests.push({
+            name: 'Portfolio Simulator Page',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                return response.ok;
+            }
+        });
+
+        // Test 2: Check if all required scripts exist
+        const scripts = [
+            'js/config.js',
+            'js/parcel-api.js',
+            'js/sales-api.js',
+            'js/simulation-api.js',
+            'js/financial-calculator.js',
+            'js/property-selector.js',
+            'js/portfolio-simulator.js'
+        ];
+
+        scripts.forEach(script => {
+            tests.push({
+                name: `Script: ${script}`,
+                test: async () => {
+                    const response = await fetch(`/${script}`);
+                    return response.ok;
+                }
+            });
+        });
+
+        // Test 3: Check navigation links
+        tests.push({
+            name: 'Navigation Links in Index',
+            test: async () => {
+                const response = await fetch('/index.html');
+                const text = await response.text();
+                return text.includes('portfolio-simulator.html');
+            }
+        });
+
+        tests.push({
+            name: 'Navigation Links in Property Finder',
+            test: async () => {
+                const response = await fetch('/property-finder.html');
+                const text = await response.text();
+                return text.includes('portfolio-simulator.html');
+            }
+        });
+
+        // Run all tests
+        async function runTests() {
+            results.innerHTML = '<h2>Test Results:</h2>';
+            
+            for (const test of tests) {
+                try {
+                    const passed = await test.test();
+                    results.innerHTML += `
+                        <div style="padding: 5px; color: ${passed ? 'green' : 'red'}">
+                            ${passed ? '✓' : '✗'} ${test.name}
+                        </div>
+                    `;
+                } catch (error) {
+                    results.innerHTML += `
+                        <div style="padding: 5px; color: red">
+                            ✗ ${test.name} - Error: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+
+            results.innerHTML += `
+                <hr>
+                <p><strong>Portfolio Simulator is ready to test at:</strong></p>
+                <a href="/portfolio-simulator.html" target="_blank" style="font-size: 18px;">
+                    Open Portfolio Simulator
+                </a>
+            `;
+        }
+
+        runTests();
+    </script>
+</body>
+</html>
