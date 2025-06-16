@@ -67,7 +67,10 @@ async function startNewSimulation() {
     
     // Update UI
     updateSimulationUI();
-    await runSimulation();
+    
+    // Subscribe components after initial setup
+    subscribeUIComponents();
+    
     await loadSavedSimulations();
 }
 
@@ -282,37 +285,12 @@ async function deletePhase(phaseId) {
     await loadSimulation(currentSimulation.id);
 }
 
-// Run the simulation
+// Run the simulation - simplified to just trigger state recalculation
 async function runSimulation() {
     if (!currentSimulation) return;
     
-    // Run financial calculations
-    currentProjections = financialCalc.simulatePortfolio(currentSimulation, currentPhases);
-    
-    // Save projections if we have them
-    if (currentProjections.length > 0) {
-        for (const projection of currentProjections) {
-            // Include extra fields in properties_data until schema is updated
-            const projectionToSave = {
-                ...projection,
-                properties_data: {
-                    ...projection.properties_data,
-                    accumulated_rent: projection.accumulated_rent || 0,
-                    property_breakdown: projection.property_breakdown || {}
-                }
-            };
-            await simulationAPI.saveProjection(
-                currentSimulation.id,
-                projection.month_number,
-                projectionToSave
-            );
-        }
-    }
-    
-    updateMetrics();
-    updateTimelineView();
-    updateProgressBar();
-    updatePortfolioSummary();
+    // State manager will handle all calculations
+    stateManager.recalculateState();
 }
 
 // Update metrics display
@@ -340,33 +318,32 @@ function updateMetrics() {
 
 // Update metrics with growth percentages
 function updateMetricsWithGrowth() {
-    if (!currentProjections || currentProjections.length === 0) return;
+    const state = stateManager.getCurrentState();
+    if (!state || !state.summary) return;
     
-    const lastProjection = currentProjections[currentProjections.length - 1];
-    const firstProjection = currentProjections[0] || { net_cashflow: 0, total_equity: currentSimulation.initial_capital };
+    const summary = state.summary;
+    const initialCapital = currentSimulation?.initial_capital || 0;
     
     // Update income metric with growth
     const incomeCard = document.querySelector('#metricsGrid > .metric-card:nth-child(1)');
-    if (incomeCard) {
-        const incomeGrowth = firstProjection.net_cashflow > 0 
-            ? ((lastProjection.net_cashflow - firstProjection.net_cashflow) / firstProjection.net_cashflow * 100).toFixed(1)
-            : lastProjection.net_cashflow > 0 ? '∞' : '0';
+    if (incomeCard && summary.monthlyIncome > 0) {
+        const incomeGrowth = summary.monthlyIncome > 0 ? '∞' : '0';
         
         incomeCard.innerHTML = `
             <div class="metric-label">Current Monthly Income</div>
-            <div class="metric-value">${financialCalc.formatCurrency(lastProjection.net_cashflow)}</div>
-            ${incomeGrowth !== '0' ? `<div class="metric-change positive">↑ ${incomeGrowth}%</div>` : ''}
+            <div class="metric-value">${financialCalc.formatCurrency(summary.monthlyIncome)}</div>
+            ${summary.monthlyIncome > 0 ? `<div class="metric-change positive">↑ Active</div>` : ''}
         `;
     }
     
     // Update equity metric with growth
     const equityCard = document.querySelector('#metricsGrid > .metric-card:nth-child(3)');
-    if (equityCard) {
-        const equityGrowth = ((lastProjection.total_equity - currentSimulation.initial_capital) / currentSimulation.initial_capital * 100).toFixed(1);
+    if (equityCard && initialCapital > 0) {
+        const equityGrowth = ((summary.totalEquity - initialCapital) / initialCapital * 100).toFixed(1);
         
         equityCard.innerHTML = `
             <div class="metric-label">Total Equity</div>
-            <div class="metric-value">${financialCalc.formatCurrency(lastProjection.total_equity)}</div>
+            <div class="metric-value">${financialCalc.formatCurrency(summary.totalEquity)}</div>
             ${equityGrowth !== '0.0' ? `<div class="metric-change ${equityGrowth >= 0 ? 'positive' : 'negative'}">
                 ${equityGrowth >= 0 ? '↑' : '↓'} ${Math.abs(equityGrowth)}%
             </div>` : ''}
@@ -377,40 +354,43 @@ function updateMetricsWithGrowth() {
 // Portfolio summary section
 function updatePortfolioSummary() {
     const container = document.getElementById('portfolioDetails');
+    const state = stateManager.getCurrentState();
     
-    if (!currentSimulation || currentProjections.length === 0) {
+    if (!state || !state.summary) {
         container.innerHTML = '<p style="color: var(--text-secondary);">Add properties to see your portfolio summary.</p>';
         return;
     }
     
-    const lastProjection = currentProjections[currentProjections.length - 1];
+    const summary = state.summary;
     const timeToGoal = estimateTimeToGoal();
+    const portfolioValue = summary.totalPropertyValue || 0;
+    const debtToEquity = summary.totalEquity > 0 ? (summary.totalDebt / summary.totalEquity).toFixed(2) : '0';
     
     container.innerHTML = `
         <div class="summary-grid">
             <div class="summary-item">
                 <h4>Time to Goal</h4>
-                <p class="summary-value">${timeToGoal} months</p>
+                <p class="summary-value">${timeToGoal}</p>
             </div>
             <div class="summary-item">
                 <h4>Total Properties</h4>
-                <p class="summary-value">${lastProjection.total_properties}</p>
+                <p class="summary-value">${summary.totalProperties}</p>
             </div>
             <div class="summary-item">
                 <h4>Portfolio Value</h4>
-                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_equity + lastProjection.total_debt)}</p>
+                <p class="summary-value">${financialCalc.formatCurrency(portfolioValue)}</p>
             </div>
             <div class="summary-item">
                 <h4>Total Debt</h4>
-                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_debt)}</p>
+                <p class="summary-value">${financialCalc.formatCurrency(summary.totalDebt)}</p>
             </div>
             <div class="summary-item">
                 <h4>Net Worth</h4>
-                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_equity)}</p>
+                <p class="summary-value">${financialCalc.formatCurrency(summary.totalEquity)}</p>
             </div>
             <div class="summary-item">
                 <h4>Debt-to-Equity</h4>
-                <p class="summary-value">${(lastProjection.total_debt / lastProjection.total_equity).toFixed(2)}:1</p>
+                <p class="summary-value">${debtToEquity}:1</p>
             </div>
         </div>
     `;
@@ -418,26 +398,31 @@ function updatePortfolioSummary() {
 
 // Estimate time to reach goal
 function estimateTimeToGoal() {
-    if (currentProjections.length < 2) return 'N/A';
+    const state = stateManager.getCurrentState();
+    if (!state || !currentSimulation) return 'N/A';
     
     const targetIncome = currentSimulation.target_monthly_income;
     
     // Find when we reach the target
-    for (let i = 0; i < currentProjections.length; i++) {
-        if (currentProjections[i].net_cashflow >= targetIncome) {
-            return i;
+    for (let month = 0; month < state.months.length; month++) {
+        if (state.months[month] && state.months[month].monthlyIncome >= targetIncome) {
+            return `${month} months`;
         }
     }
     
-    // If not reached, estimate based on growth rate
-    const lastProjection = currentProjections[currentProjections.length - 1];
-    const firstProjection = currentProjections[Math.max(0, currentProjections.length - 12)];
-    const monthlyGrowth = (lastProjection.net_cashflow - firstProjection.net_cashflow) / 12;
+    // If not reached yet
+    const summary = state.summary;
+    if (summary && summary.monthlyIncome > 0) {
+        const remaining = targetIncome - summary.monthlyIncome;
+        const monthlyGrowth = summary.monthlyIncome / state.months.length;
+        
+        if (monthlyGrowth > 0) {
+            const additionalMonths = Math.ceil(remaining / monthlyGrowth);
+            return `~${state.months.length + additionalMonths} months`;
+        }
+    }
     
-    if (monthlyGrowth <= 0) return '>100';
-    
-    const monthsNeeded = (targetIncome - lastProjection.net_cashflow) / monthlyGrowth;
-    return Math.ceil(currentSimulation.time_horizon_months + monthsNeeded);
+    return '>100 months';
 }
 
 // Show property search modal
@@ -1485,51 +1470,49 @@ function updateTimelineView() {
         }
     });
     
-    // Add timeline cards for each phase
-    let lastMonth = 0;
-    const sortedPhases = [...currentPhases].sort((a, b) => a.month_number - b.month_number);
+    // Get all transactions from state manager
+    const transactions = stateManager.transactions || [];
     
-    sortedPhases.forEach((phase, index) => {
-        // Add time snapshots between phases if needed
-        if (phase.month_number > lastMonth + 6) {
-            addTimeSnapshotCard(lastMonth + 6);
+    // Group transactions by month
+    const transactionsByMonth = {};
+    transactions.forEach(txn => {
+        if (!transactionsByMonth[txn.month]) {
+            transactionsByMonth[txn.month] = [];
         }
-        
-        // Add appropriate card based on action type
-        if (phase.action_type === 'buy') {
-            addAcquisitionCard(phase);
-        } else if (phase.action_type === 'sell') {
-            addSaleCard(phase);
-        } else if (phase.action_type === 'loan') {
-            addLoanCard(phase);
-        } else if (phase.action_type === 'wait') {
-            addWaitCard(phase);
-        } else if (phase.action_type === 'refinance') {
-            addRefinanceCard(phase);
-        } else if (phase.action_type === 'snapshot') {
-            // Skip explicit snapshots as we add automatic ones
-        }
-        
-        lastMonth = phase.month_number;
+        transactionsByMonth[txn.month].push(txn);
     });
     
-    // Add final add button
-    const addBtn = document.createElement('button');
-    addBtn.className = 'timeline-add-btn';
-    addBtn.onclick = () => showAddTimelineModal(lastMonth + 1);
-    addBtn.innerHTML = '<i class="fas fa-plus"></i>';
-    track.appendChild(addBtn);
+    // Add cards for each month with transactions
+    Object.keys(transactionsByMonth).sort((a, b) => a - b).forEach(month => {
+        const monthNum = parseInt(month);
+        const monthTransactions = transactionsByMonth[month];
+        
+        monthTransactions.forEach(txn => {
+            if (txn.type === 'PROPERTY_PURCHASE') {
+                const card = createPropertyCard(monthNum, txn);
+                track.appendChild(card);
+            } else if (txn.type === 'PROPERTY_SALE') {
+                const card = createSaleCard(monthNum, txn);
+                track.appendChild(card);
+            }
+        });
+        
+        // Add "add" button after each transaction
+        const addBtn = document.createElement('button');
+        addBtn.className = 'timeline-add-btn';
+        addBtn.onclick = () => showAddTimelineModal(monthNum + 1);
+        addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+        track.appendChild(addBtn);
+    });
     
-    // Add a final snapshot if we have projections
-    if (currentProjections.length > 0) {
-        const finalMonth = currentSimulation.time_horizon_months;
-        if (lastMonth < finalMonth) {
-            addTimeSnapshotCard(finalMonth);
-        }
+    // Add final add button if no transactions
+    if (transactions.length === 0) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'timeline-add-btn';
+        addBtn.onclick = () => showAddTimelineModal(1);
+        addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+        track.appendChild(addBtn);
     }
-    
-    // Ensure horizontal scrolling works
-    track.parentElement.scrollLeft = track.scrollWidth;
 }
 
 // Add acquisition card to timeline
@@ -1630,6 +1613,81 @@ function createTimelineCard(month, type, data) {
             </div>
         `;
     }
+    
+    return card;
+}
+
+// Create property purchase card
+function createPropertyCard(month, transaction) {
+    const card = document.createElement('div');
+    card.className = 'timeline-card acquisition-card';
+    card.setAttribute('data-month', month);
+    
+    const data = transaction.data;
+    const isAllCash = data.financingType === 'CASH';
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">🏠</span>
+            <h3>Month ${month}</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${data.address}</div>
+            <div class="metric-row">
+                <span class="metric-text">Price: <strong>${financialCalc.formatCurrency(data.purchasePrice)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Cash Needed: <strong>${financialCalc.formatCurrency(data.totalCashNeeded)}</strong></span>
+            </div>
+            ${isAllCash ? `
+            <div class="metric-row">
+                <span class="metric-text">Financing: <strong>All Cash</strong></span>
+            </div>
+            ` : `
+            <div class="metric-row">
+                <span class="metric-text">Loan: <strong>${financialCalc.formatCurrency(data.loanDetails?.loanAmount || 0)}</strong></span>
+            </div>
+            `}
+            <div class="metric-row">
+                <span class="metric-text">Rent: <strong>${financialCalc.formatCurrency(data.monthlyRent)}/mo</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Cash Flow: <strong style="color: ${data.cashFlowAnalysis?.netCashFlow >= 0 ? 'var(--accent-green)' : '#f44336'}">${financialCalc.formatCurrency(data.cashFlowAnalysis?.netCashFlow || 0)}/mo</strong></span>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Create property sale card
+function createSaleCard(month, transaction) {
+    const card = document.createElement('div');
+    card.className = 'timeline-card sale-card';
+    card.setAttribute('data-month', month);
+    
+    const data = transaction.data;
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">💰</span>
+            <h3>Month ${month} - Sale</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${data.address}</div>
+            <div class="metric-row">
+                <span class="metric-text">Sale Price: <strong>${financialCalc.formatCurrency(data.salePrice)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Net Proceeds: <strong>${financialCalc.formatCurrency(data.netProceeds)}</strong></span>
+            </div>
+            ${data.capitalGains > 0 ? `
+            <div class="metric-row">
+                <span class="metric-text">Profit: <strong style="color: var(--accent-green)">${financialCalc.formatCurrency(data.capitalGains)}</strong></span>
+            </div>
+            ` : ''}
+        </div>
+    `;
     
     return card;
 }
@@ -1896,11 +1954,11 @@ async function refreshAllUI() {
 
 // Update cash reserves display (piggy bank)
 function updateCashReservesDisplay() {
-    if (!currentProjections || currentProjections.length === 0) return;
+    const state = stateManager.getCurrentState();
+    if (!state || !state.summary) return;
     
-    const lastProjection = currentProjections[currentProjections.length - 1];
-    const cashReserves = lastProjection.cash_reserves || 0;
-    const initialCapital = currentSimulation.initial_capital || 0;
+    const cashReserves = state.summary.cashReserves || 0;
+    const initialCapital = currentSimulation?.initial_capital || 0;
     const cashGrowthPercent = initialCapital > 0 ? ((cashReserves - initialCapital) / initialCapital * 100).toFixed(1) : 0;
     
     // Add or update cash reserves card in metrics grid
@@ -1915,7 +1973,7 @@ function updateCashReservesDisplay() {
     
     cashCard.innerHTML = `
         <div class="metric-label">
-            <span style="font-size: 1.5rem; margin-right: 0.5rem;">🐷</span>
+            <span style="font-size: 1.2rem; margin-right: 0.25rem;">🐷</span>
             Cash Reserves
         </div>
         <div class="metric-value">${financialCalc.formatCurrency(cashReserves)}</div>
@@ -1927,13 +1985,11 @@ function updateCashReservesDisplay() {
 
 // Update loan summary display
 function updateLoanSummary() {
-    const loanPhases = currentPhases.filter(p => p.action_type === 'loan');
-    const propertyLoans = currentPhases.filter(p => p.action_type === 'buy' && p.loan_amount > 0);
-    const totalLoans = loanPhases.length + propertyLoans.length;
+    const state = stateManager.getCurrentState();
+    if (!state || !state.summary) return;
     
-    // Calculate total debt from last projection
-    const lastProjection = currentProjections[currentProjections.length - 1];
-    const totalDebt = lastProjection?.total_debt || 0;
+    const totalDebt = state.summary.totalDebt || 0;
+    const totalLoans = state.summary.loans?.length || 0;
     
     // Add or update loan summary card
     let loanCard = document.getElementById('loanSummaryCard');
@@ -1947,7 +2003,7 @@ function updateLoanSummary() {
     
     loanCard.innerHTML = `
         <div class="metric-label">
-            <span style="font-size: 1.5rem; margin-right: 0.5rem;">💳</span>
+            <span style="font-size: 1.2rem; margin-right: 0.25rem;">💳</span>
             Active Loans
         </div>
         <div class="metric-value">${totalLoans}</div>
@@ -2050,21 +2106,49 @@ function addMilestoneMarker(milestone) {
 function showTimeSnapshotForm() {
     const month = window.currentTimelineMonth || 6;
     
-    // Add a snapshot phase
-    simulationAPI.addPhase(currentSimulation.id, {
-        phaseNumber: currentPhases.length + 1,
-        monthNumber: month,
-        actionType: 'snapshot',
-        propertyAddress: `Month ${month} Snapshot`,
-        purchasePrice: 0,
-        monthlyRentalIncome: 0,
-        notes: 'Portfolio checkpoint'
-    }).then(result => {
-        if (!result.error) {
-            closeTimelineModal();
-            loadSimulation(currentSimulation.id);
+    // Get current state for this month
+    const state = stateManager.getMonthState(month);
+    if (!state) {
+        alert('No data available for this month');
+        return;
+    }
+    
+    // Add snapshot card to timeline
+    const track = document.getElementById('timelineTrack');
+    const card = createTimelineCard(month, 'snapshot', state);
+    
+    // Find correct position to insert
+    const cards = track.querySelectorAll('.timeline-card');
+    let insertBefore = null;
+    
+    for (const existingCard of cards) {
+        const cardMonth = parseInt(existingCard.getAttribute('data-month'));
+        if (cardMonth > month) {
+            insertBefore = existingCard;
+            break;
+        }
+    }
+    
+    if (insertBefore) {
+        track.insertBefore(card, insertBefore);
+    } else {
+        // Insert before last add button
+        const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+        if (lastBtn) {
+            track.insertBefore(card, lastBtn);
+        } else {
+            track.appendChild(card);
+        }
+    }
+    
+    // Subscribe card to state updates
+    stateManager.subscribe(`timeline-card-${month}`, (newState) => {
+        if (newState && newState.months[month]) {
+            updateTimelineCard(card, month, newState.months[month]);
         }
     });
+    
+    closeTimelineModal();
 }
 
 // Show sell property form
@@ -2138,6 +2222,33 @@ async function addPropertySale() {
         return;
     }
     
+    // Find the property being sold
+    const state = stateManager.getCurrentState();
+    const property = state?.months[saleMonth - 1]?.properties?.find(p => p.address === address);
+    
+    if (!property) {
+        alert('Property not found');
+        return;
+    }
+    
+    // Create sale transaction
+    const transaction = {
+        id: `txn_${Date.now()}_sale`,
+        type: 'PROPERTY_SALE',
+        month: saleMonth,
+        propertyId: property.id,
+        data: {
+            address,
+            salePrice,
+            netProceeds: salePrice * 0.94, // 6% selling costs
+            capitalGains: salePrice - property.purchasePrice
+        }
+    };
+    
+    // Add to state manager
+    stateManager.addTransaction(transaction);
+    
+    // Save to database
     const result = await simulationAPI.addPhase(currentSimulation.id, {
         phaseNumber: currentPhases.length + 1,
         monthNumber: saleMonth,
@@ -2146,7 +2257,7 @@ async function addPropertySale() {
         salePrice: salePrice,
         purchasePrice: 0,
         monthlyRentalIncome: 0,
-        notes: 'Property sale'
+        notes: JSON.stringify(transaction.data)
     });
     
     if (result.error) {
@@ -2155,8 +2266,6 @@ async function addPropertySale() {
     }
     
     closePropertyModal();
-    await loadSimulation(currentSimulation.id);
-    await refreshAllUI();
 }
 
 // Show loan form

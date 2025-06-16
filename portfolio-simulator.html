@@ -173,21 +173,42 @@
 
         .metric-card {
             background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
+            border-radius: 6px;
+            padding: 1rem;
             border: 1px solid var(--border-color);
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .metric-value {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: var(--primary-color);
-            margin: 0.5rem 0;
+            margin: 0.25rem 0;
+            line-height: 1.2;
         }
 
         .metric-label {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            line-height: 1.2;
+        }
+        
+        @media (max-width: 768px) {
+            .metric-card {
+                padding: 0.75rem;
+                min-height: 70px;
+            }
+            
+            .metric-value {
+                font-size: 1.25rem;
+            }
+            
+            .metric-label {
+                font-size: 0.75rem;
+            }
         }
 
         .timeline-container {
@@ -276,9 +297,22 @@
 
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (min-width: 1200px) {
+            .metrics-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
         }
 
         .saved-simulations {
@@ -354,42 +388,85 @@
             margin: 0;
         }
 
-        /* Timeline Styles */
-        .timeline-scroll-container {
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding: 2rem 1rem;
-            margin: 1rem -1rem;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+        /* Timeline Styles - Desktop (Horizontal) */
+        @media (min-width: 769px) {
+            .timeline-scroll-container {
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 2rem 1rem;
+                margin: 1rem -1rem;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .timeline-track {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 0 1rem;
+                min-width: fit-content;
+                position: relative;
+            }
+            
+            /* Custom scrollbar for timeline */
+            .timeline-scroll-container::-webkit-scrollbar {
+                height: 8px;
+            }
+            
+            .timeline-scroll-container::-webkit-scrollbar-track {
+                background: var(--light-gray);
+                border-radius: 4px;
+            }
+            
+            .timeline-scroll-container::-webkit-scrollbar-thumb {
+                background: var(--dark-gray);
+                border-radius: 4px;
+            }
+            
+            .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: var(--primary-color);
+            }
         }
         
-        /* Custom scrollbar for timeline */
-        .timeline-scroll-container::-webkit-scrollbar {
-            height: 8px;
-        }
-        
-        .timeline-scroll-container::-webkit-scrollbar-track {
-            background: var(--light-gray);
-            border-radius: 4px;
-        }
-        
-        .timeline-scroll-container::-webkit-scrollbar-thumb {
-            background: var(--dark-gray);
-            border-radius: 4px;
-        }
-        
-        .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-color);
-        }
-
-        .timeline-track {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0 1rem;
-            min-width: fit-content;
-            position: relative;
+        /* Timeline Styles - Mobile (Vertical) */
+        @media (max-width: 768px) {
+            .timeline-scroll-container {
+                overflow-y: auto;
+                overflow-x: hidden;
+                max-height: 60vh;
+                padding: 1rem;
+                margin: 0;
+            }
+            
+            .timeline-track {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                padding: 0;
+                position: relative;
+            }
+            
+            .timeline-track::before {
+                content: '';
+                position: absolute;
+                left: 20px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: var(--border-color);
+                z-index: 0;
+            }
+            
+            .timeline-card {
+                margin-left: 40px;
+                width: calc(100% - 40px);
+                max-width: none;
+            }
+            
+            .timeline-add-btn {
+                margin-left: 0;
+                align-self: center;
+            }
         }
 
         .timeline-track::before {
