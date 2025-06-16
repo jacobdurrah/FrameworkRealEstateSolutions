@@ -275,6 +275,42 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Tabs */
+        .modal-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .simulator-container {
@@ -288,6 +324,10 @@
             .simulation-header {
                 flex-direction: column;
                 gap: 1rem;
+            }
+
+            .modal-content {
+                padding: 1rem;
             }
         }
     </style>
@@ -439,6 +479,7 @@
     <script src="js/config.js"></script>
     <script src="js/simulation-api.js"></script>
     <script src="js/financial-calculator.js"></script>
+    <script src="js/property-selector.js"></script>
     <script src="js/portfolio-simulator.js"></script>
 </body>
 </html>

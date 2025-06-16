@@ -372,7 +372,7 @@ function estimateTimeToGoal() {
 }
 
 // Show property search modal
-function showPropertySearch() {
+async function showPropertySearch() {
     if (!currentSimulation) {
         alert('Please start a simulation first');
         return;
@@ -381,46 +381,89 @@ function showPropertySearch() {
     const modal = document.getElementById('propertyModal');
     const content = document.getElementById('propertyModalContent');
     
-    // Simple property input form for now
+    // Show loading
+    content.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading properties...</div>';
+    modal.classList.add('active');
+    
+    // Load properties
+    await window.propertySelector.loadProperties();
+    
+    // Create tabbed interface
     content.innerHTML = `
-        <div class="goal-inputs">
-            <div class="input-group">
-                <label>Property Address</label>
-                <input type="text" id="newPropertyAddress" placeholder="123 Main St" />
-            </div>
-            
-            <div class="input-group">
-                <label>Purchase Price</label>
-                <input type="number" id="newPurchasePrice" placeholder="50000" />
-            </div>
-            
-            <div class="input-group">
-                <label>Rehab Cost</label>
-                <input type="number" id="newRehabCost" placeholder="10000" />
-            </div>
-            
-            <div class="input-group">
-                <label>Monthly Rent</label>
-                <input type="number" id="newMonthlyRent" placeholder="1200" />
-            </div>
-            
-            <div class="input-group">
-                <label>Down Payment %</label>
-                <input type="number" id="newDownPayment" value="20" />
-            </div>
-            
-            <div class="input-group">
-                <label>Month to Purchase</label>
-                <input type="number" id="newPurchaseMonth" value="0" min="0" max="${currentSimulation.time_horizon_months}" />
-            </div>
-            
-            <button class="btn btn-primary" onclick="addPropertyToSimulation()">
-                Add to Simulation
+        <div class="modal-tabs">
+            <button class="tab-btn active" onclick="switchTab('search')">
+                <i class="fas fa-search"></i> Search Properties
             </button>
+            <button class="tab-btn" onclick="switchTab('manual')">
+                <i class="fas fa-edit"></i> Manual Entry
+            </button>
+        </div>
+        
+        <div id="searchTab" class="tab-content active">
+            <!-- Property selector will be rendered here -->
+        </div>
+        
+        <div id="manualTab" class="tab-content" style="display: none;">
+            <div class="goal-inputs">
+                <div class="input-group">
+                    <label>Property Address</label>
+                    <input type="text" id="newPropertyAddress" placeholder="123 Main St" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Purchase Price</label>
+                    <input type="number" id="newPurchasePrice" placeholder="50000" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Rehab Cost</label>
+                    <input type="number" id="newRehabCost" placeholder="10000" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Monthly Rent</label>
+                    <input type="number" id="newMonthlyRent" placeholder="1200" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Down Payment %</label>
+                    <input type="number" id="newDownPayment" value="20" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Month to Purchase</label>
+                    <input type="number" id="newPurchaseMonth" value="0" min="0" max="${currentSimulation.time_horizon_months}" />
+                </div>
+                
+                <button class="btn btn-primary" onclick="addPropertyToSimulation()">
+                    Add to Simulation
+                </button>
+            </div>
         </div>
     `;
     
-    modal.classList.add('active');
+    // Render property selector
+    window.propertySelector.renderSelector('searchTab');
+}
+
+// Switch between tabs
+function switchTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    if (tab === 'search') {
+        document.getElementById('searchTab').style.display = 'block';
+    } else {
+        document.getElementById('manualTab').style.display = 'block';
+    }
 }
 
 // Close property modal

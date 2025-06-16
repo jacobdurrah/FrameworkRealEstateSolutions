@@ -1,0 +1,455 @@
+// Property Selector Component for Portfolio Simulator
+// Integrates with existing property finder data
+
+class PropertySelector {
+    constructor() {
+        this.properties = [];
+        this.filteredProperties = [];
+        this.selectedProperty = null;
+    }
+
+    // Load properties from parcel API
+    async loadProperties(searchCriteria = {}) {
+        try {
+            // Default search criteria for investment properties
+            const defaults = {
+                maxPrice: 100000,
+                minBedrooms: 2,
+                propertyType: 'single-family'
+            };
+            
+            const criteria = { ...defaults, ...searchCriteria };
+            
+            // For now, use mock data - this would connect to parcel API
+            this.properties = this.generateMockProperties(20);
+            this.filteredProperties = [...this.properties];
+            
+            return this.properties;
+        } catch (error) {
+            console.error('Error loading properties:', error);
+            return [];
+        }
+    }
+
+    // Generate mock properties for demonstration
+    generateMockProperties(count) {
+        const streets = ['CHANDLER', 'HORTON', 'MELBOURNE', 'EUCLID', 'FERRY', 'OAKLAND', 'WOODWARD', 'GRAND', 'JEFFERSON', 'MICHIGAN'];
+        const properties = [];
+        
+        for (let i = 0; i < count; i++) {
+            const price = Math.floor(Math.random() * 50000) + 40000; // $40K-$90K
+            const sqft = Math.floor(Math.random() * 1500) + 1000; // 1000-2500 sqft
+            const bedrooms = Math.floor(Math.random() * 2) + 2; // 2-3 bedrooms
+            const monthlyRent = Math.floor(bedrooms * 400 + Math.random() * 300); // $800-$1500
+            
+            properties.push({
+                id: `prop_${i + 1}`,
+                address: `${Math.floor(Math.random() * 900) + 100} ${streets[Math.floor(Math.random() * streets.length)]}`,
+                city: 'Detroit',
+                state: 'MI',
+                zip: '48202',
+                price: price,
+                bedrooms: bedrooms,
+                bathrooms: Math.random() > 0.5 ? 1.5 : 1,
+                sqft: sqft,
+                yearBuilt: Math.floor(Math.random() * 50) + 1900,
+                propertyType: 'single-family',
+                estimatedRehab: Math.floor(Math.random() * 10000) + 5000,
+                monthlyRent: monthlyRent,
+                capRate: ((monthlyRent * 12 * 0.7) / price * 100).toFixed(1), // Assuming 70% NOI
+                cashFlow: Math.floor(monthlyRent * 0.7 - (price * 0.8 * 0.007 * 30 / 12)), // Rough calculation
+                image: 'https://photos.zillowstatic.com/fp/demo.jpg'
+            });
+        }
+        
+        return properties.sort((a, b) => b.capRate - a.capRate);
+    }
+
+    // Filter properties based on criteria
+    filterProperties(filters) {
+        this.filteredProperties = this.properties.filter(property => {
+            if (filters.maxPrice && property.price > filters.maxPrice) return false;
+            if (filters.minPrice && property.price < filters.minPrice) return false;
+            if (filters.minBedrooms && property.bedrooms < filters.minBedrooms) return false;
+            if (filters.minRent && property.monthlyRent < filters.minRent) return false;
+            if (filters.minCapRate && parseFloat(property.capRate) < filters.minCapRate) return false;
+            if (filters.search) {
+                const searchLower = filters.search.toLowerCase();
+                if (!property.address.toLowerCase().includes(searchLower)) return false;
+            }
+            return true;
+        });
+        
+        return this.filteredProperties;
+    }
+
+    // Render property selector UI
+    renderSelector(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="property-selector">
+                <div class="selector-filters">
+                    <div class="filter-row">
+                        <input type="text" id="propSearch" placeholder="Search address..." class="filter-input" />
+                        <input type="number" id="maxPrice" placeholder="Max price" class="filter-input" />
+                        <input type="number" id="minRent" placeholder="Min rent" class="filter-input" />
+                        <button class="btn btn-secondary" onclick="propertySelector.applyFilters()">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="property-list" id="propertyList">
+                    ${this.renderPropertyList()}
+                </div>
+                
+                <div class="selected-property" id="selectedPropertyDetails" style="display: none;">
+                    <!-- Selected property details will appear here -->
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners
+        this.attachEventListeners();
+    }
+
+    // Render property list
+    renderPropertyList() {
+        if (this.filteredProperties.length === 0) {
+            return '<p class="no-results">No properties found matching your criteria.</p>';
+        }
+        
+        return this.filteredProperties.map(property => `
+            <div class="property-item" onclick="propertySelector.selectProperty('${property.id}')">
+                <div class="property-item-header">
+                    <h4>${property.address}</h4>
+                    <span class="property-price">${this.formatCurrency(property.price)}</span>
+                </div>
+                <div class="property-item-details">
+                    <span><i class="fas fa-bed"></i> ${property.bedrooms} bd</span>
+                    <span><i class="fas fa-bath"></i> ${property.bathrooms} ba</span>
+                    <span><i class="fas fa-ruler-combined"></i> ${property.sqft} sqft</span>
+                </div>
+                <div class="property-item-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Rent</span>
+                        <span class="metric-value">${this.formatCurrency(property.monthlyRent)}/mo</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Cap Rate</span>
+                        <span class="metric-value">${property.capRate}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Cash Flow</span>
+                        <span class="metric-value">${this.formatCurrency(property.cashFlow)}/mo</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Select a property
+    selectProperty(propertyId) {
+        this.selectedProperty = this.properties.find(p => p.id === propertyId);
+        if (!this.selectedProperty) return;
+        
+        // Update selected property details
+        const detailsContainer = document.getElementById('selectedPropertyDetails');
+        if (detailsContainer) {
+            detailsContainer.style.display = 'block';
+            detailsContainer.innerHTML = this.renderPropertyDetails(this.selectedProperty);
+        }
+        
+        // Highlight selected property
+        document.querySelectorAll('.property-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+    }
+
+    // Render detailed property view
+    renderPropertyDetails(property) {
+        const totalInvestment = property.price + property.estimatedRehab;
+        const downPayment = property.price * 0.2;
+        const loanAmount = property.price * 0.8;
+        const monthlyPayment = this.calculateMortgagePayment(loanAmount, 0.07, 30);
+        const estimatedCashFlow = property.monthlyRent * 0.7 - monthlyPayment;
+        
+        return `
+            <div class="property-details-card">
+                <h3>Selected Property</h3>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <label>Address</label>
+                        <span>${property.address}, ${property.city}, ${property.state} ${property.zip}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Purchase Price</label>
+                        <span>${this.formatCurrency(property.price)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Estimated Rehab</label>
+                        <span>${this.formatCurrency(property.estimatedRehab)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Total Investment</label>
+                        <span>${this.formatCurrency(totalInvestment)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Down Payment (20%)</label>
+                        <span>${this.formatCurrency(downPayment)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Monthly Rent</label>
+                        <span>${this.formatCurrency(property.monthlyRent)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Est. Monthly Cash Flow</label>
+                        <span>${this.formatCurrency(estimatedCashFlow)}</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="propertySelector.addToSimulation()">
+                        <i class="fas fa-plus"></i> Add to Simulation
+                    </button>
+                    <button class="btn btn-outline" onclick="propertySelector.viewOnZillow('${property.address}')">
+                        <i class="fas fa-external-link-alt"></i> View on Zillow
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Add selected property to simulation
+    addToSimulation() {
+        if (!this.selectedProperty) {
+            alert('Please select a property first');
+            return;
+        }
+        
+        // Populate the form fields in the modal
+        document.getElementById('newPropertyAddress').value = this.selectedProperty.address;
+        document.getElementById('newPurchasePrice').value = this.selectedProperty.price;
+        document.getElementById('newRehabCost').value = this.selectedProperty.estimatedRehab;
+        document.getElementById('newMonthlyRent').value = this.selectedProperty.monthlyRent;
+        
+        // Trigger the add property function
+        if (window.addPropertyToSimulation) {
+            window.addPropertyToSimulation();
+        }
+    }
+
+    // Apply filters
+    applyFilters() {
+        const filters = {
+            search: document.getElementById('propSearch').value,
+            maxPrice: parseFloat(document.getElementById('maxPrice').value) || null,
+            minRent: parseFloat(document.getElementById('minRent').value) || null
+        };
+        
+        this.filterProperties(filters);
+        document.getElementById('propertyList').innerHTML = this.renderPropertyList();
+    }
+
+    // Attach event listeners
+    attachEventListeners() {
+        // Enter key on search
+        const searchInput = document.getElementById('propSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.applyFilters();
+            });
+        }
+    }
+
+    // View property on Zillow
+    viewOnZillow(address) {
+        const searchQuery = encodeURIComponent(`${address} Detroit MI`);
+        window.open(`https://www.zillow.com/homes/${searchQuery}_rb/`, '_blank');
+    }
+
+    // Calculate mortgage payment
+    calculateMortgagePayment(principal, rate, years) {
+        const monthlyRate = rate / 12;
+        const numPayments = years * 12;
+        
+        if (monthlyRate === 0) return principal / numPayments;
+        
+        const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                       (Math.pow(1 + monthlyRate, numPayments) - 1);
+        
+        return Math.round(payment);
+    }
+
+    // Format currency
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+}
+
+// Create global instance
+window.propertySelector = new PropertySelector();
+
+// Add styles for property selector
+const style = document.createElement('style');
+style.textContent = `
+    .property-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-height: 70vh;
+        overflow: hidden;
+    }
+
+    .selector-filters {
+        padding: 1rem;
+        background: var(--bg-color);
+        border-radius: 4px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .filter-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--card-bg);
+        color: var(--text-primary);
+    }
+
+    .property-list {
+        overflow-y: auto;
+        max-height: 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .property-item {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .property-item:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+    }
+
+    .property-item.selected {
+        border-color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+    }
+
+    .property-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .property-item-header h4 {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--text-primary);
+    }
+
+    .property-price {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .property-item-details {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+    }
+
+    .property-item-metrics {
+        display: flex;
+        gap: 1.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .property-item-metrics .metric {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .property-item-metrics .metric-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .property-item-metrics .metric-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .property-details-card {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .property-details-card h3 {
+        margin: 0 0 1rem 0;
+        color: var(--text-primary);
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detail-item label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .detail-item span {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .no-results {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 2rem;
+    }
+`;
+document.head.appendChild(style);
