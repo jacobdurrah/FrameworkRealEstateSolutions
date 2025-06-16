@@ -21,11 +21,50 @@
         }
 
         /* Portfolio Simulator Specific Styles */
+        
+        /* Fix for fixed navbar - add padding to main container */
+        body {
+            padding-top: 80px; /* Space for navbar */
+        }
+
+        /* Ensure navbar stays on top */
+        .navbar {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--pure-white) !important;
+            padding: 1rem 0 !important;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            padding: 0.5rem 0 !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar .logo-img {
+            height: 40px !important;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled .logo-img {
+            height: 35px !important;
+        }
+
+        /* Main container adjustments */
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+        
         .simulator-container {
             display: grid;
             grid-template-columns: 300px 1fr;
             gap: 2rem;
-            min-height: calc(100vh - 200px);
+            min-height: calc(100vh - 100px);
+            padding-top: 1rem;
         }
 
         .sidebar {
@@ -34,7 +73,33 @@
             padding: 1.5rem;
             height: fit-content;
             position: sticky;
-            top: 2rem;
+            top: 90px; /* Below navbar */
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+                margin-bottom: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding-top: 70px;
+            }
+            
+            .navbar {
+                padding: 0.75rem 0 !important;
+            }
+            
+            .sidebar {
+                padding: 1rem;
+            }
         }
 
         .main-content {
@@ -50,6 +115,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .simulation-header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        
+        .simulation-header .btn {
+            white-space: nowrap;
         }
 
         .goal-inputs {
@@ -851,6 +927,24 @@
             const navMenu = document.getElementById('navMenu');
             navMenu.classList.toggle('active');
         }
+        
+        // Navbar scroll behavior
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Initialize navbar state on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            }
+        });
     </script>
 </body>
 </html>
