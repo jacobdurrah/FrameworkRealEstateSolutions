@@ -372,11 +372,11 @@ class PropertySelector {
         return `
             <div class="property-details-card">
                 <h3>Selected Property</h3>
+                <div class="property-summary">
+                    <h4>${property.address}</h4>
+                    <p>${property.city}, ${property.state} ${property.zip}</p>
+                </div>
                 <div class="details-grid">
-                    <div class="detail-item">
-                        <label>Address</label>
-                        <span>${property.address}, ${property.city}, ${property.state} ${property.zip}</span>
-                    </div>
                     <div class="detail-item">
                         <label>Purchase Price</label>
                         <span>${this.formatCurrency(property.price)}</span>
@@ -387,7 +387,7 @@ class PropertySelector {
                     </div>
                     <div class="detail-item">
                         <label>Total Investment</label>
-                        <span>${this.formatCurrency(totalInvestment)}</span>
+                        <span><strong>${this.formatCurrency(totalInvestment)}</strong></span>
                     </div>
                     <div class="detail-item">
                         <label>Down Payment (20%)</label>
@@ -398,14 +398,16 @@ class PropertySelector {
                         <span>${this.formatCurrency(property.monthlyRent)}</span>
                     </div>
                     <div class="detail-item">
-                        <label>Est. Monthly Cash Flow</label>
-                        <span>${this.formatCurrency(estimatedCashFlow)}</span>
+                        <label>Est. Cash Flow</label>
+                        <span class="${estimatedCashFlow >= 0 ? 'positive' : 'negative'}">
+                            <strong>${this.formatCurrency(estimatedCashFlow)}/mo</strong>
+                        </span>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
                     <button class="btn btn-primary" onclick="propertySelector.addToSimulation()">
-                        <i class="fas fa-plus"></i> Add to Simulation
+                        <i class="fas fa-plus"></i> Add to Timeline
                     </button>
                     <button class="btn btn-outline" onclick="propertySelector.viewOnZillow('${property.address}')">
                         <i class="fas fa-external-link-alt"></i> View on Zillow
@@ -497,8 +499,8 @@ style.textContent = `
         display: flex;
         flex-direction: column;
         gap: 1rem;
-        max-height: 70vh;
-        overflow: hidden;
+        height: 100%;
+        min-height: 500px;
     }
 
     .selector-filters {
@@ -531,10 +533,11 @@ style.textContent = `
 
     .property-list {
         overflow-y: auto;
-        max-height: 400px;
+        max-height: 300px;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        padding: 0.5rem;
     }
 
     .property-item {
@@ -606,15 +609,33 @@ style.textContent = `
 
     .property-details-card {
         background: var(--bg-color);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
+        border: 2px solid var(--primary-color);
+        border-radius: 8px;
         padding: 1.5rem;
         margin-top: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .property-details-card h3 {
         margin: 0 0 1rem 0;
         color: var(--text-primary);
+    }
+
+    .property-summary {
+        background: var(--card-bg);
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .property-summary h4 {
+        margin: 0 0 0.25rem 0;
+        color: var(--primary-color);
+    }
+
+    .property-summary p {
+        margin: 0;
+        color: var(--text-secondary);
     }
 
     .details-grid {
