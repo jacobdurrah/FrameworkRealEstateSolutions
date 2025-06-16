@@ -156,7 +156,7 @@ async function loadSimulation(simulationId) {
         await runSimulation();
     } else {
         updateMetrics();
-        drawTimeline();
+        updateProgressBar();
     }
 }
 
@@ -168,6 +168,7 @@ function updateSimulationUI() {
     updateTimelineView();
     updateMetrics();
     updateProgressBar();
+    updatePortfolioSummary();
 }
 
 // Update phases list
@@ -241,7 +242,9 @@ async function runSimulation() {
     }
     
     updateMetrics();
-    drawTimeline();
+    updateTimelineView();
+    updateProgressBar();
+    updatePortfolioSummary();
 }
 
 // Update metrics display
@@ -266,84 +269,45 @@ function updateMetrics() {
         financialCalc.formatPercentage(lastProjection.roi_percentage);
 }
 
-// Draw timeline visualization
-function drawTimeline() {
-    const canvas = document.getElementById('timelineCanvas');
-    const ctx = canvas.getContext('2d');
+// Portfolio summary section
+function updatePortfolioSummary() {
+    const container = document.getElementById('portfolioDetails');
     
-    // Set canvas size
-    canvas.width = canvas.offsetWidth;
-    canvas.height = 300;
+    if (!currentSimulation || currentProjections.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary);">Add properties to see your portfolio summary.</p>';
+        return;
+    }
     
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (currentProjections.length === 0) return;
-    
-    // Draw axes
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(50, 250);
-    ctx.lineTo(canvas.width - 20, 250);
-    ctx.moveTo(50, 20);
-    ctx.lineTo(50, 250);
-    ctx.stroke();
-    
-    // Find max values for scaling
-    const maxIncome = Math.max(...currentProjections.map(p => p.net_cashflow));
-    const targetIncome = currentSimulation.target_monthly_income;
-    const maxY = Math.max(maxIncome, targetIncome) * 1.1;
-    
-    // Draw target line
-    ctx.strokeStyle = '#ff6b6b';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    const targetY = 250 - (targetIncome / maxY) * 220;
-    ctx.moveTo(50, targetY);
-    ctx.lineTo(canvas.width - 20, targetY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    
-    // Draw income line
-    ctx.strokeStyle = '#4CAF50';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    
-    currentProjections.forEach((projection, index) => {
-        const x = 50 + (index / (currentProjections.length - 1)) * (canvas.width - 70);
-        const y = 250 - (projection.net_cashflow / maxY) * 220;
-        
-        if (index === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    });
-    
-    ctx.stroke();
-    
-    // Draw phase markers
-    currentPhases.forEach(phase => {
-        const x = 50 + (phase.month_number / currentSimulation.time_horizon_months) * (canvas.width - 70);
-        
-        ctx.fillStyle = phase.action_type === 'buy' ? '#2196F3' : 
-                       phase.action_type === 'sell' ? '#FF9800' : '#9C27B0';
-        ctx.beginPath();
-        ctx.arc(x, 250, 5, 0, 2 * Math.PI);
-        ctx.fill();
-    });
-    
-    // Update details
-    const detailsDiv = document.getElementById('timelineDetails');
     const lastProjection = currentProjections[currentProjections.length - 1];
-    const goalProgress = (lastProjection.net_cashflow / targetIncome) * 100;
+    const timeToGoal = estimateTimeToGoal();
     
-    detailsDiv.innerHTML = `
-        <p><strong>Goal Progress:</strong> ${goalProgress.toFixed(1)}% 
-           (${financialCalc.formatCurrency(lastProjection.net_cashflow)} / ${financialCalc.formatCurrency(targetIncome)})</p>
-        <p><strong>Time to Goal:</strong> ${estimateTimeToGoal()} months</p>
+    container.innerHTML = `
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h4>Time to Goal</h4>
+                <p class="summary-value">${timeToGoal} months</p>
+            </div>
+            <div class="summary-item">
+                <h4>Total Properties</h4>
+                <p class="summary-value">${lastProjection.total_properties}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Portfolio Value</h4>
+                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_equity + lastProjection.total_debt)}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Total Debt</h4>
+                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_debt)}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Net Worth</h4>
+                <p class="summary-value">${financialCalc.formatCurrency(lastProjection.total_equity)}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Debt-to-Equity</h4>
+                <p class="summary-value">${(lastProjection.total_debt / lastProjection.total_equity).toFixed(2)}:1</p>
+            </div>
+        </div>
     `;
 }
 
@@ -437,11 +401,32 @@ async function showPropertySearch() {
                 
                 <div class="input-group">
                     <label>Month to Purchase</label>
-                    <input type="number" id="newPurchaseMonth" value="0" min="0" max="${currentSimulation.time_horizon_months}" />
+                    <input type="number" id="newPurchaseMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+                </div>
+                
+                <div class="input-group">
+                    <label>Investment Strategy</label>
+                    <div class="strategy-selector">
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="buy-hold" checked />
+                            <span class="strategy-label">Buy & Hold</span>
+                            <span class="strategy-desc">Long-term rental income</span>
+                        </label>
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="brrrr" />
+                            <span class="strategy-label">BRRRR</span>
+                            <span class="strategy-desc">Buy, Rehab, Rent, Refinance</span>
+                        </label>
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="flip" />
+                            <span class="strategy-label">Fix & Flip</span>
+                            <span class="strategy-desc">Quick renovation and sale</span>
+                        </label>
+                    </div>
                 </div>
                 
                 <button class="btn btn-primary" onclick="addPropertyToSimulation()">
-                    Add to Simulation
+                    Add to Timeline
                 </button>
             </div>
         </div>
@@ -485,6 +470,15 @@ async function addPropertyToSimulation() {
     const downPayment = parseFloat(document.getElementById('newDownPayment').value) || 20;
     const purchaseMonth = parseInt(document.getElementById('newPurchaseMonth').value) || 0;
     
+    // Get selected strategy
+    const strategyInput = document.querySelector('input[name="strategy"]:checked');
+    const strategy = strategyInput ? strategyInput.value : 'buy-hold';
+    const strategyLabels = {
+        'buy-hold': 'Buy & Hold',
+        'brrrr': 'BRRRR',
+        'flip': 'Fix & Flip'
+    };
+    
     if (!address || !purchasePrice || !monthlyRent) {
         alert('Please fill in all required fields');
         return;
@@ -503,7 +497,8 @@ async function addPropertyToSimulation() {
         rehabCost: rehabCost,
         downPaymentPercent: downPayment,
         loanAmount: loanAmount,
-        monthlyRentalIncome: monthlyRent
+        monthlyRentalIncome: monthlyRent,
+        notes: strategyLabels[strategy]
     });
     
     if (result.error) {
