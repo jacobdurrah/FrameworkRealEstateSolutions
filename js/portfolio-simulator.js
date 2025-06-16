@@ -233,10 +233,19 @@ async function runSimulation() {
     // Save projections if we have them
     if (currentProjections.length > 0) {
         for (const projection of currentProjections) {
+            // Include extra fields in properties_data until schema is updated
+            const projectionToSave = {
+                ...projection,
+                properties_data: {
+                    ...projection.properties_data,
+                    accumulated_rent: projection.accumulated_rent || 0,
+                    property_breakdown: projection.property_breakdown || {}
+                }
+            };
             await simulationAPI.saveProjection(
                 currentSimulation.id,
                 projection.month_number,
-                projection
+                projectionToSave
             );
         }
     }
@@ -684,9 +693,17 @@ function addTimeSnapshotCard(month, isAutomatic = false) {
     const totalValue = projection.total_equity + projection.total_debt;
     const equityPercent = totalValue > 0 ? (projection.total_equity / totalValue * 100).toFixed(1) : 0;
     
-    // Get property breakdown
-    const breakdown = projection.property_breakdown || {};
-    const totalProps = breakdown.hold + breakdown.brrrr_active + breakdown.flip_active + breakdown.sold;
+    // Get property breakdown from properties_data if not in main object
+    const breakdown = projection.property_breakdown || 
+                     (projection.properties_data && projection.properties_data.property_breakdown) || 
+                     { hold: 0, brrrr_active: 0, flip_active: 0, sold: 0 };
+    const totalProps = (breakdown.hold || 0) + (breakdown.brrrr_active || 0) + 
+                      (breakdown.flip_active || 0) + (breakdown.sold || 0);
+    
+    // Get accumulated rent from properties_data if not in main object
+    const accumulatedRent = projection.accumulated_rent || 
+                           (projection.properties_data && projection.properties_data.accumulated_rent) || 
+                           0;
     
     card.innerHTML = `
         <div class="card-header">
@@ -700,7 +717,7 @@ function addTimeSnapshotCard(month, isAutomatic = false) {
             </div>
             <div class="metric-row">
                 <span class="metric-icon">💵</span>
-                <span class="metric-text">Rent Collected: <strong>${financialCalc.formatCurrency(projection.accumulated_rent || 0)}</strong></span>
+                <span class="metric-text">Rent Collected: <strong>${financialCalc.formatCurrency(accumulatedRent)}</strong></span>
             </div>
             <div class="metric-row">
                 <span class="metric-icon">💎</span>
@@ -798,10 +815,23 @@ function addLoanCard(phase) {
     card.className = 'timeline-card loan-card';
     card.setAttribute('data-month', phase.month_number);
     
+    // Parse loan details from notes if available
+    let loanDetails = {};
+    try {
+        if (phase.notes && phase.notes.startsWith('{')) {
+            loanDetails = JSON.parse(phase.notes);
+        }
+    } catch (e) {
+        console.log('Could not parse loan details from notes');
+    }
+    
+    const interestRate = loanDetails.rate || phase.interest_rate || 0.07;
+    const loanTerm = loanDetails.term || phase.loan_term_months || 360;
+    
     const monthlyPayment = financialCalc.calculateMortgagePayment(
         phase.loan_amount,
-        phase.interest_rate || 0.07,
-        (phase.loan_term_months || 360) / 12
+        interestRate,
+        loanTerm / 12
     );
     
     card.innerHTML = `
@@ -815,7 +845,7 @@ function addLoanCard(phase) {
                 <span class="metric-text">Amount: <strong>${financialCalc.formatCurrency(phase.loan_amount)}</strong></span>
             </div>
             <div class="metric-row">
-                <span class="metric-text">Rate: <strong>${((phase.interest_rate || 0.07) * 100).toFixed(2)}%</strong></span>
+                <span class="metric-text">Rate: <strong>${(interestRate * 100).toFixed(2)}%</strong></span>
             </div>
             <div class="metric-row">
                 <span class="metric-text">Payment: <strong>${financialCalc.formatCurrency(monthlyPayment)}/mo</strong></span>
@@ -1064,6 +1094,15 @@ async function addLoan() {
         return;
     }
     
+    // Store loan details in notes field until schema is updated
+    const loanDetails = {
+        type: loanType,
+        rate: interestRate,
+        term: loanTerm,
+        closingCosts: closingCosts,
+        points: points
+    };
+    
     const result = await simulationAPI.addPhase(currentSimulation.id, {
         phaseNumber: currentPhases.length + 1,
         monthNumber: loanMonth,
@@ -1072,12 +1111,7 @@ async function addLoan() {
         purchasePrice: 0,
         loanAmount: loanAmount,
         monthlyRentalIncome: 0,
-        loanType: loanType,
-        interestRate: interestRate,
-        loanTermMonths: loanTerm,
-        closingCosts: closingCosts,
-        points: points,
-        notes: `${loanType} loan`
+        notes: JSON.stringify(loanDetails)
     });
     
     if (result.error) {
