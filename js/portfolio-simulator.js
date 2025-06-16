@@ -3,6 +3,7 @@
 
 let simulationAPI;
 let financialCalc;
+let stateManager;
 let currentSimulation = null;
 let currentPhases = [];
 let currentProjections = [];
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize services
     simulationAPI = new SimulationAPIService();
     financialCalc = new FinancialCalculator();
+    stateManager = new PortfolioStateManager(financialCalc);
     
     // Initialize Supabase
     const initialized = await simulationAPI.init(
@@ -150,14 +152,67 @@ async function loadSimulation(simulationId) {
     document.getElementById('timeHorizon').value = simulation.time_horizon_months;
     document.getElementById('strategyType').value = simulation.strategy_type;
     
+    // Set simulation in state manager
+    stateManager.setSimulation(simulation);
+    
+    // Convert phases to transactions for state manager
+    const transactions = [];
+    currentPhases.forEach(phase => {
+        if (phase.action_type === 'buy') {
+            let transactionData = {};
+            try {
+                // Try to parse enhanced data from notes
+                transactionData = JSON.parse(phase.notes || '{}');
+            } catch (e) {
+                // Fallback to basic data
+                transactionData = {
+                    address: phase.property_address,
+                    purchasePrice: phase.purchase_price,
+                    monthlyRent: phase.monthly_rental_income,
+                    rehabCost: phase.rehab_cost || 0,
+                    totalCashNeeded: phase.purchase_price * 0.25 // Estimate
+                };
+            }
+            
+            transactions.push({
+                id: transactionData.transactionId || `txn_${phase.id}`,
+                type: 'PROPERTY_PURCHASE',
+                month: phase.month_number,
+                propertyId: `prop_${phase.id}`,
+                data: transactionData
+            });
+        }
+    });
+    
+    // Load transactions into state manager
+    stateManager.setTransactions(transactions);
+    
+    // Subscribe UI components to state changes
+    subscribeUIComponents();
+    
     // Update UI
     updateSimulationUI();
-    if (currentProjections.length === 0) {
-        await runSimulation();
-    } else {
-        updateMetrics();
-        updateProgressBar();
-    }
+}
+
+// Subscribe UI components to state manager
+function subscribeUIComponents() {
+    // Subscribe summary metrics
+    stateManager.subscribe('summary-metrics', (state) => {
+        if (state && state.summary) {
+            updateMetrics();
+            updateProgressBar();
+            updateCashReservesDisplay();
+            updateLoanSummary();
+            updateMetricsWithGrowth();
+        }
+    });
+    
+    // Subscribe portfolio summary
+    stateManager.subscribe('portfolio-summary', (state) => {
+        if (state && state.summary) {
+            updatePortfolioSummary();
+        }
+    });
 }
 
 // Update the simulation UI
@@ -262,7 +317,8 @@ async function runSimulation() {
 
 // Update metrics display
 function updateMetrics() {
-    if (currentProjections.length === 0) {
+    const state = stateManager.getCurrentState();
+    if (!state || !state.summary) {
         document.getElementById('currentIncome').textContent = '$0';
         document.getElementById('totalProperties').textContent = '0';
         document.getElementById('totalEquity').textContent = '$0';
@@ -270,16 +326,16 @@ function updateMetrics() {
         return;
     }
     
-    const lastProjection = currentProjections[currentProjections.length - 1];
+    const summary = state.summary;
     
     document.getElementById('currentIncome').textContent = 
-        financialCalc.formatCurrency(lastProjection.net_cashflow);
+        financialCalc.formatCurrency(summary.monthlyIncome);
     document.getElementById('totalProperties').textContent = 
-        lastProjection.total_properties;
+        summary.totalProperties;
     document.getElementById('totalEquity').textContent = 
-        financialCalc.formatCurrency(lastProjection.total_equity);
+        financialCalc.formatCurrency(summary.totalEquity);
     document.getElementById('currentROI').textContent = 
-        financialCalc.formatPercentage(lastProjection.roi_percentage);
+        `${summary.roi}%`;
 }
 
 // Update metrics with growth percentages
@@ -423,6 +479,7 @@ async function showPropertySearch() {
         
         <div id="manualTab" class="tab-content" style="display: none;">
             <div class="goal-inputs">
+                <h3>Property Details</h3>
                 <div class="input-group">
                     <label>Property Address</label>
                     <input type="text" id="newPropertyAddress" placeholder="123 Main St" />
@@ -430,27 +487,90 @@ async function showPropertySearch() {
                 
                 <div class="input-group">
                     <label>Purchase Price</label>
-                    <input type="number" id="newPurchasePrice" placeholder="50000" />
+                    <input type="number" id="newPurchasePrice" placeholder="50000" onchange="updatePropertyDefaults()" />
                 </div>
                 
                 <div class="input-group">
                     <label>Rehab Cost</label>
-                    <input type="number" id="newRehabCost" placeholder="10000" />
+                    <input type="number" id="newRehabCost" placeholder="10000" value="0" />
                 </div>
                 
                 <div class="input-group">
                     <label>Monthly Rent</label>
-                    <input type="number" id="newMonthlyRent" placeholder="1200" />
+                    <input type="number" id="newMonthlyRent" placeholder="1200" onchange="updateCashFlowPreview()" />
+                </div>
+                
+                <h3 style="margin-top: 1.5rem;">Operating Expenses</h3>
+                <div class="input-group">
+                    <label>Annual Property Tax</label>
+                    <input type="number" id="newPropertyTax" placeholder="3200" />
+                    <small style="color: var(--text-secondary);">Default: 0.8% of purchase price</small>
                 </div>
                 
                 <div class="input-group">
-                    <label>Down Payment %</label>
-                    <input type="number" id="newDownPayment" value="20" />
+                    <label>Monthly Insurance</label>
+                    <input type="number" id="newInsurance" value="100" />
+                    <small style="color: var(--text-secondary);">Default: $100/month</small>
+                </div>
+                
+                <div class="input-group">
+                    <label>Property Management (%)</label>
+                    <input type="number" id="newManagementPercent" value="8" min="0" max="100" />
+                    <small style="color: var(--text-secondary);">Percentage of monthly rent</small>
+                </div>
+                
+                <div class="input-group">
+                    <label>Maintenance Reserve (%)</label>
+                    <input type="number" id="newMaintenancePercent" value="5" min="0" max="100" />
+                    <small style="color: var(--text-secondary);">Percentage of monthly rent</small>
+                </div>
+                
+                <div class="input-group">
+                    <label>Vacancy Rate (%)</label>
+                    <input type="number" id="newVacancyRate" value="8" min="0" max="100" />
+                    <small style="color: var(--text-secondary);">Expected vacancy percentage</small>
+                </div>
+                
+                <h3 style="margin-top: 1.5rem;">Financing</h3>
+                <div class="input-group">
+                    <label>Financing Type</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <label><input type="radio" name="financingType" value="CASH" onchange="toggleFinancingFields()"> All Cash</label>
+                        <label><input type="radio" name="financingType" value="FINANCED" checked onchange="toggleFinancingFields()"> Financed</label>
+                    </div>
+                </div>
+                
+                <div id="financingFields">
+                    <div class="input-group">
+                        <label>Down Payment %</label>
+                        <input type="number" id="newDownPayment" value="20" onchange="updateCashFlowPreview()" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Interest Rate (%)</label>
+                        <input type="number" id="newInterestRate" value="8.0" step="0.1" onchange="updateCashFlowPreview()" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Loan Term (years)</label>
+                        <input type="number" id="newLoanTerm" value="30" onchange="updateCashFlowPreview()" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Closing Costs (%)</label>
+                        <input type="number" id="newClosingCostPercent" value="1.0" step="0.1" />
+                        <small style="color: var(--text-secondary);">Percentage of loan amount</small>
+                    </div>
                 </div>
                 
                 <div class="input-group">
                     <label>Month to Purchase</label>
                     <input type="number" id="newPurchaseMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+                </div>
+                
+                <div id="cashFlowPreview" style="background: var(--bg-color); padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                    <h4 style="margin-top: 0;">Cash Flow Analysis</h4>
+                    <div id="cashFlowDetails">Calculate cash flow...</div>
                 </div>
                 
                 <div class="input-group">
@@ -533,31 +653,201 @@ function closePropertyModal() {
     document.getElementById('propertyModal').classList.remove('active');
 }
 
+// Update property defaults when purchase price changes
+function updatePropertyDefaults() {
+    const purchasePrice = parseFloat(document.getElementById('newPurchasePrice').value) || 0;
+    
+    // Set default property tax (0.8% annually)
+    const propertyTaxInput = document.getElementById('newPropertyTax');
+    if (!propertyTaxInput.value || propertyTaxInput.value === propertyTaxInput.placeholder) {
+        propertyTaxInput.value = Math.round(purchasePrice * 0.008);
+    }
+    
+    updateCashFlowPreview();
+}
+
+// Toggle financing fields based on selection
+function toggleFinancingFields() {
+    const financingType = document.querySelector('input[name="financingType"]:checked').value;
+    const financingFields = document.getElementById('financingFields');
+    
+    if (financingType === 'CASH') {
+        financingFields.style.display = 'none';
+    } else {
+        financingFields.style.display = 'block';
+    }
+    
+    updateCashFlowPreview();
+}
+
+// Update cash flow preview in real-time
+function updateCashFlowPreview() {
+    const purchasePrice = parseFloat(document.getElementById('newPurchasePrice').value) || 0;
+    const monthlyRent = parseFloat(document.getElementById('newMonthlyRent').value) || 0;
+    const propertyTaxAnnual = parseFloat(document.getElementById('newPropertyTax').value) || (purchasePrice * 0.008);
+    const insuranceMonthly = parseFloat(document.getElementById('newInsurance').value) || 100;
+    const managementPercent = parseFloat(document.getElementById('newManagementPercent').value) || 8;
+    const maintenancePercent = parseFloat(document.getElementById('newMaintenancePercent').value) || 5;
+    const vacancyRate = parseFloat(document.getElementById('newVacancyRate').value) || 8;
+    
+    // Calculate operating expenses
+    const vacancy = monthlyRent * (vacancyRate / 100);
+    const propertyTaxMonthly = propertyTaxAnnual / 12;
+    const management = monthlyRent * (managementPercent / 100);
+    const maintenance = monthlyRent * (maintenancePercent / 100);
+    
+    // Calculate NOI
+    const effectiveRent = monthlyRent - vacancy;
+    const totalExpenses = propertyTaxMonthly + insuranceMonthly + management + maintenance;
+    const noi = effectiveRent - totalExpenses;
+    
+    // Calculate mortgage payment if financed
+    let mortgagePayment = 0;
+    let totalCashNeeded = 0;
+    const financingType = document.querySelector('input[name="financingType"]:checked')?.value || 'FINANCED';
+    
+    if (financingType === 'CASH') {
+        totalCashNeeded = purchasePrice + (purchasePrice * 0.03); // 3% closing costs for cash
+    } else {
+        const downPaymentPercent = parseFloat(document.getElementById('newDownPayment').value) || 20;
+        const interestRate = parseFloat(document.getElementById('newInterestRate').value) || 8;
+        const loanTermYears = parseFloat(document.getElementById('newLoanTerm').value) || 30;
+        const closingCostPercent = parseFloat(document.getElementById('newClosingCostPercent').value) || 1;
+        
+        const downPayment = purchasePrice * (downPaymentPercent / 100);
+        const loanAmount = purchasePrice - downPayment;
+        const closingCosts = loanAmount * (closingCostPercent / 100);
+        
+        totalCashNeeded = downPayment + closingCosts;
+        
+        // Calculate monthly payment
+        if (loanAmount > 0) {
+            mortgagePayment = financialCalc.calculateMortgagePayment(loanAmount, interestRate / 100, loanTermYears);
+        }
+    }
+    
+    const netCashFlow = noi - mortgagePayment;
+    const rehabCost = parseFloat(document.getElementById('newRehabCost').value) || 0;
+    totalCashNeeded += rehabCost;
+    
+    // Update preview
+    const preview = document.getElementById('cashFlowDetails');
+    preview.innerHTML = `
+        <div style="display: grid; gap: 0.5rem;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Monthly Rent:</span>
+                <span><strong>${financialCalc.formatCurrency(monthlyRent)}</strong></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Vacancy (${vacancyRate}%):</span>
+                <span>${financialCalc.formatCurrency(vacancy)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Property Tax:</span>
+                <span>${financialCalc.formatCurrency(propertyTaxMonthly)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Insurance:</span>
+                <span>${financialCalc.formatCurrency(insuranceMonthly)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Management:</span>
+                <span>${financialCalc.formatCurrency(management)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Maintenance:</span>
+                <span>${financialCalc.formatCurrency(maintenance)}</span>
+            </div>
+            ${mortgagePayment > 0 ? `
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                <span>- Mortgage:</span>
+                <span>${financialCalc.formatCurrency(mortgagePayment)}</span>
+            </div>
+            ` : ''}
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.5rem; display: flex; justify-content: space-between;">
+                <span><strong>Net Cash Flow:</strong></span>
+                <span style="color: ${netCashFlow >= 0 ? 'var(--accent-green)' : '#f44336'}">
+                    <strong>${financialCalc.formatCurrency(netCashFlow)}/mo</strong>
+                </span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span><strong>Total Cash Needed:</strong></span>
+                <span><strong>${financialCalc.formatCurrency(totalCashNeeded)}</strong></span>
+            </div>
+        </div>
+    `;
+}
+
 // Add property to simulation
 async function addPropertyToSimulation() {
     const address = document.getElementById('newPropertyAddress').value;
     const purchasePrice = parseFloat(document.getElementById('newPurchasePrice').value);
     const rehabCost = parseFloat(document.getElementById('newRehabCost').value) || 0;
     const monthlyRent = parseFloat(document.getElementById('newMonthlyRent').value);
-    const downPayment = parseFloat(document.getElementById('newDownPayment').value) || 20;
     const purchaseMonth = parseInt(document.getElementById('newPurchaseMonth').value) || 0;
     
-    // Get selected strategy
-    const strategyInput = document.querySelector('input[name="strategy"]:checked');
-    const strategy = strategyInput ? strategyInput.value : 'buy-hold';
-    const strategyLabels = {
-        'buy-hold': 'Buy & Hold',
-        'brrrr': 'BRRRR',
-        'flip': 'Fix & Flip'
-    };
+    // Get operating expenses
+    const propertyTaxAnnual = parseFloat(document.getElementById('newPropertyTax').value) || (purchasePrice * 0.008);
+    const insuranceMonthly = parseFloat(document.getElementById('newInsurance').value) || 100;
+    const managementPercent = parseFloat(document.getElementById('newManagementPercent').value) || 8;
+    const maintenancePercent = parseFloat(document.getElementById('newMaintenancePercent').value) || 5;
+    const vacancyRate = parseFloat(document.getElementById('newVacancyRate').value) || 8;
+    
+    // Get financing details
+    const financingType = document.querySelector('input[name="financingType"]:checked')?.value || 'FINANCED';
+    let loanDetails = null;
+    let totalCashNeeded = rehabCost;
     
     if (!address || !purchasePrice || !monthlyRent) {
         alert('Please fill in all required fields');
         return;
     }
     
-    // Calculate loan amount
-    const loanAmount = purchasePrice * (1 - downPayment / 100);
+    // Calculate financing details
+    let mortgagePayment = 0;
+    if (financingType === 'CASH') {
+        totalCashNeeded += purchasePrice + (purchasePrice * 0.03); // 3% closing for cash
+    } else {
+        const downPaymentPercent = parseFloat(document.getElementById('newDownPayment').value) || 20;
+        const interestRate = parseFloat(document.getElementById('newInterestRate').value) || 8;
+        const loanTermYears = parseFloat(document.getElementById('newLoanTerm').value) || 30;
+        const closingCostPercent = parseFloat(document.getElementById('newClosingCostPercent').value) || 1;
+        
+        const downPayment = purchasePrice * (downPaymentPercent / 100);
+        const loanAmount = purchasePrice - downPayment;
+        const closingCosts = loanAmount * (closingCostPercent / 100);
+        
+        totalCashNeeded += downPayment + closingCosts;
+        
+        if (loanAmount > 0) {
+            mortgagePayment = financialCalc.calculateMortgagePayment(loanAmount, interestRate / 100, loanTermYears);
+        }
+        
+        loanDetails = {
+            downPaymentPercent,
+            downPaymentAmount: downPayment,
+            loanAmount,
+            interestRate: interestRate / 100,
+            loanTermYears,
+            closingCostPercent: closingCostPercent / 100,
+            closingCostAmount: closingCosts,
+            monthlyPayment: mortgagePayment
+        };
+    }
+    
+    // Calculate cash flow analysis
+    const vacancy = monthlyRent * (vacancyRate / 100);
+    const propertyTaxMonthly = propertyTaxAnnual / 12;
+    const management = monthlyRent * (managementPercent / 100);
+    const maintenance = monthlyRent * (maintenancePercent / 100);
+    const effectiveRent = monthlyRent - vacancy;
+    const totalExpenses = propertyTaxMonthly + insuranceMonthly + management + maintenance;
+    const noi = effectiveRent - totalExpenses;
+    const netCashFlow = noi - mortgagePayment;
+    
+    // Get selected strategy
+    const strategyInput = document.querySelector('input[name="strategy"]:checked');
+    const strategy = strategyInput ? strategyInput.value : 'buy-hold';
     
     // Get BRRRR options if applicable
     let brrrrDetails = null;
@@ -571,7 +861,56 @@ async function addPropertyToSimulation() {
         };
     }
     
-    // Add phase
+    // Create transaction for state manager
+    const transaction = {
+        id: `txn_${Date.now()}`,
+        type: 'PROPERTY_PURCHASE',
+        month: purchaseMonth,
+        propertyId: `prop_${Date.now()}`,
+        data: {
+            address,
+            purchasePrice,
+            monthlyRent,
+            rehabCost,
+            strategy,
+            
+            // Operating expenses
+            operatingExpenses: {
+                propertyTaxAnnual,
+                insuranceMonthly,
+                managementPercent,
+                maintenancePercent,
+                vacancyPercent: vacancyRate
+            },
+            
+            // Financing
+            financingType,
+            loanDetails,
+            
+            // Cash flow analysis
+            cashFlowAnalysis: {
+                grossRent: monthlyRent,
+                vacancy,
+                propertyTax: propertyTaxMonthly,
+                insurance: insuranceMonthly,
+                management,
+                maintenance,
+                mortgagePayment,
+                netCashFlow
+            },
+            
+            // Total investment
+            totalCashNeeded,
+            
+            // BRRRR details if applicable
+            brrrrDetails
+        }
+    };
+    
+    // Add transaction to state manager
+    stateManager.addTransaction(transaction);
+    
+    // Also save to database for persistence
     const result = await simulationAPI.addPhase(currentSimulation.id, {
         phaseNumber: currentPhases.length + 1,
         monthNumber: purchaseMonth,
@@ -579,10 +918,13 @@ async function addPropertyToSimulation() {
         propertyAddress: address,
         purchasePrice: purchasePrice,
         rehabCost: rehabCost,
-        downPaymentPercent: downPayment,
-        loanAmount: loanAmount,
+        downPaymentPercent: loanDetails?.downPaymentPercent || 100,
+        loanAmount: loanDetails?.loanAmount || 0,
         monthlyRentalIncome: monthlyRent,
-        notes: brrrrDetails ? JSON.stringify(brrrrDetails) : strategyLabels[strategy]
+        notes: JSON.stringify({
+            ...transaction.data,
+            transactionId: transaction.id
+        })
     });
     
     if (result.error) {
@@ -590,9 +932,23 @@ async function addPropertyToSimulation() {
         return;
     }
     
-    // If BRRRR, automatically schedule refinance
+    // If BRRRR, schedule refinance
     if (strategy === 'brrrr' && brrrrDetails) {
         const refinanceMonth = purchaseMonth + brrrrDetails.refinanceAfter;
+        const refinanceTransaction = {
+            id: `txn_${Date.now()}_ref`,
+            type: 'PROPERTY_REFINANCE',
+            month: refinanceMonth,
+            propertyId: transaction.propertyId,
+            data: {
+                address,
+                refinanceLTV: brrrrDetails.refinanceLTV,
+                notes: `BRRRR Refinance at ${brrrrDetails.refinanceLTV}% LTV`
+            }
+        };
+        
+        stateManager.addTransaction(refinanceTransaction);
+        
         await simulationAPI.addPhase(currentSimulation.id, {
             phaseNumber: currentPhases.length + 2,
             monthNumber: refinanceMonth,
@@ -600,14 +956,15 @@ async function addPropertyToSimulation() {
             propertyAddress: address,
             purchasePrice: 0,
             monthlyRentalIncome: 0,
-            notes: `BRRRR Refinance at ${brrrrDetails.refinanceLTV}% LTV`
+            notes: JSON.stringify(refinanceTransaction.data)
         });
     }
     
-    // Close modal and reload
+    // Close modal
     closePropertyModal();
-    await loadSimulation(currentSimulation.id);
-    await refreshAllUI();
+    
+    // Update all UI components through state manager
+    // Timeline will automatically update via subscriptions
 }
 
 // Export simulation
@@ -1109,21 +1466,24 @@ function updateTimelineView() {
     const track = document.getElementById('timelineTrack');
     if (!track) return;
     
-    // Keep the initial snapshot
-    const initialSnapshot = track.querySelector('.timeline-card[data-month="0"]');
+    // Clear all cards
+    track.innerHTML = '';
     
-    // Clear everything except initial snapshot
-    while (track.children.length > 1) {
-        track.removeChild(track.lastChild);
-    }
+    // Add initial snapshot card
+    const initialCard = createTimelineCard(0, 'snapshot', {
+        cashReserves: currentSimulation?.initial_capital || 0,
+        monthlyIncome: 0,
+        totalProperties: 0,
+        totalEquity: 0
+    });
+    track.appendChild(initialCard);
     
-    // Update initial snapshot with current simulation data
-    if (initialSnapshot && currentSimulation) {
-        const cashSpan = initialSnapshot.querySelector('#startingCash');
-        if (cashSpan) {
-            cashSpan.textContent = financialCalc.formatCurrency(currentSimulation.initial_capital);
+    // Subscribe this card to state updates
+    stateManager.subscribe(`timeline-card-0`, (state) => {
+        if (state && state.months[0]) {
+            updateTimelineCard(initialCard, 0, state.months[0]);
         }
-    }
+    });
     
     // Add timeline cards for each phase
     let lastMonth = 0;
@@ -1235,10 +1595,61 @@ function addAcquisitionCard(phase) {
         track.appendChild(addBtn);
     }
     
-    // Add automatic snapshot after property acquisition
-    setTimeout(() => {
-        addTimeSnapshotCard(phase.month_number + 1, true);
-    }, 100); // Small delay to ensure projections are updated
+    // No more automatic snapshots - user must add manually
+}
+
+// Create a timeline card element
+function createTimelineCard(month, type, data) {
+    const card = document.createElement('div');
+    card.className = `timeline-card ${type}-card`;
+    card.setAttribute('data-month', month);
+    
+    if (type === 'snapshot') {
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-icon">📊</span>
+                <h3>Month ${month}</h3>
+            </div>
+            <div class="card-content">
+                <div class="metric-row">
+                    <span class="metric-icon">💰</span>
+                    <span class="metric-text">Cash: <strong class="cash-value">${financialCalc.formatCurrency(data.cashReserves || 0)}</strong></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-icon">🏠</span>
+                    <span class="metric-text">Properties: <span class="property-count">${data.totalProperties || 0}</span></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-icon">📈</span>
+                    <span class="metric-text">Income: <strong class="income-value">${financialCalc.formatCurrency(data.monthlyIncome || 0)}/mo</strong></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-icon">💎</span>
+                    <span class="metric-text">Equity: <strong class="equity-value">${financialCalc.formatCurrency(data.totalEquity || 0)}</strong></span>
+                </div>
+            </div>
+        `;
+    }
+    
+    return card;
+}
+
+// Update timeline card with new data
+function updateTimelineCard(card, month, monthState) {
+    if (!card || !monthState) return;
+    
+    // Update values
+    const cashElement = card.querySelector('.cash-value');
+    if (cashElement) cashElement.textContent = financialCalc.formatCurrency(monthState.cashReserves);
+    
+    const propertyElement = card.querySelector('.property-count');
+    if (propertyElement) propertyElement.textContent = monthState.totalProperties;
+    
+    const incomeElement = card.querySelector('.income-value');
+    if (incomeElement) incomeElement.textContent = `${financialCalc.formatCurrency(monthState.monthlyIncome)}/mo`;
+    
+    const equityElement = card.querySelector('.equity-value');
+    if (equityElement) equityElement.textContent = financialCalc.formatCurrency(monthState.totalEquity);
 }
 
 // Add snapshot card to timeline
@@ -1323,16 +1734,16 @@ function addTimeSnapshotCard(month, isAutomatic = false) {
 
 // Update progress bar
 function updateProgressBar() {
-    if (!currentSimulation || currentProjections.length === 0) {
-        document.getElementById('progressText').textContent = '$0 / $' + (currentSimulation?.target_monthly_income || 10000) + ' per month';
+    const state = stateManager.getCurrentState();
+    const targetIncome = currentSimulation?.target_monthly_income || 10000;
+    
+    if (!state || !state.summary) {
+        document.getElementById('progressText').textContent = `$0 / $${targetIncome} per month`;
         document.getElementById('progressFill').style.width = '0%';
         return;
     }
     
-    const targetIncome = currentSimulation.target_monthly_income;
-    const lastProjection = currentProjections[currentProjections.length - 1];
-    const currentIncome = lastProjection.net_cashflow; // Use net cash flow for true income
-    
+    const currentIncome = state.summary.monthlyIncome;
     const progress = Math.min((currentIncome / targetIncome) * 100, 100);
     
     document.getElementById('progressText').textContent = 
