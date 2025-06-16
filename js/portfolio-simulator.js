@@ -165,13 +165,14 @@ function updateSimulationUI() {
     if (!currentSimulation) return;
     
     document.getElementById('simulationTitle').textContent = currentSimulation.name;
-    updateTimelineView();
     updateMetrics();
     updateProgressBar();
     updatePortfolioSummary();
     updateCashReservesDisplay();
     updateLoanSummary();
+    updateTimelineView(); // Call this after metrics are updated
     checkMilestones();
+    updateMetricsWithGrowth(); // Ensure growth percentages are shown
 }
 
 // Update phases list
@@ -279,6 +280,42 @@ function updateMetrics() {
         financialCalc.formatCurrency(lastProjection.total_equity);
     document.getElementById('currentROI').textContent = 
         financialCalc.formatPercentage(lastProjection.roi_percentage);
+}
+
+// Update metrics with growth percentages
+function updateMetricsWithGrowth() {
+    if (!currentProjections || currentProjections.length === 0) return;
+    
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const firstProjection = currentProjections[0] || { net_cashflow: 0, total_equity: currentSimulation.initial_capital };
+    
+    // Update income metric with growth
+    const incomeCard = document.querySelector('#metricsGrid > .metric-card:nth-child(1)');
+    if (incomeCard) {
+        const incomeGrowth = firstProjection.net_cashflow > 0 
+            ? ((lastProjection.net_cashflow - firstProjection.net_cashflow) / firstProjection.net_cashflow * 100).toFixed(1)
+            : lastProjection.net_cashflow > 0 ? '∞' : '0';
+        
+        incomeCard.innerHTML = `
+            <div class="metric-label">Current Monthly Income</div>
+            <div class="metric-value">${financialCalc.formatCurrency(lastProjection.net_cashflow)}</div>
+            ${incomeGrowth !== '0' ? `<div class="metric-change positive">↑ ${incomeGrowth}%</div>` : ''}
+        `;
+    }
+    
+    // Update equity metric with growth
+    const equityCard = document.querySelector('#metricsGrid > .metric-card:nth-child(3)');
+    if (equityCard) {
+        const equityGrowth = ((lastProjection.total_equity - currentSimulation.initial_capital) / currentSimulation.initial_capital * 100).toFixed(1);
+        
+        equityCard.innerHTML = `
+            <div class="metric-label">Total Equity</div>
+            <div class="metric-value">${financialCalc.formatCurrency(lastProjection.total_equity)}</div>
+            ${equityGrowth !== '0.0' ? `<div class="metric-change ${equityGrowth >= 0 ? 'positive' : 'negative'}">
+                ${equityGrowth >= 0 ? '↑' : '↓'} ${Math.abs(equityGrowth)}%
+            </div>` : ''}
+        `;
+    }
 }
 
 // Portfolio summary section
@@ -1090,7 +1127,9 @@ function updateTimelineView() {
     
     // Add timeline cards for each phase
     let lastMonth = 0;
-    currentPhases.forEach((phase, index) => {
+    const sortedPhases = [...currentPhases].sort((a, b) => a.month_number - b.month_number);
+    
+    sortedPhases.forEach((phase, index) => {
         // Add time snapshots between phases if needed
         if (phase.month_number > lastMonth + 6) {
             addTimeSnapshotCard(lastMonth + 6);
@@ -1105,6 +1144,10 @@ function updateTimelineView() {
             addLoanCard(phase);
         } else if (phase.action_type === 'wait') {
             addWaitCard(phase);
+        } else if (phase.action_type === 'refinance') {
+            addRefinanceCard(phase);
+        } else if (phase.action_type === 'snapshot') {
+            // Skip explicit snapshots as we add automatic ones
         }
         
         lastMonth = phase.month_number;
@@ -1193,7 +1236,9 @@ function addAcquisitionCard(phase) {
     }
     
     // Add automatic snapshot after property acquisition
-    addTimeSnapshotCard(phase.month_number + 1, true);
+    setTimeout(() => {
+        addTimeSnapshotCard(phase.month_number + 1, true);
+    }, 100); // Small delay to ensure projections are updated
 }
 
 // Add snapshot card to timeline
@@ -1278,18 +1323,34 @@ function addTimeSnapshotCard(month, isAutomatic = false) {
 
 // Update progress bar
 function updateProgressBar() {
-    if (!currentSimulation || currentProjections.length === 0) return;
+    if (!currentSimulation || currentProjections.length === 0) {
+        document.getElementById('progressText').textContent = '$0 / $' + (currentSimulation?.target_monthly_income || 10000) + ' per month';
+        document.getElementById('progressFill').style.width = '0%';
+        return;
+    }
     
     const targetIncome = currentSimulation.target_monthly_income;
     const lastProjection = currentProjections[currentProjections.length - 1];
-    const currentIncome = lastProjection.rental_income; // Use rental income instead of net cash flow
+    const currentIncome = lastProjection.net_cashflow; // Use net cash flow for true income
     
     const progress = Math.min((currentIncome / targetIncome) * 100, 100);
     
     document.getElementById('progressText').textContent = 
-        `${financialCalc.formatCurrency(currentIncome)} / ${financialCalc.formatCurrency(targetIncome)} rental income per month`;
+        `${financialCalc.formatCurrency(currentIncome)} / ${financialCalc.formatCurrency(targetIncome)} per month`;
     
     document.getElementById('progressFill').style.width = `${progress}%`;
+    
+    // Add color indication based on progress
+    const progressBar = document.getElementById('progressFill');
+    if (progress >= 100) {
+        progressBar.style.background = 'var(--accent-green)';
+    } else if (progress >= 75) {
+        progressBar.style.background = '#4CAF50';
+    } else if (progress >= 50) {
+        progressBar.style.background = '#FFC107';
+    } else {
+        progressBar.style.background = 'var(--primary-color)';
+    }
 }
 
 // Add sale card to timeline
@@ -1409,11 +1470,17 @@ async function refreshAllUI() {
     await runSimulation();
     
     // Update all UI components
-    updateSimulationUI();
+    updateMetrics();
+    updateTimelineView();
+    updateProgressBar();
+    updatePortfolioSummary();
     updatePhasesList();
     updateCashReservesDisplay();
     updateLoanSummary();
     checkMilestones();
+    
+    // Ensure metrics show growth percentages
+    updateMetricsWithGrowth();
 }
 
 // Update cash reserves display (piggy bank)

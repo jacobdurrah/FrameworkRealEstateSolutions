@@ -358,8 +358,29 @@
         .timeline-scroll-container {
             overflow-x: auto;
             overflow-y: hidden;
-            padding: 2rem 0;
+            padding: 2rem 1rem;
             margin: 1rem -1rem;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Custom scrollbar for timeline */
+        .timeline-scroll-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-track {
+            background: var(--light-gray);
+            border-radius: 4px;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-thumb {
+            background: var(--dark-gray);
+            border-radius: 4px;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
         }
 
         .timeline-track {
@@ -422,6 +443,11 @@
         .timeline-card.wait-card {
             background: #f3e5f5;
             border-color: #9C27B0;
+        }
+        
+        .timeline-card.refinance-card {
+            background: #e0f2f1;
+            border-color: #009688;
         }
         
         .property-breakdown {
