@@ -2,12 +2,46 @@
 
 ## Overview
 
-The Portfolio Simulator is a powerful tool for planning real estate investment strategies. It allows you to:
-- Set income goals and see how to achieve them
-- Add properties to a simulated portfolio
+The Portfolio Simulator is a powerful timeline-based tool for planning real estate investment strategies. It allows you to:
+- Set income goals and visualize your path to achieve them
+- Add properties with different investment strategies (Buy & Hold, BRRRR, Fix & Flip)
+- See portfolio snapshots at key time points
 - Track cash flow and equity growth over time
 - Save and load different scenarios
 - Export your plans for sharing
+
+## Timeline Card System
+
+The simulator uses a visual timeline with two types of cards:
+
+### 📊 Snapshot Cards
+Show your portfolio state at specific time points:
+- Cash reserves
+- Number and types of properties
+- Monthly income
+- Total equity
+- Progress toward goal
+
+### 🏠 Acquisition Cards
+Represent property purchases with:
+- Property details and price
+- Investment strategy
+- Financing information
+- Impact on cash flow
+
+## Visual Timeline Example
+
+```
+Month 0        Month 3         Month 6         Month 9         Month 12
+┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
+│📊 Start  │──→│🏠 Buy #1 │──→│📊 Update │──→│🏠 Buy #2 │──→│📊 1 Year │
+│          │   │          │   │          │   │          │   │          │
+│Cash: 50k │   │442       │   │Cash: 28k │   │556       │   │Cash: 15k │
+│Props: 0  │   │Chandler  │   │Props: 1  │   │Melbourne │   │Props: 2  │
+│Income: 0 │   │$65k      │   │Inc: $420 │   │$72k      │   │Inc: $980 │
+│          │   │Buy&Hold  │   │Equity:14k│   │BRRRR     │   │Eq: $38k  │
+└──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘
+```
 
 ## Getting Started
 
@@ -15,15 +49,15 @@ The Portfolio Simulator is a powerful tool for planning real estate investment s
 Navigate to the Portfolio Simulator from the main navigation menu or go directly to `/portfolio-simulator.html`
 
 ### 2. Set Your Goals
-In the left sidebar, enter:
+- **Target Monthly Income**: Your desired passive income goal (e.g., $10,000)
+- **Initial Capital**: How much money you have to start (e.g., $50,000)
 - **Simulation Name**: Give your plan a memorable name
-- **Target Monthly Income**: Your desired passive income goal
-- **Initial Capital**: How much money you have to start
-- **Time Horizon**: How many months to simulate (default: 36)
-- **Strategy Type**: Conservative, Balanced, or Aggressive
 
-### 3. Start Simulation
-Click "Start Simulation" to create your investment plan.
+### 3. Build Your Timeline
+- Start with Month 0 showing your initial capital
+- Click the "+" button to add properties or time snapshots
+- Watch how each acquisition affects your metrics
+- The timeline automatically shows your progress toward your goal
 
 ## Adding Properties
 
