@@ -568,8 +568,14 @@ function updateTimelineView() {
             addTimeSnapshotCard(lastMonth + 6);
         }
         
-        // Add acquisition card
-        addAcquisitionCard(phase);
+        // Add appropriate card based on action type
+        if (phase.action_type === 'buy') {
+            addAcquisitionCard(phase);
+        } else if (phase.action_type === 'sell') {
+            addSaleCard(phase);
+        } else if (phase.action_type === 'loan') {
+            addLoanCard(phase);
+        }
         
         lastMonth = phase.month_number;
     });
@@ -588,6 +594,9 @@ function updateTimelineView() {
             addTimeSnapshotCard(finalMonth);
         }
     }
+    
+    // Ensure horizontal scrolling works
+    track.parentElement.scrollLeft = track.scrollWidth;
 }
 
 // Add acquisition card to timeline
@@ -599,6 +608,9 @@ function addAcquisitionCard(phase) {
     card.setAttribute('data-month', phase.month_number);
     
     const strategy = phase.notes || 'Buy & Hold';
+    const downPayment = phase.purchase_price * (phase.down_payment_percent || 20) / 100;
+    const loanAmount = phase.purchase_price - downPayment;
+    const totalCash = downPayment + (phase.rehab_cost || 0) + (phase.purchase_price * 0.03); // Include closing costs
     
     card.innerHTML = `
         <div class="card-header">
@@ -609,6 +621,17 @@ function addAcquisitionCard(phase) {
             <div class="property-address">${phase.property_address || 'Property'}</div>
             <div class="metric-row">
                 <span class="metric-text">Price: <strong>${financialCalc.formatCurrency(phase.purchase_price)}</strong></span>
+            </div>
+            ${phase.rehab_cost > 0 ? `
+            <div class="metric-row">
+                <span class="metric-text">Rehab: <strong>${financialCalc.formatCurrency(phase.rehab_cost)}</strong></span>
+            </div>
+            ` : ''}
+            <div class="metric-row">
+                <span class="metric-text">Cash Needed: <strong>${financialCalc.formatCurrency(totalCash)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Loan: <strong>${financialCalc.formatCurrency(loanAmount)}</strong></span>
             </div>
             <div class="metric-row">
                 <span class="metric-text">Strategy: <strong>${strategy}</strong></span>
@@ -638,10 +661,13 @@ function addAcquisitionCard(phase) {
     } else {
         track.appendChild(addBtn);
     }
+    
+    // Add automatic snapshot after property acquisition
+    addTimeSnapshotCard(phase.month_number + 1, true);
 }
 
 // Add snapshot card to timeline
-function addTimeSnapshotCard(month) {
+function addTimeSnapshotCard(month, isAutomatic = false) {
     const track = document.getElementById('timelineTrack');
     
     // Find projection for this month
@@ -654,10 +680,18 @@ function addTimeSnapshotCard(month) {
     card.className = 'timeline-card snapshot-card';
     card.setAttribute('data-month', month);
     
+    // Calculate equity percentage
+    const totalValue = projection.total_equity + projection.total_debt;
+    const equityPercent = totalValue > 0 ? (projection.total_equity / totalValue * 100).toFixed(1) : 0;
+    
+    // Get property breakdown
+    const breakdown = projection.property_breakdown || {};
+    const totalProps = breakdown.hold + breakdown.brrrr_active + breakdown.flip_active + breakdown.sold;
+    
     card.innerHTML = `
         <div class="card-header">
             <span class="card-icon">📊</span>
-            <h3>Month ${month}</h3>
+            <h3>Month ${month} ${isAutomatic ? '(Auto)' : ''}</h3>
         </div>
         <div class="card-content">
             <div class="metric-row">
@@ -665,16 +699,32 @@ function addTimeSnapshotCard(month) {
                 <span class="metric-text">Cash: <strong>${financialCalc.formatCurrency(projection.cash_reserves)}</strong></span>
             </div>
             <div class="metric-row">
-                <span class="metric-icon">🏠</span>
-                <span class="metric-text">Properties: <strong>${projection.total_properties}</strong></span>
+                <span class="metric-icon">💵</span>
+                <span class="metric-text">Rent Collected: <strong>${financialCalc.formatCurrency(projection.accumulated_rent || 0)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-icon">💎</span>
+                <span class="metric-text">Equity: <strong>${financialCalc.formatCurrency(projection.total_equity)}</strong> (${equityPercent}%)</span>
+            </div>
+            <div class="property-breakdown">
+                <div class="breakdown-header">
+                    <span class="metric-icon">🏠</span>
+                    <span>Properties (${totalProps}):</span>
+                </div>
+                <div class="breakdown-items">
+                    ${breakdown.hold > 0 ? `<span class="breakdown-item">Hold: ${breakdown.hold}</span>` : ''}
+                    ${breakdown.brrrr_active > 0 ? `<span class="breakdown-item brrrr">BRRRR: ${breakdown.brrrr_active}</span>` : ''}
+                    ${breakdown.flip_active > 0 ? `<span class="breakdown-item flip">Flip: ${breakdown.flip_active}</span>` : ''}
+                    ${breakdown.sold > 0 ? `<span class="breakdown-item sold">Sold: ${breakdown.sold}</span>` : ''}
+                </div>
             </div>
             <div class="metric-row">
                 <span class="metric-icon">📈</span>
                 <span class="metric-text">Income: <strong>${financialCalc.formatCurrency(projection.net_cashflow)}/mo</strong></span>
             </div>
             <div class="metric-row">
-                <span class="metric-icon">💎</span>
-                <span class="metric-text">Equity: <strong>${financialCalc.formatCurrency(projection.total_equity)}</strong></span>
+                <span class="metric-icon">💳</span>
+                <span class="metric-text">Total Debt: <strong>${financialCalc.formatCurrency(projection.total_debt)}</strong></span>
             </div>
         </div>
     `;
@@ -694,14 +744,92 @@ function updateProgressBar() {
     
     const targetIncome = currentSimulation.target_monthly_income;
     const lastProjection = currentProjections[currentProjections.length - 1];
-    const currentIncome = lastProjection.net_cashflow;
+    const currentIncome = lastProjection.rental_income; // Use rental income instead of net cash flow
     
     const progress = Math.min((currentIncome / targetIncome) * 100, 100);
     
     document.getElementById('progressText').textContent = 
-        `${financialCalc.formatCurrency(currentIncome)} / ${financialCalc.formatCurrency(targetIncome)} per month`;
+        `${financialCalc.formatCurrency(currentIncome)} / ${financialCalc.formatCurrency(targetIncome)} rental income per month`;
     
     document.getElementById('progressFill').style.width = `${progress}%`;
+}
+
+// Add sale card to timeline
+function addSaleCard(phase) {
+    const track = document.getElementById('timelineTrack');
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card sale-card';
+    card.setAttribute('data-month', phase.month_number);
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">💰</span>
+            <h3>Month ${phase.month_number} - Sale</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${phase.property_address || 'Property'}</div>
+            <div class="metric-row">
+                <span class="metric-text">Sale Price: <strong>${financialCalc.formatCurrency(phase.sale_price)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Net Proceeds: <strong>~${financialCalc.formatCurrency(phase.sale_price * 0.94)}</strong></span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
+    
+    // Add automatic snapshot after sale
+    addTimeSnapshotCard(phase.month_number + 1, true);
+}
+
+// Add loan card to timeline
+function addLoanCard(phase) {
+    const track = document.getElementById('timelineTrack');
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card loan-card';
+    card.setAttribute('data-month', phase.month_number);
+    
+    const monthlyPayment = financialCalc.calculateMortgagePayment(
+        phase.loan_amount,
+        phase.interest_rate || 0.07,
+        (phase.loan_term_months || 360) / 12
+    );
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">💳</span>
+            <h3>Month ${phase.month_number} - Loan</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${phase.property_address || 'General Loan'}</div>
+            <div class="metric-row">
+                <span class="metric-text">Amount: <strong>${financialCalc.formatCurrency(phase.loan_amount)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Rate: <strong>${((phase.interest_rate || 0.07) * 100).toFixed(2)}%</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Payment: <strong>${financialCalc.formatCurrency(monthlyPayment)}/mo</strong></span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
 }
 
 // Show add timeline modal
@@ -741,4 +869,222 @@ function showTimeSnapshotForm() {
             loadSimulation(currentSimulation.id);
         }
     });
+}
+
+// Show sell property form
+function showSellPropertyForm() {
+    closeTimelineModal();
+    
+    // Get list of active properties
+    const activeProperties = currentProjections[currentProjections.length - 1]?.properties_data?.filter(p => p.status !== 'sold') || [];
+    
+    if (activeProperties.length === 0) {
+        alert('No properties available to sell');
+        return;
+    }
+    
+    const modal = document.getElementById('propertyModal');
+    const content = document.getElementById('propertyModalContent');
+    
+    content.innerHTML = `
+        <div class="goal-inputs">
+            <h3>Sell Property</h3>
+            <div class="input-group">
+                <label>Select Property</label>
+                <select id="sellPropertySelect">
+                    ${activeProperties.map(p => `
+                        <option value="${p.address}">${p.address} - Value: ${financialCalc.formatCurrency(p.value)}</option>
+                    `).join('')}
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>Sale Price</label>
+                <input type="number" id="salePrice" placeholder="Sale price" />
+            </div>
+            
+            <div class="input-group">
+                <label>Month of Sale</label>
+                <input type="number" id="saleMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+            </div>
+            
+            <button class="btn btn-primary" onclick="addPropertySale()">
+                Sell Property
+            </button>
+        </div>
+    `;
+    
+    // Set default sale price based on selected property
+    const propertySelect = document.getElementById('sellPropertySelect');
+    const selectedProperty = activeProperties.find(p => p.address === propertySelect.value);
+    if (selectedProperty) {
+        document.getElementById('salePrice').value = Math.round(selectedProperty.value * 1.1); // 10% appreciation
+    }
+    
+    propertySelect.addEventListener('change', (e) => {
+        const prop = activeProperties.find(p => p.address === e.target.value);
+        if (prop) {
+            document.getElementById('salePrice').value = Math.round(prop.value * 1.1);
+        }
+    });
+    
+    modal.classList.add('active');
+}
+
+// Add property sale
+async function addPropertySale() {
+    const address = document.getElementById('sellPropertySelect').value;
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const saleMonth = parseInt(document.getElementById('saleMonth').value);
+    
+    if (!address || !salePrice) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const result = await simulationAPI.addPhase(currentSimulation.id, {
+        phaseNumber: currentPhases.length + 1,
+        monthNumber: saleMonth,
+        actionType: 'sell',
+        propertyAddress: address,
+        salePrice: salePrice,
+        purchasePrice: 0,
+        monthlyRentalIncome: 0,
+        notes: 'Property sale'
+    });
+    
+    if (result.error) {
+        alert('Error adding sale: ' + result.error.message);
+        return;
+    }
+    
+    closePropertyModal();
+    await loadSimulation(currentSimulation.id);
+}
+
+// Show loan form
+function showLoanForm() {
+    closeTimelineModal();
+    
+    const modal = document.getElementById('propertyModal');
+    const content = document.getElementById('propertyModalContent');
+    
+    content.innerHTML = `
+        <div class="goal-inputs">
+            <h3>Add Loan</h3>
+            <div class="input-group">
+                <label>Loan Type</label>
+                <select id="loanType">
+                    <option value="heloc">HELOC (Home Equity Line)</option>
+                    <option value="private">Private Money</option>
+                    <option value="hard-money">Hard Money</option>
+                    <option value="personal">Personal Loan</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>Loan Amount</label>
+                <input type="number" id="loanAmount" placeholder="100000" />
+            </div>
+            
+            <div class="input-group">
+                <label>Interest Rate (%)</label>
+                <input type="number" id="interestRate" step="0.1" placeholder="7.0" value="7.0" />
+            </div>
+            
+            <div class="input-group">
+                <label>Term (months)</label>
+                <input type="number" id="loanTerm" placeholder="360" value="360" />
+            </div>
+            
+            <div class="input-group">
+                <label>Closing Costs</label>
+                <input type="number" id="closingCosts" placeholder="3000" value="0" />
+            </div>
+            
+            <div class="input-group">
+                <label>Points</label>
+                <input type="number" id="loanPoints" step="0.25" placeholder="0" value="0" />
+            </div>
+            
+            <div class="input-group">
+                <label>Month to Take Loan</label>
+                <input type="number" id="loanMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+            </div>
+            
+            <div class="loan-preview">
+                <p id="monthlyPaymentPreview">Monthly Payment: $0</p>
+                <p id="totalCostPreview">Total Closing Costs: $0</p>
+            </div>
+            
+            <button class="btn btn-primary" onclick="addLoan()">
+                Add Loan
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners for preview
+    const updateLoanPreview = () => {
+        const amount = parseFloat(document.getElementById('loanAmount').value) || 0;
+        const rate = parseFloat(document.getElementById('interestRate').value) / 100 || 0.07;
+        const term = parseInt(document.getElementById('loanTerm').value) || 360;
+        const closing = parseFloat(document.getElementById('closingCosts').value) || 0;
+        const points = parseFloat(document.getElementById('loanPoints').value) || 0;
+        
+        const monthlyPayment = financialCalc.calculateMortgagePayment(amount, rate, term / 12);
+        const pointsCost = amount * (points / 100);
+        const totalClosing = closing + pointsCost;
+        
+        document.getElementById('monthlyPaymentPreview').textContent = 
+            `Monthly Payment: ${financialCalc.formatCurrency(monthlyPayment)}`;
+        document.getElementById('totalCostPreview').textContent = 
+            `Total Closing Costs: ${financialCalc.formatCurrency(totalClosing)}`;
+    };
+    
+    ['loanAmount', 'interestRate', 'loanTerm', 'closingCosts', 'loanPoints'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateLoanPreview);
+    });
+    
+    updateLoanPreview();
+    modal.classList.add('active');
+}
+
+// Add loan
+async function addLoan() {
+    const loanType = document.getElementById('loanType').value;
+    const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+    const interestRate = parseFloat(document.getElementById('interestRate').value) / 100;
+    const loanTerm = parseInt(document.getElementById('loanTerm').value);
+    const closingCosts = parseFloat(document.getElementById('closingCosts').value) || 0;
+    const points = parseFloat(document.getElementById('loanPoints').value) || 0;
+    const loanMonth = parseInt(document.getElementById('loanMonth').value);
+    
+    if (!loanAmount || !interestRate || !loanTerm) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const result = await simulationAPI.addPhase(currentSimulation.id, {
+        phaseNumber: currentPhases.length + 1,
+        monthNumber: loanMonth,
+        actionType: 'loan',
+        propertyAddress: `${loanType.toUpperCase()} Loan`,
+        purchasePrice: 0,
+        loanAmount: loanAmount,
+        monthlyRentalIncome: 0,
+        loanType: loanType,
+        interestRate: interestRate,
+        loanTermMonths: loanTerm,
+        closingCosts: closingCosts,
+        points: points,
+        notes: `${loanType} loan`
+    });
+    
+    if (result.error) {
+        alert('Error adding loan: ' + result.error.message);
+        return;
+    }
+    
+    closePropertyModal();
+    await loadSimulation(currentSimulation.id);
 }

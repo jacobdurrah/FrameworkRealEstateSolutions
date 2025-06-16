@@ -155,7 +155,13 @@ class SimulationAPIService {
             down_payment_percent: phaseData.downPaymentPercent || 20,
             loan_amount: phaseData.loanAmount,
             monthly_rental_income: phaseData.monthlyRentalIncome,
-            notes: phaseData.notes
+            notes: phaseData.notes,
+            // New loan fields
+            loan_type: phaseData.loanType,
+            interest_rate: phaseData.interestRate,
+            loan_term_months: phaseData.loanTermMonths,
+            closing_costs: phaseData.closingCosts,
+            points: phaseData.points
         };
 
         const { data, error } = await this.client
@@ -229,16 +235,18 @@ class SimulationAPIService {
         const projection = {
             simulation_id: simulationId,
             month_number: monthNumber,
-            total_properties: projectionData.totalProperties || 0,
-            rental_income: projectionData.rentalIncome || 0,
-            total_expenses: projectionData.totalExpenses || 0,
-            mortgage_payments: projectionData.mortgagePayments || 0,
-            net_cashflow: projectionData.netCashflow || 0,
-            cash_reserves: projectionData.cashReserves || 0,
-            total_equity: projectionData.totalEquity || 0,
-            total_debt: projectionData.totalDebt || 0,
-            roi_percentage: projectionData.roiPercentage || 0,
-            properties_data: projectionData.propertiesData || {}
+            total_properties: projectionData.total_properties || 0,
+            rental_income: projectionData.rental_income || 0,
+            total_expenses: projectionData.total_expenses || 0,
+            mortgage_payments: projectionData.mortgage_payments || 0,
+            net_cashflow: projectionData.net_cashflow || 0,
+            cash_reserves: projectionData.cash_reserves || 0,
+            total_equity: projectionData.total_equity || 0,
+            total_debt: projectionData.total_debt || 0,
+            roi_percentage: projectionData.roi_percentage || 0,
+            properties_data: projectionData.properties_data || {},
+            accumulated_rent: projectionData.accumulated_rent || 0,
+            property_breakdown: projectionData.property_breakdown || {}
         };
 
         const { data, error } = await this.client

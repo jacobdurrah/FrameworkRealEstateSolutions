@@ -408,6 +408,75 @@
             background: #fff8e1;
             border-color: var(--accent-gold);
         }
+        
+        .timeline-card.sale-card {
+            background: #e8f5e9;
+            border-color: #4CAF50;
+        }
+        
+        .timeline-card.loan-card {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+        
+        .property-breakdown {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .breakdown-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        
+        .breakdown-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .breakdown-item {
+            background: var(--bg-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .breakdown-item.brrrr {
+            background: #e3f2fd;
+            color: #1976D2;
+        }
+        
+        .breakdown-item.flip {
+            background: #fff3e0;
+            color: #F57C00;
+        }
+        
+        .breakdown-item.sold {
+            background: #e8f5e9;
+            color: #388E3C;
+        }
+        
+        .loan-preview {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+        
+        .loan-preview p {
+            margin: 0.25rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
 
         .card-header {
             display: flex;
@@ -898,6 +967,16 @@
                             <span class="choice-icon">🏠</span>
                             <span class="choice-label">Property Acquisition</span>
                             <span class="choice-desc">Add a new property purchase</span>
+                        </button>
+                        <button class="choice-btn" onclick="showSellPropertyForm()">
+                            <span class="choice-icon">💰</span>
+                            <span class="choice-label">Sell Property</span>
+                            <span class="choice-desc">Sell an existing property</span>
+                        </button>
+                        <button class="choice-btn" onclick="showLoanForm()">
+                            <span class="choice-icon">💳</span>
+                            <span class="choice-label">Add Loan</span>
+                            <span class="choice-desc">Add a loan or credit line</span>
                         </button>
                         <button class="choice-btn" onclick="showTimeSnapshotForm()">
                             <span class="choice-icon">📊</span>
