@@ -165,9 +165,9 @@ function updateSimulationUI() {
     if (!currentSimulation) return;
     
     document.getElementById('simulationTitle').textContent = currentSimulation.name;
-    updatePhasesList();
+    updateTimelineView();
     updateMetrics();
-    drawTimeline();
+    updateProgressBar();
 }
 
 // Update phases list
@@ -540,4 +540,210 @@ function exportSimulation() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+}
+
+// Timeline View Functions
+
+// Update timeline view with cards
+function updateTimelineView() {
+    const track = document.getElementById('timelineTrack');
+    if (!track) return;
+    
+    // Keep the initial snapshot
+    const initialSnapshot = track.querySelector('.timeline-card[data-month="0"]');
+    
+    // Clear everything except initial snapshot
+    while (track.children.length > 1) {
+        track.removeChild(track.lastChild);
+    }
+    
+    // Update initial snapshot with current simulation data
+    if (initialSnapshot && currentSimulation) {
+        const cashSpan = initialSnapshot.querySelector('#startingCash');
+        if (cashSpan) {
+            cashSpan.textContent = financialCalc.formatCurrency(currentSimulation.initial_capital);
+        }
+    }
+    
+    // Add timeline cards for each phase
+    let lastMonth = 0;
+    currentPhases.forEach((phase, index) => {
+        // Add time snapshots between phases if needed
+        if (phase.month_number > lastMonth + 6) {
+            addTimeSnapshotCard(lastMonth + 6);
+        }
+        
+        // Add acquisition card
+        addAcquisitionCard(phase);
+        
+        lastMonth = phase.month_number;
+    });
+    
+    // Add final add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'timeline-add-btn';
+    addBtn.onclick = () => showAddTimelineModal(lastMonth + 1);
+    addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    track.appendChild(addBtn);
+    
+    // Add a final snapshot if we have projections
+    if (currentProjections.length > 0) {
+        const finalMonth = currentSimulation.time_horizon_months;
+        if (lastMonth < finalMonth) {
+            addTimeSnapshotCard(finalMonth);
+        }
+    }
+}
+
+// Add acquisition card to timeline
+function addAcquisitionCard(phase) {
+    const track = document.getElementById('timelineTrack');
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card acquisition-card';
+    card.setAttribute('data-month', phase.month_number);
+    
+    const strategy = phase.notes || 'Buy & Hold';
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">🏠</span>
+            <h3>Month ${phase.month_number}</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${phase.property_address || 'Property'}</div>
+            <div class="metric-row">
+                <span class="metric-text">Price: <strong>${financialCalc.formatCurrency(phase.purchase_price)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Strategy: <strong>${strategy}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Rent: <strong>${financialCalc.formatCurrency(phase.monthly_rental_income)}/mo</strong></span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
+    
+    // Add an add button after this card
+    const addBtn = document.createElement('button');
+    addBtn.className = 'timeline-add-btn';
+    addBtn.onclick = () => showAddTimelineModal(phase.month_number + 1);
+    addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    
+    if (lastBtn) {
+        track.insertBefore(addBtn, lastBtn);
+    } else {
+        track.appendChild(addBtn);
+    }
+}
+
+// Add snapshot card to timeline
+function addTimeSnapshotCard(month) {
+    const track = document.getElementById('timelineTrack');
+    
+    // Find projection for this month
+    const projection = currentProjections.find(p => p.month_number === month) || 
+                      currentProjections[currentProjections.length - 1];
+    
+    if (!projection) return;
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card snapshot-card';
+    card.setAttribute('data-month', month);
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">📊</span>
+            <h3>Month ${month}</h3>
+        </div>
+        <div class="card-content">
+            <div class="metric-row">
+                <span class="metric-icon">💰</span>
+                <span class="metric-text">Cash: <strong>${financialCalc.formatCurrency(projection.cash_reserves)}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-icon">🏠</span>
+                <span class="metric-text">Properties: <strong>${projection.total_properties}</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-icon">📈</span>
+                <span class="metric-text">Income: <strong>${financialCalc.formatCurrency(projection.net_cashflow)}/mo</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-icon">💎</span>
+                <span class="metric-text">Equity: <strong>${financialCalc.formatCurrency(projection.total_equity)}</strong></span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
+}
+
+// Update progress bar
+function updateProgressBar() {
+    if (!currentSimulation || currentProjections.length === 0) return;
+    
+    const targetIncome = currentSimulation.target_monthly_income;
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const currentIncome = lastProjection.net_cashflow;
+    
+    const progress = Math.min((currentIncome / targetIncome) * 100, 100);
+    
+    document.getElementById('progressText').textContent = 
+        `${financialCalc.formatCurrency(currentIncome)} / ${financialCalc.formatCurrency(targetIncome)} per month`;
+    
+    document.getElementById('progressFill').style.width = `${progress}%`;
+}
+
+// Show add timeline modal
+function showAddTimelineModal(suggestedMonth) {
+    window.currentTimelineMonth = suggestedMonth || 1;
+    const modal = document.getElementById('timelineModal');
+    modal.classList.add('active');
+}
+
+// Close timeline modal
+function closeTimelineModal() {
+    document.getElementById('timelineModal').classList.remove('active');
+}
+
+// Show property form
+function showPropertyForm() {
+    closeTimelineModal();
+    showPropertySearch();
+}
+
+// Show time snapshot form
+function showTimeSnapshotForm() {
+    const month = window.currentTimelineMonth || 6;
+    
+    // Add a snapshot phase
+    simulationAPI.addPhase(currentSimulation.id, {
+        phaseNumber: currentPhases.length + 1,
+        monthNumber: month,
+        actionType: 'snapshot',
+        propertyAddress: `Month ${month} Snapshot`,
+        purchasePrice: 0,
+        monthlyRentalIncome: 0,
+        notes: 'Portfolio checkpoint'
+    }).then(result => {
+        if (!result.error) {
+            closeTimelineModal();
+            loadSimulation(currentSimulation.id);
+        }
+    });
 }

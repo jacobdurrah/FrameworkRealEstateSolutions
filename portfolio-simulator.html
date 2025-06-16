@@ -264,17 +264,218 @@
             margin: 0;
         }
 
-        /* Canvas for timeline */
-        #timelineCanvas {
-            width: 100%;
-            height: 300px;
-            margin-top: 1rem;
+        /* Timeline Styles */
+        .timeline-scroll-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 2rem 0;
+            margin: 1rem -1rem;
+        }
+
+        .timeline-track {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0 1rem;
+            min-width: fit-content;
+            position: relative;
+        }
+
+        .timeline-track::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .timeline-card {
+            background: var(--pure-white);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 200px;
+            max-width: 250px;
+            position: relative;
+            z-index: 1;
+            transition: all 0.2s ease;
+        }
+
+        .timeline-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .timeline-card.snapshot-card {
+            background: var(--card-bg);
+        }
+
+        .timeline-card.acquisition-card {
+            background: #fff8e1;
+            border-color: var(--accent-gold);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+        }
+
+        .card-header h3 {
+            font-size: 0.9rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .card-content {
+            font-size: 0.85rem;
+        }
+
+        .metric-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-icon {
+            font-size: 1rem;
+            width: 1.5rem;
+        }
+
+        .metric-text {
+            color: var(--text-secondary);
+        }
+
+        .metric-text strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .timeline-add-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .timeline-add-btn:hover {
+            background: var(--primary-hover);
+            transform: scale(1.1);
+        }
+
+        /* Goal Progress */
+        .goal-progress {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: var(--light-gray);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.5s ease;
+        }
+
+        /* Portfolio Summary */
+        .portfolio-summary {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
         }
 
         /* Loading state */
         .loading {
             text-align: center;
             padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        /* Choice Buttons */
+        .add-choice {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .add-choice h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .choice-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .choice-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-width: 180px;
+        }
+
+        .choice-btn:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .choice-icon {
+            display: block;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .choice-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .choice-desc {
+            display: block;
+            font-size: 0.85rem;
             color: var(--text-secondary);
         }
 
@@ -455,16 +656,55 @@
                 <!-- Timeline Visualization -->
                 <div class="timeline-container">
                     <h2>Investment Timeline</h2>
-                    <canvas id="timelineCanvas"></canvas>
-                    <div id="timelineDetails" style="margin-top: 1rem;"></div>
+                    <div class="timeline-scroll-container">
+                        <div class="timeline-track" id="timelineTrack">
+                            <!-- Initial snapshot card -->
+                            <div class="timeline-card snapshot-card" data-month="0">
+                                <div class="card-header">
+                                    <span class="card-icon">📊</span>
+                                    <h3>Month 0 - Start</h3>
+                                </div>
+                                <div class="card-content">
+                                    <div class="metric-row">
+                                        <span class="metric-icon">💰</span>
+                                        <span class="metric-text">Cash: <span id="startingCash">$0</span></span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-icon">🏠</span>
+                                        <span class="metric-text">Properties: 0</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-icon">📈</span>
+                                        <span class="metric-text">Income: $0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Add button -->
+                            <button class="timeline-add-btn" onclick="showAddTimelineModal(1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div class="goal-progress">
+                        <div class="progress-label">
+                            <span>Progress to Goal</span>
+                            <span id="progressText">$0 / $10,000 per month</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Phase List -->
-                <div class="phase-list">
-                    <h2>Investment Phases</h2>
-                    <div id="phasesList">
+                <!-- Portfolio Summary -->
+                <div class="portfolio-summary">
+                    <h2>Portfolio Summary</h2>
+                    <div id="portfolioDetails">
                         <p style="color: var(--text-secondary);">
-                            No phases added yet. Click "Add Property" to begin planning.
+                            Add properties to see your portfolio summary.
                         </p>
                     </div>
                 </div>
@@ -472,11 +712,40 @@
         </div>
     </div>
 
-    <!-- Add Property Modal -->
+    <!-- Add Timeline Item Modal -->
+    <div id="timelineModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add to Timeline</h2>
+                <button class="btn-icon" onclick="closeTimelineModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="timelineModalContent">
+                <div class="add-choice">
+                    <h3>What would you like to add?</h3>
+                    <div class="choice-buttons">
+                        <button class="choice-btn" onclick="showPropertyForm()">
+                            <span class="choice-icon">🏠</span>
+                            <span class="choice-label">Property Acquisition</span>
+                            <span class="choice-desc">Add a new property purchase</span>
+                        </button>
+                        <button class="choice-btn" onclick="showTimeSnapshotForm()">
+                            <span class="choice-icon">📊</span>
+                            <span class="choice-label">Time Snapshot</span>
+                            <span class="choice-desc">Add a portfolio checkpoint</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Selection Modal -->
     <div id="propertyModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add Property to Simulation</h2>
+                <h2>Add Property to Timeline</h2>
                 <button class="btn-icon" onclick="closePropertyModal()">
                     <i class="fas fa-times"></i>
                 </button>
