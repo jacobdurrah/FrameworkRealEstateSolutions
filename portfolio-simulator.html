@@ -419,6 +419,11 @@
             border-color: #2196F3;
         }
         
+        .timeline-card.wait-card {
+            background: #f3e5f5;
+            border-color: #9C27B0;
+        }
+        
         .property-breakdown {
             margin-top: 0.75rem;
             padding-top: 0.75rem;
@@ -476,6 +481,60 @@
             margin: 0.25rem 0;
             color: var(--text-secondary);
             font-size: 0.9rem;
+        }
+        
+        /* Metric enhancements */
+        .metric-change {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .metric-change.positive {
+            color: #4CAF50;
+        }
+        
+        .metric-change.negative {
+            color: #f44336;
+        }
+        
+        .metric-subtext {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* Milestone markers */
+        .milestone-marker {
+            position: relative;
+            z-index: 2;
+            margin: 0 0.5rem;
+        }
+        
+        .milestone-flag {
+            background: var(--accent-gold);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+        
+        .milestone-marker.goal .milestone-flag {
+            background: #4CAF50;
+        }
+        
+        .milestone-marker.recovery .milestone-flag {
+            background: #2196F3;
+        }
+        
+        .milestone-icon {
+            font-size: 1rem;
         }
 
         .card-header {
@@ -760,20 +819,190 @@
         @media (max-width: 768px) {
             .simulator-container {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 0.5rem;
             }
 
             .sidebar {
                 position: static;
+                padding: 1rem;
+                margin-bottom: 1rem;
             }
 
             .simulation-header {
                 flex-direction: column;
                 gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .simulation-header h1 {
+                font-size: 1.5rem;
             }
 
             .modal-content {
                 padding: 1rem;
+                margin: 1rem;
+                max-height: 85vh;
             }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .metric-card {
+                padding: 1rem;
+            }
+            
+            .metric-value {
+                font-size: 1.5rem;
+            }
+            
+            .timeline-container {
+                padding: 1rem;
+            }
+            
+            .timeline-scroll-container {
+                margin: 0.5rem -0.5rem;
+                padding: 1rem 0;
+            }
+            
+            .timeline-card {
+                min-width: 160px;
+                max-width: 200px;
+                padding: 0.75rem;
+            }
+            
+            .timeline-card h3 {
+                font-size: 0.8rem;
+            }
+            
+            .card-content {
+                font-size: 0.75rem;
+            }
+            
+            .metric-row {
+                margin-bottom: 0.25rem;
+            }
+            
+            .milestone-flag {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
+            }
+            
+            .phase-list, .portfolio-summary {
+                padding: 1rem;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            
+            .choice-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .choice-btn {
+                width: 100%;
+                min-width: unset;
+                padding: 1.5rem 1rem;
+            }
+            
+            .tab-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+            
+            .saved-simulations {
+                margin-top: 1rem;
+                padding-top: 1rem;
+            }
+            
+            .property-breakdown {
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+            }
+            
+            .breakdown-items {
+                gap: 0.25rem;
+            }
+            
+            .breakdown-item {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.4rem;
+            }
+            
+            /* Ensure modals are properly sized on mobile */
+            .modal {
+                padding: 1rem;
+            }
+            
+            .modal-header h2 {
+                font-size: 1.25rem;
+            }
+            
+            /* Improve form inputs on mobile */
+            .input-group input,
+            .input-group select {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            /* Hide less important info on very small screens */
+            @media (max-width: 400px) {
+                .metric-label {
+                    font-size: 0.8rem;
+                }
+                
+                .summary-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .timeline-add-btn {
+                    width: 30px;
+                    height: 30px;
+                    font-size: 0.8rem;
+                }
+            }
+        }
+        
+        /* Export Modal Styles */
+        .export-options {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .export-options .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .export-note {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid var(--primary-color);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+        }
+        
+        .export-note i {
+            color: var(--primary-color);
+            margin-right: 0.5rem;
         }
     </style>
 </head>
@@ -982,6 +1211,16 @@
                             <span class="choice-icon">📊</span>
                             <span class="choice-label">Time Snapshot</span>
                             <span class="choice-desc">Add a portfolio checkpoint</span>
+                        </button>
+                        <button class="choice-btn" onclick="showWaitingPeriodForm()">
+                            <span class="choice-icon">⏰</span>
+                            <span class="choice-label">Wait Period</span>
+                            <span class="choice-desc">Wait to accumulate cash</span>
+                        </button>
+                        <button class="choice-btn" onclick="showRefinanceForm()">
+                            <span class="choice-icon">🏦</span>
+                            <span class="choice-label">Refinance Property</span>
+                            <span class="choice-desc">Cash-out refinance for equity</span>
                         </button>
                     </div>
                 </div>

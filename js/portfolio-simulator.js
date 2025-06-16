@@ -169,6 +169,9 @@ function updateSimulationUI() {
     updateMetrics();
     updateProgressBar();
     updatePortfolioSummary();
+    updateCashReservesDisplay();
+    updateLoanSummary();
+    checkMilestones();
 }
 
 // Update phases list
@@ -417,20 +420,33 @@ async function showPropertySearch() {
                     <label>Investment Strategy</label>
                     <div class="strategy-selector">
                         <label class="strategy-option">
-                            <input type="radio" name="strategy" value="buy-hold" checked />
+                            <input type="radio" name="strategy" value="buy-hold" checked onchange="updateStrategyOptions()" />
                             <span class="strategy-label">Buy & Hold</span>
                             <span class="strategy-desc">Long-term rental income</span>
                         </label>
                         <label class="strategy-option">
-                            <input type="radio" name="strategy" value="brrrr" />
+                            <input type="radio" name="strategy" value="brrrr" onchange="updateStrategyOptions()" />
                             <span class="strategy-label">BRRRR</span>
                             <span class="strategy-desc">Buy, Rehab, Rent, Refinance</span>
                         </label>
                         <label class="strategy-option">
-                            <input type="radio" name="strategy" value="flip" />
+                            <input type="radio" name="strategy" value="flip" onchange="updateStrategyOptions()" />
                             <span class="strategy-label">Fix & Flip</span>
                             <span class="strategy-desc">Quick renovation and sale</span>
                         </label>
+                    </div>
+                </div>
+                
+                <div id="brrrr-options" style="display: none;">
+                    <div class="input-group">
+                        <label>Refinance After (months)</label>
+                        <input type="number" id="refinanceAfter" value="6" min="6" max="12" />
+                        <small style="color: var(--text-secondary);">Seasoning period before refinance</small>
+                    </div>
+                    <div class="input-group">
+                        <label>Target LTV for Refinance (%)</label>
+                        <input type="number" id="refinanceLTV" value="75" min="60" max="80" />
+                        <small style="color: var(--text-secondary);">Loan-to-value ratio for cash-out refinance</small>
                     </div>
                 </div>
                 
@@ -443,6 +459,16 @@ async function showPropertySearch() {
     
     // Render property selector
     window.propertySelector.renderSelector('searchTab');
+}
+
+// Update strategy options visibility
+function updateStrategyOptions() {
+    const selectedStrategy = document.querySelector('input[name="strategy"]:checked')?.value;
+    const brrrrOptions = document.getElementById('brrrr-options');
+    
+    if (brrrrOptions) {
+        brrrrOptions.style.display = selectedStrategy === 'brrrr' ? 'block' : 'none';
+    }
 }
 
 // Switch between tabs
@@ -496,6 +522,18 @@ async function addPropertyToSimulation() {
     // Calculate loan amount
     const loanAmount = purchasePrice * (1 - downPayment / 100);
     
+    // Get BRRRR options if applicable
+    let brrrrDetails = null;
+    if (strategy === 'brrrr') {
+        const refinanceAfter = parseInt(document.getElementById('refinanceAfter').value) || 6;
+        const refinanceLTV = parseFloat(document.getElementById('refinanceLTV').value) || 75;
+        brrrrDetails = {
+            strategy: 'brrrr',
+            refinanceAfter: refinanceAfter,
+            refinanceLTV: refinanceLTV
+        };
+    }
+    
     // Add phase
     const result = await simulationAPI.addPhase(currentSimulation.id, {
         phaseNumber: currentPhases.length + 1,
@@ -507,7 +545,7 @@ async function addPropertyToSimulation() {
         downPaymentPercent: downPayment,
         loanAmount: loanAmount,
         monthlyRentalIncome: monthlyRent,
-        notes: strategyLabels[strategy]
+        notes: brrrrDetails ? JSON.stringify(brrrrDetails) : strategyLabels[strategy]
     });
     
     if (result.error) {
@@ -515,9 +553,24 @@ async function addPropertyToSimulation() {
         return;
     }
     
+    // If BRRRR, automatically schedule refinance
+    if (strategy === 'brrrr' && brrrrDetails) {
+        const refinanceMonth = purchaseMonth + brrrrDetails.refinanceAfter;
+        await simulationAPI.addPhase(currentSimulation.id, {
+            phaseNumber: currentPhases.length + 2,
+            monthNumber: refinanceMonth,
+            actionType: 'refinance',
+            propertyAddress: address,
+            purchasePrice: 0,
+            monthlyRentalIncome: 0,
+            notes: `BRRRR Refinance at ${brrrrDetails.refinanceLTV}% LTV`
+        });
+    }
+    
     // Close modal and reload
     closePropertyModal();
     await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
 }
 
 // Export simulation
@@ -526,6 +579,306 @@ function exportSimulation() {
         alert('No simulation data to export');
         return;
     }
+    
+    // Show export options modal
+    showExportOptionsModal();
+}
+
+// Show export options modal
+function showExportOptionsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Export Simulation Report</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Choose your export format:</p>
+                <div class="export-options">
+                    <button class="btn btn-primary" onclick="exportAsHTML()">
+                        <i class="fas fa-file-alt"></i> Full Report (HTML)
+                    </button>
+                    <button class="btn btn-outline" onclick="exportAsCSV()">
+                        <i class="fas fa-file-csv"></i> Data Only (CSV)
+                    </button>
+                </div>
+                <p class="export-note">
+                    <i class="fas fa-info-circle"></i> The HTML report can be opened in your browser and printed to PDF
+                </p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Export as comprehensive HTML report
+function exportAsHTML() {
+    // Close modal
+    document.querySelector('.modal').remove();
+    
+    const lastProjection = currentProjections[currentProjections.length - 1] || {};
+    const goalAchieved = (lastProjection.net_cashflow || 0) >= currentSimulation.target_monthly_income;
+    
+    // Generate HTML report
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${currentSimulation.name} - Investment Plan Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .report-header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .report-title {
+            font-size: 2em;
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .report-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.5em;
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .timeline-table th,
+        .timeline-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .timeline-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .timeline-table tr:hover {
+            background: #f8f9fa;
+        }
+        .property-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #27ae60;
+        }
+        .assumptions-list {
+            list-style: none;
+            padding: 0;
+        }
+        .assumptions-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .assumptions-list li:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1 class="report-title">${currentSimulation.name}</h1>
+        <div class="report-date">Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="section">
+        <h2 class="section-title">Executive Summary</h2>
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <div class="metric-label">Target Monthly Income</div>
+                <div class="metric-value">$${currentSimulation.target_monthly_income.toLocaleString()}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Initial Capital</div>
+                <div class="metric-value">$${currentSimulation.initial_capital.toLocaleString()}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Time Horizon</div>
+                <div class="metric-value">${currentSimulation.time_horizon_months} months</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Strategy Type</div>
+                <div class="metric-value">${currentSimulation.strategy_type.charAt(0).toUpperCase() + currentSimulation.strategy_type.slice(1)}</div>
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <p><strong>Goal Status:</strong> 
+                <span class="status-badge ${goalAchieved ? 'status-success' : 'status-pending'}">
+                    ${goalAchieved ? 'Achieved' : 'In Progress'}
+                </span>
+            </p>
+            <p><strong>Projected Monthly Income:</strong> $${(lastProjection.net_cashflow || 0).toLocaleString()}</p>
+            <p><strong>Total Properties:</strong> ${lastProjection.total_properties || 0}</p>
+            <p><strong>Total Equity Built:</strong> $${(lastProjection.total_equity || 0).toLocaleString()}</p>
+            <p><strong>Return on Investment:</strong> ${(lastProjection.roi_percentage || 0).toFixed(1)}%</p>
+        </div>
+    </div>
+
+    <!-- Investment Timeline -->
+    <div class="section">
+        <h2 class="section-title">Investment Timeline</h2>
+        <table class="timeline-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Action</th>
+                    <th>Property</th>
+                    <th>Investment</th>
+                    <th>Monthly Income Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${generateTimelineRows()}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Properties Portfolio -->
+    <div class="section">
+        <h2 class="section-title">Properties in Portfolio</h2>
+        ${generatePropertiesList()}
+    </div>
+
+    <!-- Financial Projections -->
+    <div class="section">
+        <h2 class="section-title">Financial Projections</h2>
+        <div class="chart-container">
+            <p><em>Monthly cash flow progression over ${currentSimulation.time_horizon_months} months</em></p>
+            ${generateCashFlowChart()}
+        </div>
+        <h3>Key Milestones</h3>
+        ${generateMilestonesList()}
+    </div>
+
+    <!-- Assumptions -->
+    <div class="section">
+        <h2 class="section-title">Key Assumptions</h2>
+        <ul class="assumptions-list">
+            <li><strong>Loan Terms:</strong> ${getMostCommonLoanTerms()}</li>
+            <li><strong>Down Payment:</strong> Typically 20-25% of purchase price</li>
+            <li><strong>Closing Costs:</strong> 3% of purchase price</li>
+            <li><strong>Property Management:</strong> 10% of rental income</li>
+            <li><strong>Maintenance Reserve:</strong> 5% of rental income</li>
+            <li><strong>Vacancy Rate:</strong> 5% assumed</li>
+            <li><strong>Insurance:</strong> ~$100/month per property</li>
+            <li><strong>Property Tax:</strong> Based on actual property data</li>
+            <li><strong>Market Conditions:</strong> Current Detroit market data</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="section" style="text-align: center; color: #666;">
+        <p>This report is for planning purposes only and does not constitute financial advice.</p>
+        <p>Generated by Framework Real Estate Solutions Portfolio Simulator</p>
+    </div>
+</body>
+</html>
+`;
+    
+    // Download HTML file
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentSimulation.name.replace(/\s+/g, '_')}_investment_plan.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Export as CSV (keep existing functionality)
+function exportAsCSV() {
+    // Close modal
+    document.querySelector('.modal').remove();
     
     // Create CSV data
     let csv = 'Month,Properties,Rental Income,Expenses,Mortgage,Net Cash Flow,Cash Reserves,Total Equity,ROI %\n';
@@ -544,6 +897,172 @@ function exportSimulation() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+}
+
+// Helper functions for report generation
+function generateTimelineRows() {
+    let rows = '';
+    currentPhases.forEach(phase => {
+        const actionIcon = {
+            'buy_rental': '🏠',
+            'buy_flip': '🔨',
+            'sell': '💰',
+            'refinance': '🔄',
+            'wait': '⏳'
+        }[phase.action_type] || '📍';
+        
+        const investmentAmount = phase.action_type === 'sell' 
+            ? `+$${(phase.sale_price || 0).toLocaleString()}`
+            : phase.action_type === 'refinance'
+            ? `+$${((phase.properties_data?.cashOut || 0)).toLocaleString()}`
+            : `-$${((phase.down_payment_percent / 100 * phase.purchase_price) + (phase.purchase_price * 0.03) + (phase.rehab_cost || 0)).toLocaleString()}`;
+            
+        const incomeImpact = phase.monthly_rental_income 
+            ? `+$${phase.monthly_rental_income.toLocaleString()}/mo`
+            : phase.action_type === 'sell' ? 'Property removed' : '-';
+            
+        rows += `
+            <tr>
+                <td>Month ${phase.month_number}</td>
+                <td>${actionIcon} ${phase.action_type.replace(/_/g, ' ').toUpperCase()}</td>
+                <td>${phase.property_address || '-'}</td>
+                <td>${investmentAmount}</td>
+                <td>${incomeImpact}</td>
+            </tr>
+        `;
+    });
+    return rows;
+}
+
+function generatePropertiesList() {
+    const activeProperties = [];
+    const soldProperties = [];
+    
+    currentPhases.forEach(phase => {
+        if (phase.action_type === 'buy_rental' || phase.action_type === 'buy_flip') {
+            activeProperties.push(phase);
+        } else if (phase.action_type === 'sell') {
+            const propIndex = activeProperties.findIndex(p => p.property_address === phase.property_address);
+            if (propIndex !== -1) {
+                soldProperties.push(activeProperties[propIndex]);
+                activeProperties.splice(propIndex, 1);
+            }
+        }
+    });
+    
+    let html = '<h3>Active Properties</h3>';
+    if (activeProperties.length === 0) {
+        html += '<p style="color: #666;">No active properties</p>';
+    } else {
+        activeProperties.forEach(prop => {
+            html += `
+                <div class="property-card">
+                    <strong>${prop.property_address}</strong><br>
+                    Type: ${prop.action_type === 'buy_rental' ? 'Rental' : 'Flip'}<br>
+                    Purchase Price: $${prop.purchase_price.toLocaleString()}<br>
+                    ${prop.monthly_rental_income ? `Monthly Income: $${prop.monthly_rental_income.toLocaleString()}` : 'Under renovation'}
+                </div>
+            `;
+        });
+    }
+    
+    if (soldProperties.length > 0) {
+        html += '<h3 style="margin-top: 20px;">Sold Properties</h3>';
+        soldProperties.forEach(prop => {
+            html += `
+                <div class="property-card" style="border-left-color: #e74c3c;">
+                    <strong>${prop.property_address}</strong><br>
+                    Sold for profit/loss calculation
+                </div>
+            `;
+        });
+    }
+    
+    return html;
+}
+
+function generateCashFlowChart() {
+    // Simple ASCII chart for cash flow progression
+    const maxIncome = Math.max(...currentProjections.map(p => p.net_cashflow));
+    const chartHeight = 10;
+    let chart = '<pre style="font-family: monospace; line-height: 1.2;">';
+    
+    // Create simple bar chart
+    for (let i = chartHeight; i >= 0; i--) {
+        const threshold = (maxIncome / chartHeight) * i;
+        let line = String(Math.round(threshold)).padStart(6, ' ') + ' |';
+        
+        currentProjections.forEach((proj, idx) => {
+            if (idx % 3 === 0) { // Show every 3rd month to avoid crowding
+                line += proj.net_cashflow >= threshold ? '█' : ' ';
+            }
+        });
+        
+        chart += line + '\\n';
+    }
+    
+    chart += '       +' + '-'.repeat(Math.ceil(currentProjections.length / 3)) + '\\n';
+    chart += '       ';
+    currentProjections.forEach((proj, idx) => {
+        if (idx % 3 === 0) {
+            chart += String(idx).padEnd(1);
+        }
+    });
+    chart += ' (months)\\n</pre>';
+    
+    return chart;
+}
+
+function generateMilestonesList() {
+    const milestones = [];
+    let firstIncomeMonth = null;
+    let goalAchievedMonth = null;
+    let cashRecoveredMonth = null;
+    
+    currentProjections.forEach((proj, idx) => {
+        if (!firstIncomeMonth && proj.net_cashflow > 0) {
+            firstIncomeMonth = idx;
+            milestones.push(`Month ${idx}: First positive cash flow ($${proj.net_cashflow.toLocaleString()}/month)`);
+        }
+        
+        if (!goalAchievedMonth && proj.net_cashflow >= currentSimulation.target_monthly_income) {
+            goalAchievedMonth = idx;
+            milestones.push(`Month ${idx}: Target income achieved ($${proj.net_cashflow.toLocaleString()}/month)`);
+        }
+        
+        if (!cashRecoveredMonth && proj.cash_reserves >= currentSimulation.initial_capital) {
+            cashRecoveredMonth = idx;
+            milestones.push(`Month ${idx}: Initial capital recovered (reserves: $${proj.cash_reserves.toLocaleString()})`);
+        }
+        
+        // Check for major income jumps (25% increase)
+        if (idx > 0) {
+            const prevIncome = currentProjections[idx - 1].net_cashflow;
+            const increase = proj.net_cashflow - prevIncome;
+            if (increase > prevIncome * 0.25 && increase > 500) {
+                milestones.push(`Month ${idx}: Major income increase (+$${increase.toLocaleString()}/month)`);
+            }
+        }
+    });
+    
+    if (milestones.length === 0) {
+        return '<p style="color: #666;">No major milestones reached yet</p>';
+    }
+    
+    return '<ul>' + milestones.map(m => `<li>${m}</li>`).join('') + '</ul>';
+}
+
+function getMostCommonLoanTerms() {
+    const loanTypes = {};
+    currentPhases.forEach(phase => {
+        if (phase.properties_data?.loanType) {
+            const key = `${phase.properties_data.loanType} - ${phase.properties_data.interestRate}% for ${phase.properties_data.loanTermMonths} months`;
+            loanTypes[key] = (loanTypes[key] || 0) + 1;
+        }
+    });
+    
+    const mostCommon = Object.entries(loanTypes).sort((a, b) => b[1] - a[1])[0];
+    return mostCommon ? mostCommon[0] : '30-year fixed at market rates';
 }
 
 // Timeline View Functions
@@ -584,6 +1103,8 @@ function updateTimelineView() {
             addSaleCard(phase);
         } else if (phase.action_type === 'loan') {
             addLoanCard(phase);
+        } else if (phase.action_type === 'wait') {
+            addWaitCard(phase);
         }
         
         lastMonth = phase.month_number;
@@ -880,6 +1401,173 @@ function showPropertyForm() {
     showPropertySearch();
 }
 
+// Refresh all UI components after any change
+async function refreshAllUI() {
+    if (!currentSimulation) return;
+    
+    // Run simulation to recalculate projections
+    await runSimulation();
+    
+    // Update all UI components
+    updateSimulationUI();
+    updatePhasesList();
+    updateCashReservesDisplay();
+    updateLoanSummary();
+    checkMilestones();
+}
+
+// Update cash reserves display (piggy bank)
+function updateCashReservesDisplay() {
+    if (!currentProjections || currentProjections.length === 0) return;
+    
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const cashReserves = lastProjection.cash_reserves || 0;
+    const initialCapital = currentSimulation.initial_capital || 0;
+    const cashGrowthPercent = initialCapital > 0 ? ((cashReserves - initialCapital) / initialCapital * 100).toFixed(1) : 0;
+    
+    // Add or update cash reserves card in metrics grid
+    let cashCard = document.getElementById('cashReservesCard');
+    if (!cashCard) {
+        const metricsGrid = document.getElementById('metricsGrid');
+        cashCard = document.createElement('div');
+        cashCard.id = 'cashReservesCard';
+        cashCard.className = 'metric-card';
+        metricsGrid.appendChild(cashCard);
+    }
+    
+    cashCard.innerHTML = `
+        <div class="metric-label">
+            <span style="font-size: 1.5rem; margin-right: 0.5rem;">🐷</span>
+            Cash Reserves
+        </div>
+        <div class="metric-value">${financialCalc.formatCurrency(cashReserves)}</div>
+        <div class="metric-change ${cashGrowthPercent >= 0 ? 'positive' : 'negative'}">
+            ${cashGrowthPercent >= 0 ? '+' : ''}${cashGrowthPercent}% from start
+        </div>
+    `;
+}
+
+// Update loan summary display
+function updateLoanSummary() {
+    const loanPhases = currentPhases.filter(p => p.action_type === 'loan');
+    const propertyLoans = currentPhases.filter(p => p.action_type === 'buy' && p.loan_amount > 0);
+    const totalLoans = loanPhases.length + propertyLoans.length;
+    
+    // Calculate total debt from last projection
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const totalDebt = lastProjection?.total_debt || 0;
+    
+    // Add or update loan summary card
+    let loanCard = document.getElementById('loanSummaryCard');
+    if (!loanCard) {
+        const metricsGrid = document.getElementById('metricsGrid');
+        loanCard = document.createElement('div');
+        loanCard.id = 'loanSummaryCard';
+        loanCard.className = 'metric-card';
+        metricsGrid.appendChild(loanCard);
+    }
+    
+    loanCard.innerHTML = `
+        <div class="metric-label">
+            <span style="font-size: 1.5rem; margin-right: 0.5rem;">💳</span>
+            Active Loans
+        </div>
+        <div class="metric-value">${totalLoans}</div>
+        <div class="metric-subtext">Total Debt: ${financialCalc.formatCurrency(totalDebt)}</div>
+    `;
+}
+
+// Check and display milestones
+function checkMilestones() {
+    if (!currentProjections || currentProjections.length === 0) return;
+    
+    const milestones = [];
+    const targetIncome = currentSimulation.target_monthly_income;
+    
+    // Check for income milestones
+    const incomeThresholds = [1000, 5000, 10000, 25000];
+    for (const threshold of incomeThresholds) {
+        const reachedMonth = currentProjections.findIndex(p => p.rental_income >= threshold);
+        if (reachedMonth >= 0) {
+            milestones.push({
+                month: reachedMonth,
+                type: 'income',
+                value: threshold,
+                description: `Reached ${financialCalc.formatCurrency(threshold)}/mo income`
+            });
+        }
+    }
+    
+    // Check for goal achievement
+    const goalMonth = currentProjections.findIndex(p => p.rental_income >= targetIncome);
+    if (goalMonth >= 0) {
+        milestones.push({
+            month: goalMonth,
+            type: 'goal',
+            value: targetIncome,
+            description: `🎯 Goal achieved: ${financialCalc.formatCurrency(targetIncome)}/mo`
+        });
+    }
+    
+    // Check for cash recovery (infinite return)
+    const recoveryMonth = currentProjections.findIndex(p => p.cash_reserves >= currentSimulation.initial_capital);
+    if (recoveryMonth > 0) {
+        milestones.push({
+            month: recoveryMonth,
+            type: 'recovery',
+            value: currentSimulation.initial_capital,
+            description: `💰 Initial capital recovered`
+        });
+    }
+    
+    // Display milestones on timeline
+    milestones.forEach(milestone => {
+        addMilestoneMarker(milestone);
+    });
+}
+
+// Add milestone marker to timeline
+function addMilestoneMarker(milestone) {
+    const track = document.getElementById('timelineTrack');
+    const existingMarker = track.querySelector(`.milestone-marker[data-month="${milestone.month}"]`);
+    
+    if (existingMarker) return; // Don't duplicate markers
+    
+    // Find the right position to insert the marker
+    const cards = track.querySelectorAll('.timeline-card');
+    let insertBefore = null;
+    
+    for (const card of cards) {
+        const cardMonth = parseInt(card.getAttribute('data-month'));
+        if (cardMonth > milestone.month) {
+            insertBefore = card;
+            break;
+        }
+    }
+    
+    const marker = document.createElement('div');
+    marker.className = `milestone-marker ${milestone.type}`;
+    marker.setAttribute('data-month', milestone.month);
+    marker.innerHTML = `
+        <div class="milestone-flag">
+            <span class="milestone-icon">${milestone.type === 'goal' ? '🎯' : milestone.type === 'recovery' ? '💰' : '📈'}</span>
+            <span class="milestone-text">${milestone.description}</span>
+        </div>
+    `;
+    
+    if (insertBefore) {
+        track.insertBefore(marker, insertBefore);
+    } else {
+        // Insert before the last add button
+        const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+        if (lastBtn) {
+            track.insertBefore(marker, lastBtn);
+        } else {
+            track.appendChild(marker);
+        }
+    }
+}
+
 // Show time snapshot form
 function showTimeSnapshotForm() {
     const month = window.currentTimelineMonth || 6;
@@ -990,6 +1678,7 @@ async function addPropertySale() {
     
     closePropertyModal();
     await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
 }
 
 // Show loan form
@@ -1121,4 +1810,285 @@ async function addLoan() {
     
     closePropertyModal();
     await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
+}
+
+// Show waiting period form
+function showWaitingPeriodForm() {
+    closeTimelineModal();
+    
+    // Calculate current cash flow
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const monthlyCashFlow = lastProjection?.net_cashflow || 0;
+    const currentCash = lastProjection?.cash_reserves || 0;
+    
+    const modal = document.getElementById('propertyModal');
+    const content = document.getElementById('propertyModalContent');
+    
+    content.innerHTML = `
+        <div class="goal-inputs">
+            <h3>Add Waiting Period</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Current monthly cash flow: ${financialCalc.formatCurrency(monthlyCashFlow)}<br>
+                Current cash reserves: ${financialCalc.formatCurrency(currentCash)}
+            </p>
+            
+            <div class="input-group">
+                <label>Wait Duration (months)</label>
+                <input type="number" id="waitMonths" value="6" min="1" max="24" />
+            </div>
+            
+            <div class="input-group">
+                <label>Starting Month</label>
+                <input type="number" id="waitStartMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+            </div>
+            
+            <div class="wait-preview" style="background: var(--bg-color); padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                <p id="cashAccumulationPreview">Cash after 6 months: ${financialCalc.formatCurrency(currentCash + (monthlyCashFlow * 6))}</p>
+            </div>
+            
+            <button class="btn btn-primary" onclick="addWaitingPeriod()">
+                Add Wait Period
+            </button>
+        </div>
+    `;
+    
+    // Update preview when duration changes
+    document.getElementById('waitMonths').addEventListener('input', (e) => {
+        const months = parseInt(e.target.value) || 0;
+        const accumulated = currentCash + (monthlyCashFlow * months);
+        document.getElementById('cashAccumulationPreview').textContent = 
+            `Cash after ${months} months: ${financialCalc.formatCurrency(accumulated)}`;
+    });
+    
+    modal.classList.add('active');
+}
+
+// Add waiting period
+async function addWaitingPeriod() {
+    const waitMonths = parseInt(document.getElementById('waitMonths').value);
+    const startMonth = parseInt(document.getElementById('waitStartMonth').value);
+    
+    if (!waitMonths || waitMonths < 1) {
+        alert('Please enter a valid wait duration');
+        return;
+    }
+    
+    const result = await simulationAPI.addPhase(currentSimulation.id, {
+        phaseNumber: currentPhases.length + 1,
+        monthNumber: startMonth,
+        actionType: 'wait',
+        propertyAddress: `Wait ${waitMonths} months`,
+        purchasePrice: 0,
+        monthlyRentalIncome: 0,
+        notes: `Waiting period: ${waitMonths} months to accumulate cash`
+    });
+    
+    if (result.error) {
+        alert('Error adding wait period: ' + result.error.message);
+        return;
+    }
+    
+    closePropertyModal();
+    await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
+}
+
+// Add wait card to timeline
+function addWaitCard(phase) {
+    const track = document.getElementById('timelineTrack');
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card wait-card';
+    card.setAttribute('data-month', phase.month_number);
+    
+    // Extract wait duration from notes
+    const waitMatch = phase.notes?.match(/(\d+) months/);
+    const waitDuration = waitMatch ? waitMatch[1] : '?';
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">⏰</span>
+            <h3>Month ${phase.month_number}</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">Wait Period</div>
+            <div class="metric-row">
+                <span class="metric-text">Duration: <strong>${waitDuration} months</strong></span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-text">Accumulating cash flow</span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
+    
+    // Add an add button after this card
+    const addBtn = document.createElement('button');
+    addBtn.className = 'timeline-add-btn';
+    addBtn.onclick = () => showAddTimelineModal(phase.month_number + parseInt(waitDuration));
+    addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    
+    if (lastBtn) {
+        track.insertBefore(addBtn, lastBtn);
+    } else {
+        track.appendChild(addBtn);
+    }
+}
+
+// Show refinance form
+function showRefinanceForm() {
+    closeTimelineModal();
+    
+    // Get list of properties that can be refinanced
+    const lastProjection = currentProjections[currentProjections.length - 1];
+    const eligibleProperties = [];
+    
+    if (lastProjection?.properties_data) {
+        lastProjection.properties_data.forEach(prop => {
+            if (prop.status !== 'sold' && prop.equity > 10000) { // Min equity to refinance
+                eligibleProperties.push(prop);
+            }
+        });
+    }
+    
+    if (eligibleProperties.length === 0) {
+        alert('No properties available for refinance. Properties need sufficient equity.');
+        return;
+    }
+    
+    const modal = document.getElementById('propertyModal');
+    const content = document.getElementById('propertyModalContent');
+    
+    content.innerHTML = `
+        <div class="goal-inputs">
+            <h3>Refinance Property</h3>
+            <div class="input-group">
+                <label>Select Property</label>
+                <select id="refinancePropertySelect">
+                    ${eligibleProperties.map(p => `
+                        <option value="${p.address}">
+                            ${p.address} - Value: ${financialCalc.formatCurrency(p.value)}, Equity: ${financialCalc.formatCurrency(p.equity)}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>Target LTV (%)</label>
+                <input type="number" id="refinanceLTV" value="75" min="60" max="80" />
+                <small style="color: var(--text-secondary);">Loan-to-value ratio for new loan</small>
+            </div>
+            
+            <div class="input-group">
+                <label>Month to Refinance</label>
+                <input type="number" id="refinanceMonth" value="${window.currentTimelineMonth || 1}" min="0" max="${currentSimulation.time_horizon_months}" />
+            </div>
+            
+            <div class="refinance-preview" style="background: var(--bg-color); padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                <p id="cashOutPreview">Estimated cash out: $0</p>
+                <p id="newPaymentPreview">New monthly payment: $0</p>
+            </div>
+            
+            <button class="btn btn-primary" onclick="addRefinance()">
+                Add Refinance
+            </button>
+        </div>
+    `;
+    
+    // Update preview when property or LTV changes
+    const updateRefinancePreview = () => {
+        const selectedAddress = document.getElementById('refinancePropertySelect').value;
+        const selectedProperty = eligibleProperties.find(p => p.address === selectedAddress);
+        const ltv = parseFloat(document.getElementById('refinanceLTV').value) / 100;
+        
+        if (selectedProperty) {
+            const newLoanAmount = selectedProperty.value * ltv;
+            const currentDebt = selectedProperty.value - selectedProperty.equity;
+            const cashOut = newLoanAmount - currentDebt;
+            const monthlyPayment = financialCalc.calculateMortgagePayment(newLoanAmount, 0.07, 30);
+            
+            document.getElementById('cashOutPreview').textContent = 
+                `Estimated cash out: ${financialCalc.formatCurrency(cashOut)}`;
+            document.getElementById('newPaymentPreview').textContent = 
+                `New monthly payment: ${financialCalc.formatCurrency(monthlyPayment)}`;
+        }
+    };
+    
+    document.getElementById('refinancePropertySelect').addEventListener('change', updateRefinancePreview);
+    document.getElementById('refinanceLTV').addEventListener('input', updateRefinancePreview);
+    
+    updateRefinancePreview();
+    modal.classList.add('active');
+}
+
+// Add refinance
+async function addRefinance() {
+    const propertyAddress = document.getElementById('refinancePropertySelect').value;
+    const ltv = parseFloat(document.getElementById('refinanceLTV').value);
+    const month = parseInt(document.getElementById('refinanceMonth').value);
+    
+    if (!propertyAddress || !ltv) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const result = await simulationAPI.addPhase(currentSimulation.id, {
+        phaseNumber: currentPhases.length + 1,
+        monthNumber: month,
+        actionType: 'refinance',
+        propertyAddress: propertyAddress,
+        purchasePrice: 0,
+        monthlyRentalIncome: 0,
+        notes: `Cash-out refinance at ${ltv}% LTV`
+    });
+    
+    if (result.error) {
+        alert('Error adding refinance: ' + result.error.message);
+        return;
+    }
+    
+    closePropertyModal();
+    await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
+}
+
+// Add refinance card to timeline
+function addRefinanceCard(phase) {
+    const track = document.getElementById('timelineTrack');
+    
+    const card = document.createElement('div');
+    card.className = 'timeline-card refinance-card';
+    card.setAttribute('data-month', phase.month_number);
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-icon">🏦</span>
+            <h3>Month ${phase.month_number} - Refinance</h3>
+        </div>
+        <div class="card-content">
+            <div class="property-address">${phase.property_address || 'Property'}</div>
+            <div class="metric-row">
+                <span class="metric-text">${phase.notes || 'Cash-out refinance'}</span>
+            </div>
+        </div>
+    `;
+    
+    // Insert before the last add button
+    const lastBtn = track.querySelector('.timeline-add-btn:last-child');
+    if (lastBtn) {
+        track.insertBefore(card, lastBtn);
+    } else {
+        track.appendChild(card);
+    }
+    
+    // Add automatic snapshot after refinance
+    addTimeSnapshotCard(phase.month_number + 1, true);
 }
