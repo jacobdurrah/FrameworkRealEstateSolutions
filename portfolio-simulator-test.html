@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Simulator Test</title>
+</head>
+<body>
+    <h1>Portfolio Simulator Component Test</h1>
+    <div id="test-results"></div>
+
+    <script>
+        const tests = [];
+        const results = document.getElementById('test-results');
+
+        // Test timeline implementation
+        tests.push({
+            name: 'Timeline Card System',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                const html = await response.text();
+                return html.includes('timeline-card') && 
+                       html.includes('snapshot-card') &&
+                       html.includes('timeline-track');
+            }
+        });
+
+        tests.push({
+            name: 'CSS Variables Fixed',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                const html = await response.text();
+                return html.includes('--card-bg: var(--off-white)') &&
+                       html.includes('--text-primary: var(--primary-black)');
+            }
+        });
+
+        tests.push({
+            name: 'Strategy Selection',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                const html = await response.text();
+                return html.includes('strategy-selector') &&
+                       html.includes('Buy & Hold') &&
+                       html.includes('BRRRR');
+            }
+        });
+
+        tests.push({
+            name: 'Timeline Modal',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                const html = await response.text();
+                return html.includes('timelineModal') &&
+                       html.includes('Property Acquisition') &&
+                       html.includes('Time Snapshot');
+            }
+        });
+
+        tests.push({
+            name: 'Progress Bar',
+            test: async () => {
+                const response = await fetch('/portfolio-simulator.html');
+                const html = await response.text();
+                return html.includes('goal-progress') &&
+                       html.includes('progress-fill');
+            }
+        });
+
+        // Run all tests
+        async function runTests() {
+            results.innerHTML = '<h2>Component Test Results:</h2>';
+            let allPassed = true;
+            
+            for (const test of tests) {
+                try {
+                    const passed = await test.test();
+                    allPassed = allPassed && passed;
+                    results.innerHTML += `
+                        <div style="padding: 5px; color: ${passed ? 'green' : 'red'}">
+                            ${passed ? '✓' : '✗'} ${test.name}
+                        </div>
+                    `;
+                } catch (error) {
+                    allPassed = false;
+                    results.innerHTML += `
+                        <div style="padding: 5px; color: red">
+                            ✗ ${test.name} - Error: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+
+            results.innerHTML += `
+                <hr>
+                <h3>Visual Elements to Check:</h3>
+                <ul>
+                    <li>Timeline shows Month 0 snapshot card with starting capital</li>
+                    <li>Add (+) buttons appear between timeline cards</li>
+                    <li>Progress bar shows goal achievement percentage</li>
+                    <li>Portfolio summary displays key metrics in grid</li>
+                    <li>Modal allows choice between property or time snapshot</li>
+                    <li>Strategy selection shows 3 options with radio buttons</li>
+                </ul>
+                <p><strong>${allPassed ? 'All components loaded successfully!' : 'Some components failed to load.'}</strong></p>
+                <a href="/portfolio-simulator.html" target="_blank" style="font-size: 18px;">
+                    Open Portfolio Simulator →
+                </a>
+            `;
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

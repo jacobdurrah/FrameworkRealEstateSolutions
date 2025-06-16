@@ -619,13 +619,20 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-content">
-            <h1><i class="fas fa-building"></i> Detroit Real Estate Tools</h1>
-            <div class="nav-links">
-                <a href="index.html">Home</a>
-                <a href="property-finder.html">Property Finder</a>
-                <a href="portfolio-simulator.html" class="active">Portfolio Simulator</a>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="images/framework-logo.png" alt="Framework Real Estate Solutions" class="logo-img">
+            </a>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-menu" id="navMenu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="property-finder.html" class="nav-link">Property Finder</a>
+                <a href="portfolio-simulator.html" class="nav-link active">Portfolio Simulator</a>
             </div>
         </div>
     </nav>
@@ -830,12 +837,20 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
+    <script src="js/app-config.js"></script>
     <script src="js/parcel-api.js"></script>
     <script src="js/sales-api.js"></script>
     <script src="js/simulation-api.js"></script>
     <script src="js/financial-calculator.js"></script>
     <script src="js/property-selector.js"></script>
     <script src="js/portfolio-simulator.js"></script>
+    
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('navMenu');
+            navMenu.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
