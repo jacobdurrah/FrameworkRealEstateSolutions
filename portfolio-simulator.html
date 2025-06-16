@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Simulator - Real Estate Investment Planning</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Portfolio Simulator Specific Styles */
+        .simulator-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .simulation-header {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .goal-inputs {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .input-group input,
+        .input-group select {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .timeline-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .phase-list {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .phase-item {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .phase-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+        }
+
+        .phase-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-color);
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .btn-icon:hover {
+            color: var(--text-primary);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .saved-simulations {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .saved-sim-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .saved-sim-item:hover {
+            background: var(--border-color);
+        }
+
+        .saved-sim-item h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 0.9rem;
+        }
+
+        .saved-sim-item p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        /* Canvas for timeline */
+        #timelineCanvas {
+            width: 100%;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .simulation-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-content">
+            <h1><i class="fas fa-building"></i> Detroit Real Estate Tools</h1>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="property-finder.html">Property Finder</a>
+                <a href="portfolio-simulator.html" class="active">Portfolio Simulator</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="simulator-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h2>Simulation Goals</h2>
+                <div class="goal-inputs">
+                    <div class="input-group">
+                        <label for="simulationName">Simulation Name</label>
+                        <input type="text" id="simulationName" placeholder="My Portfolio Plan" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="targetIncome">Target Monthly Income</label>
+                        <input type="number" id="targetIncome" placeholder="10000" value="10000" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="initialCapital">Initial Capital</label>
+                        <input type="number" id="initialCapital" placeholder="50000" value="50000" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="timeHorizon">Time Horizon (months)</label>
+                        <input type="number" id="timeHorizon" placeholder="36" value="36" />
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="strategyType">Strategy Type</label>
+                        <select id="strategyType">
+                            <option value="conservative">Conservative</option>
+                            <option value="balanced" selected>Balanced</option>
+                            <option value="aggressive">Aggressive</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="startNewSimulation()">
+                        <i class="fas fa-play"></i> Start Simulation
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="saveSimulation()" style="margin-top: 0.5rem;">
+                        <i class="fas fa-save"></i> Save Progress
+                    </button>
+                </div>
+
+                <!-- Saved Simulations -->
+                <div class="saved-simulations">
+                    <h3>Saved Simulations</h3>
+                    <div id="savedSimulationsList">
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            No saved simulations yet
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Simulation Header -->
+                <div class="simulation-header">
+                    <div>
+                        <h1 id="simulationTitle">Portfolio Simulator</h1>
+                        <p style="color: var(--text-secondary); margin: 0;">
+                            Plan your real estate investment strategy
+                        </p>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline" onclick="showPropertySearch()">
+                            <i class="fas fa-plus"></i> Add Property
+                        </button>
+                        <button class="btn btn-outline" onclick="exportSimulation()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Dashboard -->
+                <div class="metrics-grid" id="metricsGrid">
+                    <div class="metric-card">
+                        <div class="metric-label">Current Monthly Income</div>
+                        <div class="metric-value" id="currentIncome">$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Properties</div>
+                        <div class="metric-value" id="totalProperties">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Equity</div>
+                        <div class="metric-value" id="totalEquity">$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">ROI</div>
+                        <div class="metric-value" id="currentROI">0%</div>
+                    </div>
+                </div>
+
+                <!-- Timeline Visualization -->
+                <div class="timeline-container">
+                    <h2>Investment Timeline</h2>
+                    <canvas id="timelineCanvas"></canvas>
+                    <div id="timelineDetails" style="margin-top: 1rem;"></div>
+                </div>
+
+                <!-- Phase List -->
+                <div class="phase-list">
+                    <h2>Investment Phases</h2>
+                    <div id="phasesList">
+                        <p style="color: var(--text-secondary);">
+                            No phases added yet. Click "Add Property" to begin planning.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Property Modal -->
+    <div id="propertyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Property to Simulation</h2>
+                <button class="btn-icon" onclick="closePropertyModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="propertyModalContent">
+                <!-- Property search/selection interface will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/simulation-api.js"></script>
+    <script src="js/financial-calculator.js"></script>
+    <script src="js/portfolio-simulator.js"></script>
+</body>
+</html>
