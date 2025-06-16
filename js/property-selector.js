@@ -6,9 +6,38 @@ class PropertySelector {
         this.properties = [];
         this.filteredProperties = [];
         this.selectedProperty = null;
+        this.parcelAPI = null;
+        this.salesAPI = null;
     }
 
-    // Load properties from parcel API
+    // Initialize APIs
+    async init() {
+        // Initialize parcel API if available
+        if (window.parcelAPIService) {
+            this.parcelAPI = window.parcelAPIService;
+        } else if (window.ParcelAPIService) {
+            window.parcelAPIService = new ParcelAPIService();
+            await window.parcelAPIService.init(
+                window.APP_CONFIG.SUPABASE_URL,
+                window.APP_CONFIG.SUPABASE_ANON_KEY
+            );
+            this.parcelAPI = window.parcelAPIService;
+        }
+
+        // Initialize sales API if available
+        if (window.salesAPIService) {
+            this.salesAPI = window.salesAPIService;
+        } else if (window.SalesAPIService) {
+            window.salesAPIService = new SalesAPIService();
+            await window.salesAPIService.init(
+                window.APP_CONFIG.SUPABASE_URL,
+                window.APP_CONFIG.SUPABASE_ANON_KEY
+            );
+            this.salesAPI = window.salesAPIService;
+        }
+    }
+
+    // Load properties from parcel API or use existing search results
     async loadProperties(searchCriteria = {}) {
         try {
             // Default search criteria for investment properties
@@ -20,8 +49,14 @@ class PropertySelector {
             
             const criteria = { ...defaults, ...searchCriteria };
             
-            // For now, use mock data - this would connect to parcel API
-            this.properties = this.generateMockProperties(20);
+            // If we have search results from property finder, use those
+            if (window.currentSearchResults && window.currentSearchResults.length > 0) {
+                this.properties = window.currentSearchResults.map(prop => this.convertToSelectorFormat(prop));
+            } else {
+                // Otherwise use mock data as fallback
+                this.properties = this.generateMockProperties(20);
+            }
+            
             this.filteredProperties = [...this.properties];
             
             return this.properties;
@@ -29,6 +64,61 @@ class PropertySelector {
             console.error('Error loading properties:', error);
             return [];
         }
+    }
+
+    // Convert property finder format to selector format
+    convertToSelectorFormat(property) {
+        const parcelInfo = property.parcelInfo || {};
+        const totalInvestment = property.price + (property.estimatedRehab || 0);
+        const monthlyRent = property.monthlyRent || this.estimateRent(property);
+        const monthlyExpenses = this.calculateExpenses(property.price, monthlyRent);
+        const loanAmount = property.price * 0.8;
+        const monthlyPayment = this.calculateMortgagePayment(loanAmount, 0.07, 30);
+        const monthlyCashFlow = monthlyRent - monthlyExpenses - monthlyPayment;
+        const capRate = ((monthlyRent * 12 - monthlyExpenses * 12) / property.price * 100);
+
+        return {
+            id: property.id || `prop_${Date.now()}`,
+            address: property.address,
+            city: property.city || 'Detroit',
+            state: property.state || 'MI',
+            zip: property.zip || parcelInfo.zipCode || '48202',
+            price: property.price,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            sqft: property.sqft,
+            yearBuilt: property.yearBuilt || parcelInfo.yearBuilt,
+            propertyType: property.propertyType || 'single-family',
+            estimatedRehab: property.estimatedRehab || 10000,
+            monthlyRent: monthlyRent,
+            capRate: capRate.toFixed(1),
+            cashFlow: Math.round(monthlyCashFlow),
+            parcelInfo: parcelInfo,
+            owner: parcelInfo.owner || {},
+            taxStatus: parcelInfo.taxStatus,
+            assessedValue: parcelInfo.assessedValue,
+            lastSale: parcelInfo.lastSale || {},
+            image: property.images && property.images[0] || 'https://photos.zillowstatic.com/fp/demo.jpg'
+        };
+    }
+
+    // Estimate monthly rent based on property characteristics
+    estimateRent(property) {
+        // Base rent calculation similar to property finder
+        const baseRent = property.bedrooms * 400;
+        const sqftBonus = Math.min(property.sqft * 0.1, 200);
+        return Math.round(baseRent + sqftBonus);
+    }
+
+    // Calculate monthly expenses
+    calculateExpenses(propertyValue, monthlyRent) {
+        const propertyTax = (propertyValue * 0.8) / 12; // Detroit millage
+        const insurance = (propertyValue * 0.004) / 12;
+        const maintenance = (propertyValue * 0.01) / 12;
+        const vacancy = monthlyRent * 0.08;
+        const management = monthlyRent * 0.08;
+        
+        return Math.round(propertyTax + insurance + maintenance + vacancy + management);
     }
 
     // Generate mock properties for demonstration
@@ -99,6 +189,14 @@ class PropertySelector {
                             <i class="fas fa-filter"></i> Filter
                         </button>
                     </div>
+                    <div class="search-actions">
+                        <button class="btn btn-outline" onclick="propertySelector.searchRealProperties()">
+                            <i class="fas fa-search"></i> Search Detroit Properties
+                        </button>
+                        <button class="btn btn-outline" onclick="propertySelector.loadMockProperties()">
+                            <i class="fas fa-dice"></i> Load Sample Properties
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="property-list" id="propertyList">
@@ -115,6 +213,72 @@ class PropertySelector {
         this.attachEventListeners();
     }
 
+    // Search for real properties using parcel API
+    async searchRealProperties() {
+        const searchInput = document.getElementById('propSearch');
+        const maxPriceInput = document.getElementById('maxPrice');
+        
+        if (!searchInput.value && !maxPriceInput.value) {
+            alert('Please enter search criteria (address or max price)');
+            return;
+        }
+
+        // Show loading
+        const listContainer = document.getElementById('propertyList');
+        listContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching Detroit properties...</div>';
+
+        try {
+            const results = [];
+            
+            // If we have an address, search by address
+            if (searchInput.value && this.parcelAPI) {
+                const parcelData = await this.parcelAPI.getParcelByAddress(searchInput.value);
+                if (parcelData) {
+                    // Create a property object from parcel data
+                    const property = {
+                        id: parcelData.parcel_id,
+                        address: parcelData.address,
+                        city: 'Detroit',
+                        state: 'MI',
+                        zip: parcelData.zip_code,
+                        price: 50000, // Default price, user can adjust
+                        bedrooms: 3, // Default values
+                        bathrooms: 1,
+                        sqft: parcelData.total_square_footage || 1500,
+                        yearBuilt: parcelData.year_built,
+                        propertyType: 'single-family',
+                        estimatedRehab: 10000,
+                        monthlyRent: 1200,
+                        parcelInfo: parcelData
+                    };
+                    results.push(this.convertToSelectorFormat(property));
+                }
+            }
+
+            // If no results from address search, use mock data filtered by price
+            if (results.length === 0) {
+                const mockProperties = this.generateMockProperties(20);
+                const maxPrice = parseFloat(maxPriceInput.value) || 100000;
+                results.push(...mockProperties.filter(p => p.price <= maxPrice));
+            }
+
+            this.properties = results;
+            this.filteredProperties = [...this.properties];
+            listContainer.innerHTML = this.renderPropertyList();
+
+        } catch (error) {
+            console.error('Error searching properties:', error);
+            listContainer.innerHTML = '<p class="no-results">Error searching properties. Please try again.</p>';
+        }
+    }
+
+    // Load mock properties
+    loadMockProperties() {
+        this.properties = this.generateMockProperties(20);
+        this.filteredProperties = [...this.properties];
+        document.getElementById('propertyList').innerHTML = this.renderPropertyList();
+    }
+
     // Render property list
     renderPropertyList() {
         if (this.filteredProperties.length === 0) {
@@ -122,28 +286,56 @@ class PropertySelector {
         }
         
         return this.filteredProperties.map(property => `
-            <div class="property-item" onclick="propertySelector.selectProperty('${property.id}')">
+            <div class="property-item ${property.id === this.selectedProperty?.id ? 'selected' : ''}" onclick="propertySelector.selectProperty('${property.id}')">
                 <div class="property-item-header">
                     <h4>${property.address}</h4>
                     <span class="property-price">${this.formatCurrency(property.price)}</span>
                 </div>
-                <div class="property-item-details">
-                    <span><i class="fas fa-bed"></i> ${property.bedrooms} bd</span>
-                    <span><i class="fas fa-bath"></i> ${property.bathrooms} ba</span>
-                    <span><i class="fas fa-ruler-combined"></i> ${property.sqft} sqft</span>
+                ${property.owner && property.owner.fullName ? `
+                <div class="property-owner-info">
+                    <span class="owner-label">Owner:</span>
+                    <span class="owner-name">${property.owner.fullName}</span>
                 </div>
+                ` : ''}
+                ${property.lastSale && property.lastSale.date ? `
+                <div class="property-sale-info">
+                    <span class="sale-label">Last Sale:</span>
+                    <span class="sale-details">
+                        ${new Date(property.lastSale.date).toLocaleDateString()}
+                        ${property.lastSale.price ? ` - $${property.lastSale.price.toLocaleString()}` : ''}
+                    </span>
+                </div>
+                ` : ''}
+                <div class="property-item-details">
+                    <span><i class="fas fa-bed"></i> ${property.bedrooms} bed</span>
+                    <span><i class="fas fa-bath"></i> ${property.bathrooms} bath</span>
+                    <span><i class="fas fa-ruler-combined"></i> ${property.sqft} sqft</span>
+                    ${property.yearBuilt ? `<span>Built ${property.yearBuilt}</span>` : ''}
+                    ${property.assessedValue ? `<span>Assessed: $${property.assessedValue.toLocaleString()}</span>` : ''}
+                </div>
+                ${property.taxStatus ? `
+                <div class="property-status-badges">
+                    ${property.taxStatus === 'TAXABLE' ? 
+                        '<span class="status-badge tax-current">Taxable</span>' : 
+                        '<span class="status-badge tax-exempt">Tax Exempt</span>'}
+                </div>
+                ` : ''}
                 <div class="property-item-metrics">
                     <div class="metric">
-                        <span class="metric-label">Rent</span>
-                        <span class="metric-value">${this.formatCurrency(property.monthlyRent)}/mo</span>
+                        <span class="metric-label">Monthly Cash Flow</span>
+                        <span class="metric-value ${property.cashFlow >= 0 ? 'positive' : 'negative'}">
+                            $${Math.abs(property.cashFlow)}
+                        </span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Cap Rate</span>
-                        <span class="metric-value">${property.capRate}%</span>
+                        <span class="metric-value ${parseFloat(property.capRate) >= 8 ? 'positive' : ''}">
+                            ${property.capRate}%
+                        </span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Cash Flow</span>
-                        <span class="metric-value">${this.formatCurrency(property.cashFlow)}/mo</span>
+                        <span class="metric-label">Est. Rent</span>
+                        <span class="metric-value">${this.formatCurrency(property.monthlyRent)}/mo</span>
                     </div>
                 </div>
             </div>
@@ -319,6 +511,13 @@ style.textContent = `
         display: flex;
         gap: 0.5rem;
         align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .search-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
     }
 
     .filter-input {
@@ -450,6 +649,48 @@ style.textContent = `
         text-align: center;
         color: var(--text-secondary);
         padding: 2rem;
+    }
+
+    /* Consistent with property finder styles */
+    .property-owner-info,
+    .property-sale-info {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .owner-label,
+    .sale-label {
+        font-weight: 500;
+        margin-right: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 0.5rem;
+    }
+
+    .status-badge.tax-current {
+        background: rgba(76, 175, 80, 0.1);
+        color: #4CAF50;
+    }
+
+    .status-badge.tax-exempt {
+        background: rgba(255, 152, 0, 0.1);
+        color: #FF9800;
+    }
+
+    .metric-value.positive {
+        color: #4CAF50;
+        font-weight: 700;
+    }
+
+    .metric-value.negative {
+        color: #f44336;
     }
 `;
 document.head.appendChild(style);

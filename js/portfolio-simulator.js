@@ -385,6 +385,11 @@ async function showPropertySearch() {
     content.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading properties...</div>';
     modal.classList.add('active');
     
+    // Initialize property selector if needed
+    if (!window.propertySelector.parcelAPI) {
+        await window.propertySelector.init();
+    }
+    
     // Load properties
     await window.propertySelector.loadProperties();
     

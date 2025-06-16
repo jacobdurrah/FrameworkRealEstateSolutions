@@ -27,15 +27,27 @@ Click "Start Simulation" to create your investment plan.
 
 ## Adding Properties
 
-### Method 1: Search Properties
+### Method 1: Search Real Detroit Properties
 1. Click "Add Property" in the header
 2. Use the "Search Properties" tab
-3. Filter by price, rent, or address
-4. Select a property from the list
-5. Review the financial details
-6. Click "Add to Simulation"
+3. Enter a Detroit address (e.g., "123 Main St") or max price
+4. Click "Search Detroit Properties" to find real parcel data
+5. Select a property from the results
+6. Review the financial details including:
+   - Owner information
+   - Last sale price and date
+   - Tax status
+   - Assessed value
+7. Click "Add to Simulation"
 
-### Method 2: Manual Entry
+### Method 2: Use Sample Properties
+1. Click "Add Property" in the header
+2. Use the "Search Properties" tab
+3. Click "Load Sample Properties" for demo data
+4. Filter by price, rent, or address
+5. Select and add properties to your simulation
+
+### Method 3: Manual Entry
 1. Click "Add Property" in the header
 2. Switch to the "Manual Entry" tab
 3. Enter property details:
