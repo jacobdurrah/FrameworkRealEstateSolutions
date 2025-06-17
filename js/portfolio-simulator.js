@@ -545,7 +545,8 @@ async function showPropertySearch() {
                 <div id="financingFields">
                     <div class="input-group">
                         <label>Down Payment %</label>
-                        <input type="number" id="newDownPayment" value="20" onchange="updateCashFlowPreview()" />
+                        <input type="number" id="newDownPayment" value="20" min="0" max="100" onchange="updateCashFlowPreview()" />
+                        <small style="color: var(--text-secondary);">Cash required: <span id="downPaymentAmount">$0</span></small>
                     </div>
                     
                     <div class="input-group">
@@ -555,7 +556,7 @@ async function showPropertySearch() {
                     
                     <div class="input-group">
                         <label>Loan Term (years)</label>
-                        <input type="number" id="newLoanTerm" value="30" onchange="updateCashFlowPreview()" />
+                        <input type="number" id="newLoanTerm" value="30" min="1" max="40" onchange="updateCashFlowPreview()" />
                     </div>
                     
                     <div class="input-group">
@@ -721,6 +722,12 @@ function updateCashFlowPreview() {
         const closingCosts = loanAmount * (closingCostPercent / 100);
         
         totalCashNeeded = downPayment + closingCosts;
+        
+        // Update down payment amount display
+        const downPaymentSpan = document.getElementById('downPaymentAmount');
+        if (downPaymentSpan) {
+            downPaymentSpan.textContent = financialCalc.formatCurrency(downPayment);
+        }
         
         // Calculate monthly payment
         if (loanAmount > 0) {
@@ -1825,34 +1832,94 @@ function createPropertyCard(month, transaction) {
     
     const data = transaction.data;
     const isAllCash = data.financingType === 'CASH';
+    const cashFlow = data.cashFlowAnalysis || {};
+    const expenses = data.operatingExpenses || {};
     
     card.innerHTML = `
         <div class="card-header">
             <span class="card-icon">🏠</span>
-            <h3>Month ${month}</h3>
+            <h3>Month ${month} - Property Purchase</h3>
         </div>
         <div class="card-content">
-            <div class="property-address">${data.address}</div>
-            <div class="metric-row">
-                <span class="metric-text">Price: <strong>${financialCalc.formatCurrency(data.purchasePrice)}</strong></span>
+            <div class="property-address" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;">${data.address}</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                <div class="metric-row">
+                    <span class="metric-text">Purchase Price:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>${financialCalc.formatCurrency(data.purchasePrice)}</strong>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-text">Cash Required:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>${financialCalc.formatCurrency(data.totalCashNeeded)}</strong>
+                </div>
+                
+                ${isAllCash ? `
+                <div class="metric-row">
+                    <span class="metric-text">Financing:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>All Cash</strong>
+                </div>
+                ` : `
+                <div class="metric-row">
+                    <span class="metric-text">Down Payment:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>${data.loanDetails?.downPaymentPercent || 20}% (${financialCalc.formatCurrency(data.loanDetails?.downPaymentAmount || 0)})</strong>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-text">Loan Amount:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>${financialCalc.formatCurrency(data.loanDetails?.loanAmount || 0)}</strong>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-text">Interest Rate:</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>${((data.loanDetails?.interestRate || 0.08) * 100).toFixed(1)}%</strong>
+                </div>
+                `}
             </div>
-            <div class="metric-row">
-                <span class="metric-text">Cash Needed: <strong>${financialCalc.formatCurrency(data.totalCashNeeded)}</strong></span>
-            </div>
-            ${isAllCash ? `
-            <div class="metric-row">
-                <span class="metric-text">Financing: <strong>All Cash</strong></span>
-            </div>
-            ` : `
-            <div class="metric-row">
-                <span class="metric-text">Loan: <strong>${financialCalc.formatCurrency(data.loanDetails?.loanAmount || 0)}</strong></span>
-            </div>
-            `}
-            <div class="metric-row">
-                <span class="metric-text">Rent: <strong>${financialCalc.formatCurrency(data.monthlyRent)}/mo</strong></span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-text">Cash Flow: <strong style="color: ${data.cashFlowAnalysis?.netCashFlow >= 0 ? 'var(--accent-green)' : '#f44336'}">${financialCalc.formatCurrency(data.cashFlowAnalysis?.netCashFlow || 0)}/mo</strong></span>
+            
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-bottom: 0.75rem;">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">Monthly Cash Flow Analysis</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; font-size: 0.85rem;">
+                    <div>Gross Rent:</div>
+                    <div style="text-align: right;">${financialCalc.formatCurrency(data.monthlyRent)}</div>
+                    
+                    <div style="color: #666;">- Vacancy (${expenses.vacancyPercent || 8}%):</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.vacancy || 0)}</div>
+                    
+                    <div style="color: #666;">- Property Tax:</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.propertyTax || 0)}</div>
+                    
+                    <div style="color: #666;">- Insurance:</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.insurance || 0)}</div>
+                    
+                    <div style="color: #666;">- Management (${expenses.managementPercent || 8}%):</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.management || 0)}</div>
+                    
+                    <div style="color: #666;">- Maintenance (${expenses.maintenancePercent || 5}%):</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.maintenance || 0)}</div>
+                    
+                    ${!isAllCash ? `
+                    <div style="color: #666;">- Debt Service:</div>
+                    <div style="text-align: right; color: #666;">${financialCalc.formatCurrency(cashFlow.mortgagePayment || 0)}</div>
+                    ` : ''}
+                    
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 0.25rem; margin-top: 0.25rem; font-weight: bold;">Net Cash Flow:</div>
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 0.25rem; margin-top: 0.25rem; text-align: right; font-weight: bold; color: ${cashFlow.netCashFlow >= 0 ? 'var(--accent-green)' : '#f44336'}">
+                        ${financialCalc.formatCurrency(cashFlow.netCashFlow || 0)}/mo
+                    </div>
+                </div>
             </div>
         </div>
     `;
