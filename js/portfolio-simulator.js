@@ -1530,6 +1530,7 @@ function updateTimelineView() {
     
     // Get all transactions from state manager
     const transactions = stateManager.transactions || [];
+    console.log('Timeline update - transactions from state manager:', transactions.length);
     
     // Get all timeline events from phases
     const allEvents = [];
@@ -1545,8 +1546,35 @@ function updateTimelineView() {
     
     // Add other timeline events from phases
     if (currentPhases) {
+        console.log('Timeline update - currentPhases:', currentPhases.length, currentPhases);
         currentPhases.forEach(phase => {
-            if (phase.action_type === 'snapshot') {
+            // Check if this is a property purchase that wasn't converted to a transaction
+            if (phase.action_type === 'buy' && !transactions.find(t => t.id === `txn_${phase.id}`)) {
+                console.log('Found buy phase not in transactions:', phase);
+                let transactionData = {};
+                try {
+                    transactionData = JSON.parse(phase.notes || '{}');
+                } catch (e) {
+                    transactionData = {
+                        address: phase.property_address,
+                        purchasePrice: phase.purchase_price,
+                        monthlyRent: phase.monthly_rental_income,
+                        rehabCost: phase.rehab_cost || 0,
+                        totalCashNeeded: phase.purchase_price * 0.25
+                    };
+                }
+                allEvents.push({
+                    month: phase.month_number,
+                    type: 'PROPERTY_PURCHASE',
+                    data: {
+                        id: `txn_${phase.id}`,
+                        type: 'PROPERTY_PURCHASE',
+                        month: phase.month_number,
+                        propertyId: `prop_${phase.id}`,
+                        data: transactionData
+                    }
+                });
+            } else if (phase.action_type === 'snapshot') {
                 allEvents.push({
                     month: phase.month_number,
                     type: 'SNAPSHOT',
@@ -1576,6 +1604,7 @@ function updateTimelineView() {
     
     // Sort all events by month
     allEvents.sort((a, b) => a.month - b.month);
+    console.log('Timeline update - all events:', allEvents.length, allEvents);
     
     // Group events by month
     const eventsByMonth = {};
