@@ -248,8 +248,11 @@ test('Terminal execution test', async ({ page }) => {
   await page.click('button:has-text("Simulate Page Refresh")');
   await page.waitForTimeout(1000);
   
+  // Get console text after refresh
+  const consoleTextAfterRefresh = await page.textContent('#console');
+  
   // Verify timeline persisted
-  expect(consoleText).toContain('State loaded from localStorage');
+  expect(consoleTextAfterRefresh).toContain('State loaded from localStorage');
   
   console.log('Timeline persistence test completed successfully!');
 });
