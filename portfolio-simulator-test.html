@@ -2,113 +2,385 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Portfolio Simulator Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Simulator Test - Expected Behavior</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .metric-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .metric-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #212529;
+        }
+        .metric-card .change {
+            font-size: 12px;
+            color: #28a745;
+        }
+        .timeline {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .timeline-track {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+        .timeline-card {
+            min-width: 200px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+        .timeline-card.property {
+            border-color: #28a745;
+        }
+        .timeline-card.snapshot {
+            border-color: #17a2b8;
+        }
+        .timeline-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .timeline-card .details {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .add-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .add-button:hover {
+            background: #0056b3;
+        }
+        .console {
+            background: #212529;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+        }
+        .console-entry {
+            margin-bottom: 5px;
+        }
+        .console-entry.info { color: #17a2b8; }
+        .console-entry.success { color: #28a745; }
+        .console-entry.warning { color: #ffc107; }
+        .console-entry.error { color: #dc3545; }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Portfolio Simulator Component Test</h1>
-    <div id="test-results"></div>
+    <div class="container">
+        <h1>Portfolio Simulator - Expected Behavior Demo</h1>
+        
+        <div class="controls">
+            <button class="add-button" onclick="addProperty()">Add Property</button>
+            <button class="add-button" onclick="addSnapshot()">Add Snapshot</button>
+            <button class="add-button" onclick="simulateRefresh()">Simulate Page Refresh</button>
+            <button class="add-button" onclick="clearData()">Clear Data</button>
+        </div>
+
+        <h2>Metrics (Should Update Immediately)</h2>
+        <div class="metrics">
+            <div class="metric-card">
+                <h3>Monthly Income</h3>
+                <div class="value" id="monthlyIncome">$0</div>
+                <div class="change" id="incomeChange">+0%</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Properties</h3>
+                <div class="value" id="totalProperties">0</div>
+                <div class="change" id="propertiesChange">+0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Equity</h3>
+                <div class="value" id="totalEquity">$0</div>
+                <div class="change" id="equityChange">+0%</div>
+            </div>
+            <div class="metric-card">
+                <h3>Cash Reserves</h3>
+                <div class="value" id="cashReserves">$50,000</div>
+                <div class="change" id="cashChange">+0%</div>
+            </div>
+        </div>
+
+        <h2>Investment Timeline (Should Persist on Refresh)</h2>
+        <div class="timeline">
+            <div class="timeline-track" id="timelineTrack">
+                <div class="timeline-card snapshot">
+                    <h4>Month 0 - Start</h4>
+                    <div class="details">
+                        Cash: $50,000<br>
+                        Properties: 0<br>
+                        Income: $0
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Debug Console</h2>
+        <div class="console" id="console">
+            <div class="console-entry info">System initialized</div>
+        </div>
+    </div>
 
     <script>
-        const tests = [];
-        const results = document.getElementById('test-results');
+        // Simulated state
+        let state = {
+            monthlyIncome: 0,
+            totalProperties: 0,
+            totalEquity: 0,
+            cashReserves: 50000,
+            timeline: [
+                {
+                    month: 0,
+                    type: 'snapshot',
+                    data: {
+                        cash: 50000,
+                        properties: 0,
+                        income: 0
+                    }
+                }
+            ]
+        };
 
-        // Test timeline implementation
-        tests.push({
-            name: 'Timeline Card System',
-            test: async () => {
-                const response = await fetch('/portfolio-simulator.html');
-                const html = await response.text();
-                return html.includes('timeline-card') && 
-                       html.includes('snapshot-card') &&
-                       html.includes('timeline-track');
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('portfolioTestState');
+            if (saved) {
+                state = JSON.parse(saved);
+                log('State loaded from localStorage', 'success');
+                updateUI();
+                rebuildTimeline();
             }
-        });
+        }
 
-        tests.push({
-            name: 'CSS Variables Fixed',
-            test: async () => {
-                const response = await fetch('/portfolio-simulator.html');
-                const html = await response.text();
-                return html.includes('--card-bg: var(--off-white)') &&
-                       html.includes('--text-primary: var(--primary-black)');
-            }
-        });
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('portfolioTestState', JSON.stringify(state));
+            log('State saved to localStorage', 'success');
+        }
 
-        tests.push({
-            name: 'Strategy Selection',
-            test: async () => {
-                const response = await fetch('/portfolio-simulator.html');
-                const html = await response.text();
-                return html.includes('strategy-selector') &&
-                       html.includes('Buy & Hold') &&
-                       html.includes('BRRRR');
-            }
-        });
+        // Log to console
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.className = `console-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
 
-        tests.push({
-            name: 'Timeline Modal',
-            test: async () => {
-                const response = await fetch('/portfolio-simulator.html');
-                const html = await response.text();
-                return html.includes('timelineModal') &&
-                       html.includes('Property Acquisition') &&
-                       html.includes('Time Snapshot');
-            }
-        });
-
-        tests.push({
-            name: 'Progress Bar',
-            test: async () => {
-                const response = await fetch('/portfolio-simulator.html');
-                const html = await response.text();
-                return html.includes('goal-progress') &&
-                       html.includes('progress-fill');
-            }
-        });
-
-        // Run all tests
-        async function runTests() {
-            results.innerHTML = '<h2>Component Test Results:</h2>';
-            let allPassed = true;
+        // Update UI metrics
+        function updateUI() {
+            log('Updating UI metrics', 'info');
             
-            for (const test of tests) {
-                try {
-                    const passed = await test.test();
-                    allPassed = allPassed && passed;
-                    results.innerHTML += `
-                        <div style="padding: 5px; color: ${passed ? 'green' : 'red'}">
-                            ${passed ? '✓' : '✗'} ${test.name}
+            // Update values
+            document.getElementById('monthlyIncome').textContent = 
+                `$${state.monthlyIncome.toLocaleString()}`;
+            document.getElementById('totalProperties').textContent = 
+                state.totalProperties;
+            document.getElementById('totalEquity').textContent = 
+                `$${state.totalEquity.toLocaleString()}`;
+            document.getElementById('cashReserves').textContent = 
+                `$${state.cashReserves.toLocaleString()}`;
+            
+            // Update changes
+            document.getElementById('incomeChange').textContent = 
+                `+${((state.monthlyIncome / 10000) * 100).toFixed(0)}% of goal`;
+            document.getElementById('propertiesChange').textContent = 
+                `+${state.totalProperties} total`;
+            document.getElementById('equityChange').textContent = 
+                `+${((state.totalEquity / 50000) * 100).toFixed(0)}%`;
+            document.getElementById('cashChange').textContent = 
+                `${((state.cashReserves - 50000) / 50000 * 100).toFixed(0)}%`;
+            
+            log('UI metrics updated successfully', 'success');
+        }
+
+        // Rebuild timeline from state
+        function rebuildTimeline() {
+            log('Rebuilding timeline', 'info');
+            const track = document.getElementById('timelineTrack');
+            track.innerHTML = '';
+            
+            state.timeline.forEach(event => {
+                const card = document.createElement('div');
+                card.className = `timeline-card ${event.type}`;
+                
+                if (event.type === 'snapshot') {
+                    card.innerHTML = `
+                        <h4>Month ${event.month} - Snapshot</h4>
+                        <div class="details">
+                            Cash: $${event.data.cash.toLocaleString()}<br>
+                            Properties: ${event.data.properties}<br>
+                            Income: $${event.data.income.toLocaleString()}
                         </div>
                     `;
-                } catch (error) {
-                    allPassed = false;
-                    results.innerHTML += `
-                        <div style="padding: 5px; color: red">
-                            ✗ ${test.name} - Error: ${error.message}
+                } else if (event.type === 'property') {
+                    card.innerHTML = `
+                        <h4>Month ${event.month} - Property</h4>
+                        <div class="details">
+                            ${event.data.address}<br>
+                            Price: $${event.data.price.toLocaleString()}<br>
+                            Rent: $${event.data.rent.toLocaleString()}/mo<br>
+                            Cash Flow: $${event.data.cashFlow.toLocaleString()}/mo
                         </div>
                     `;
                 }
-            }
-
-            results.innerHTML += `
-                <hr>
-                <h3>Visual Elements to Check:</h3>
-                <ul>
-                    <li>Timeline shows Month 0 snapshot card with starting capital</li>
-                    <li>Add (+) buttons appear between timeline cards</li>
-                    <li>Progress bar shows goal achievement percentage</li>
-                    <li>Portfolio summary displays key metrics in grid</li>
-                    <li>Modal allows choice between property or time snapshot</li>
-                    <li>Strategy selection shows 3 options with radio buttons</li>
-                </ul>
-                <p><strong>${allPassed ? 'All components loaded successfully!' : 'Some components failed to load.'}</strong></p>
-                <a href="/portfolio-simulator.html" target="_blank" style="font-size: 18px;">
-                    Open Portfolio Simulator →
-                </a>
-            `;
+                
+                track.appendChild(card);
+            });
+            
+            log(`Timeline rebuilt with ${state.timeline.length} events`, 'success');
         }
 
-        runTests();
+        // Add property
+        function addProperty() {
+            const month = state.timeline.length;
+            const propertyData = {
+                address: `${123 + state.totalProperties} Main St`,
+                price: 150000,
+                rent: 1500,
+                cashFlow: 400
+            };
+            
+            log(`Adding property at month ${month}`, 'info');
+            
+            // Update state
+            state.totalProperties++;
+            state.monthlyIncome += propertyData.cashFlow;
+            state.totalEquity += propertyData.price * 0.2; // 20% down
+            state.cashReserves -= propertyData.price * 0.25; // 25% total cash
+            
+            // Add to timeline
+            state.timeline.push({
+                month: month,
+                type: 'property',
+                data: propertyData
+            });
+            
+            // Save and update
+            saveState();
+            updateUI();
+            rebuildTimeline();
+            
+            log('Property added successfully', 'success');
+        }
+
+        // Add snapshot
+        function addSnapshot() {
+            const month = state.timeline.length;
+            
+            log(`Adding snapshot at month ${month}`, 'info');
+            
+            // Add to timeline
+            state.timeline.push({
+                month: month,
+                type: 'snapshot',
+                data: {
+                    cash: state.cashReserves,
+                    properties: state.totalProperties,
+                    income: state.monthlyIncome
+                }
+            });
+            
+            // Save and update
+            saveState();
+            rebuildTimeline();
+            
+            log('Snapshot added successfully', 'success');
+        }
+
+        // Simulate page refresh
+        function simulateRefresh() {
+            log('Simulating page refresh...', 'warning');
+            
+            // Clear UI
+            document.getElementById('timelineTrack').innerHTML = '';
+            
+            // Reload from storage
+            setTimeout(() => {
+                loadState();
+                log('Page refresh complete', 'success');
+            }, 500);
+        }
+
+        // Clear all data
+        function clearData() {
+            log('Clearing all data...', 'warning');
+            
+            localStorage.removeItem('portfolioTestState');
+            state = {
+                monthlyIncome: 0,
+                totalProperties: 0,
+                totalEquity: 0,
+                cashReserves: 50000,
+                timeline: [{
+                    month: 0,
+                    type: 'snapshot',
+                    data: {
+                        cash: 50000,
+                        properties: 0,
+                        income: 0
+                    }
+                }]
+            };
+            
+            updateUI();
+            rebuildTimeline();
+            log('Data cleared', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+        });
     </script>
 </body>
 </html>

@@ -184,6 +184,17 @@ async function loadSimulation(simulationId) {
                 propertyId: `prop_${phase.id}`,
                 data: transactionData
             });
+        } else if (phase.action_type === 'sell') {
+            transactions.push({
+                id: `txn_${phase.id}`,
+                type: 'PROPERTY_SALE',
+                month: phase.month_number,
+                propertyId: phase.property_id,
+                data: {
+                    salePrice: phase.sale_price,
+                    address: phase.property_address
+                }
+            });
         }
     });
     
@@ -195,6 +206,9 @@ async function loadSimulation(simulationId) {
     
     // Update UI
     updateSimulationUI();
+    
+    // Reconstruct timeline events from phases
+    reconstructTimelineFromPhases();
 }
 
 // Subscribe UI components to state manager
@@ -231,6 +245,9 @@ function updateSimulationUI() {
     updateTimelineView(); // Call this after metrics are updated
     checkMilestones();
     updateMetricsWithGrowth(); // Ensure growth percentages are shown
+    
+    // Ensure all phases are displayed in timeline
+    updatePhasesList();
 }
 
 // Update phases list
@@ -948,8 +965,11 @@ async function addPropertyToSimulation() {
     // Close modal
     closePropertyModal();
     
-    // Update all UI components through state manager
-    // Timeline will automatically update via subscriptions
+    // Reload simulation to ensure all phases are properly loaded
+    await loadSimulation(currentSimulation.id);
+    
+    // Refresh all UI components
+    await refreshAllUI();
 }
 
 // Export simulation
@@ -1446,6 +1466,37 @@ function getMostCommonLoanTerms() {
 
 // Timeline View Functions
 
+// Reconstruct timeline from phases data
+function reconstructTimelineFromPhases() {
+    if (!currentPhases || currentPhases.length === 0) return;
+    
+    // Sort phases by month number
+    const sortedPhases = [...currentPhases].sort((a, b) => a.month_number - b.month_number);
+    
+    // Process each phase and add appropriate timeline events
+    sortedPhases.forEach(phase => {
+        const month = phase.month_number;
+        
+        switch (phase.action_type) {
+            case 'snapshot':
+                // Snapshot events are visual only, handled in updateTimelineView
+                break;
+            case 'wait':
+                // Wait period events are visual only, handled in updateTimelineView
+                break;
+            case 'loan':
+                // Loan events are visual only, handled in updateTimelineView
+                break;
+            case 'refinance':
+                // Refinance events are visual only, handled in updateTimelineView
+                break;
+            // Property purchases and sales are already handled by transactions
+        }
+    });
+    
+    // The actual timeline rendering happens in updateTimelineView which reads from phases
+}
+
 // Update timeline view with cards
 function updateTimelineView() {
     const track = document.getElementById('timelineTrack');
@@ -1473,31 +1524,114 @@ function updateTimelineView() {
     // Get all transactions from state manager
     const transactions = stateManager.transactions || [];
     
-    // Group transactions by month
-    const transactionsByMonth = {};
+    // Get all timeline events from phases
+    const allEvents = [];
+    
+    // Add property transactions
     transactions.forEach(txn => {
-        if (!transactionsByMonth[txn.month]) {
-            transactionsByMonth[txn.month] = [];
-        }
-        transactionsByMonth[txn.month].push(txn);
+        allEvents.push({
+            month: txn.month,
+            type: txn.type,
+            data: txn
+        });
     });
     
-    // Add cards for each month with transactions
-    Object.keys(transactionsByMonth).sort((a, b) => a - b).forEach(month => {
+    // Add other timeline events from phases
+    if (currentPhases) {
+        currentPhases.forEach(phase => {
+            if (phase.action_type === 'snapshot') {
+                allEvents.push({
+                    month: phase.month_number,
+                    type: 'SNAPSHOT',
+                    data: phase
+                });
+            } else if (phase.action_type === 'wait') {
+                allEvents.push({
+                    month: phase.month_number,
+                    type: 'WAIT',
+                    data: phase
+                });
+            } else if (phase.action_type === 'loan') {
+                allEvents.push({
+                    month: phase.month_number,
+                    type: 'LOAN',
+                    data: phase
+                });
+            } else if (phase.action_type === 'refinance') {
+                allEvents.push({
+                    month: phase.month_number,
+                    type: 'REFINANCE',
+                    data: phase
+                });
+            }
+        });
+    }
+    
+    // Sort all events by month
+    allEvents.sort((a, b) => a.month - b.month);
+    
+    // Group events by month
+    const eventsByMonth = {};
+    allEvents.forEach(event => {
+        if (!eventsByMonth[event.month]) {
+            eventsByMonth[event.month] = [];
+        }
+        eventsByMonth[event.month].push(event);
+    });
+    
+    // Add cards for each month with events
+    Object.keys(eventsByMonth).sort((a, b) => a - b).forEach(month => {
         const monthNum = parseInt(month);
-        const monthTransactions = transactionsByMonth[month];
+        const monthEvents = eventsByMonth[month];
         
-        monthTransactions.forEach(txn => {
-            if (txn.type === 'PROPERTY_PURCHASE') {
-                const card = createPropertyCard(monthNum, txn);
-                track.appendChild(card);
-            } else if (txn.type === 'PROPERTY_SALE') {
-                const card = createSaleCard(monthNum, txn);
+        monthEvents.forEach(event => {
+            let card = null;
+            
+            switch (event.type) {
+                case 'PROPERTY_PURCHASE':
+                    card = createPropertyCard(monthNum, event.data);
+                    break;
+                case 'PROPERTY_SALE':
+                    card = createSaleCard(monthNum, event.data);
+                    break;
+                case 'SNAPSHOT':
+                    const state = stateManager.getMonthState(monthNum);
+                    if (state) {
+                        card = createTimelineCard(monthNum, 'snapshot', state);
+                    }
+                    break;
+                case 'WAIT':
+                    try {
+                        const waitData = JSON.parse(event.data.notes || '{}');
+                        card = createTimelineCard(monthNum, 'wait', waitData);
+                    } catch (e) {
+                        console.error('Error parsing wait data:', e);
+                    }
+                    break;
+                case 'LOAN':
+                    try {
+                        const loanData = JSON.parse(event.data.notes || '{}');
+                        card = createTimelineCard(monthNum, 'loan', loanData);
+                    } catch (e) {
+                        console.error('Error parsing loan data:', e);
+                    }
+                    break;
+                case 'REFINANCE':
+                    try {
+                        const refinanceData = JSON.parse(event.data.notes || '{}');
+                        card = createTimelineCard(monthNum, 'refinance', refinanceData);
+                    } catch (e) {
+                        console.error('Error parsing refinance data:', e);
+                    }
+                    break;
+            }
+            
+            if (card) {
                 track.appendChild(card);
             }
         });
         
-        // Add "add" button after each transaction
+        // Add "add" button after each month's events
         const addBtn = document.createElement('button');
         addBtn.className = 'timeline-add-btn';
         addBtn.onclick = () => showAddTimelineModal(monthNum + 1);
@@ -1610,6 +1744,72 @@ function createTimelineCard(month, type, data) {
                     <span class="metric-icon">💎</span>
                     <span class="metric-text">Equity: <strong class="equity-value">${financialCalc.formatCurrency(data.totalEquity || 0)}</strong></span>
                 </div>
+            </div>
+        `;
+    } else if (type === 'wait') {
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-icon">⏰</span>
+                <h3>Month ${month}</h3>
+            </div>
+            <div class="card-content">
+                <div class="metric-row">
+                    <span class="metric-icon">⏳</span>
+                    <span class="metric-text">Wait ${data.months || 1} months</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-icon">💰</span>
+                    <span class="metric-text">Target: ${financialCalc.formatCurrency(data.targetAmount || 0)}</span>
+                </div>
+                ${data.purpose ? `
+                <div class="metric-row">
+                    <span class="metric-icon">📝</span>
+                    <span class="metric-text">${data.purpose}</span>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } else if (type === 'loan') {
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-icon">💳</span>
+                <h3>Month ${month}</h3>
+            </div>
+            <div class="card-content">
+                <div class="metric-row">
+                    <span class="metric-icon">💵</span>
+                    <span class="metric-text">Amount: ${financialCalc.formatCurrency(data.amount || 0)}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-icon">📊</span>
+                    <span class="metric-text">${data.loanType || 'Loan'}</span>
+                </div>
+                ${data.interestRate ? `
+                <div class="metric-row">
+                    <span class="metric-icon">%</span>
+                    <span class="metric-text">Rate: ${data.interestRate}%</span>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } else if (type === 'refinance') {
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-icon">🏦</span>
+                <h3>Month ${month}</h3>
+            </div>
+            <div class="card-content">
+                <div class="property-address">${data.propertyAddress || 'Property'}</div>
+                <div class="metric-row">
+                    <span class="metric-icon">💰</span>
+                    <span class="metric-text">Cash Out: ${financialCalc.formatCurrency(data.cashOut || 0)}</span>
+                </div>
+                ${data.newRate ? `
+                <div class="metric-row">
+                    <span class="metric-icon">%</span>
+                    <span class="metric-text">New Rate: ${data.newRate}%</span>
+                </div>
+                ` : ''}
             </div>
         `;
     }
@@ -1935,6 +2135,12 @@ function showPropertyForm() {
 async function refreshAllUI() {
     if (!currentSimulation) return;
     
+    // Reload phases from database to ensure sync
+    const result = await simulationAPI.getPhases(currentSimulation.id);
+    if (result && !result.error) {
+        currentPhases = result;
+    }
+    
     // Run simulation to recalculate projections
     await runSimulation();
     
@@ -2103,7 +2309,7 @@ function addMilestoneMarker(milestone) {
 }
 
 // Show time snapshot form
-function showTimeSnapshotForm() {
+async function showTimeSnapshotForm() {
     const month = window.currentTimelineMonth || 6;
     
     // Get current state for this month
@@ -2141,6 +2347,30 @@ function showTimeSnapshotForm() {
         }
     }
     
+    // Save snapshot to database
+    if (currentSimulation) {
+        await simulationAPI.addPhase(currentSimulation.id, {
+            phaseNumber: currentPhases.length + 1,
+            monthNumber: month,
+            actionType: 'snapshot',
+            propertyAddress: '',
+            purchasePrice: 0,
+            monthlyRentalIncome: 0,
+            notes: JSON.stringify({
+                cashReserves: state.cashReserves,
+                monthlyIncome: state.monthlyIncome,
+                totalProperties: state.totalProperties,
+                totalEquity: state.totalEquity
+            })
+        });
+        
+        // Reload phases to update local state
+        const simulation = await simulationAPI.getSimulation(currentSimulation.id);
+        if (simulation) {
+            currentPhases = simulation.phases || [];
+        }
+    }
+    
     // Subscribe card to state updates
     stateManager.subscribe(`timeline-card-${month}`, (newState) => {
         if (newState && newState.months[month]) {
@@ -2149,6 +2379,17 @@ function showTimeSnapshotForm() {
     });
     
     closeTimelineModal();
+    
+    // Reload current phases to ensure database sync
+    if (currentSimulation) {
+        const result = await simulationAPI.getPhases(currentSimulation.id);
+        if (result && !result.error) {
+            currentPhases = result;
+        }
+    }
+    
+    // Refresh UI to ensure timeline persists
+    await refreshAllUI();
 }
 
 // Show sell property form
@@ -2266,6 +2507,10 @@ async function addPropertySale() {
     }
     
     closePropertyModal();
+    
+    // Reload simulation and refresh UI
+    await loadSimulation(currentSimulation.id);
+    await refreshAllUI();
 }
 
 // Show loan form
