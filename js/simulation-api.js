@@ -125,6 +125,12 @@ class SimulationAPIService {
 
     // Update simulation basic info
     async updateSimulation(simulationId, updates) {
+        // Ensure we have at least one field to update
+        if (!updates || Object.keys(updates).length === 0) {
+            console.warn('No fields to update, adding updated_at timestamp');
+            updates = { updated_at: new Date().toISOString() };
+        }
+
         const { data, error } = await this.client
             .from('simulations')
             .update(updates)
@@ -134,6 +140,8 @@ class SimulationAPIService {
 
         if (error) {
             console.error('Error updating simulation:', error);
+            console.error('Simulation ID:', simulationId);
+            console.error('Updates:', updates);
             return { error };
         }
 
@@ -270,8 +278,10 @@ class SimulationAPIService {
     async recalculateProjections(simulationId) {
         // This will be implemented with the financial calculation engine
         console.log('Recalculating projections for simulation:', simulationId);
-        // For now, just update the simulation's updated_at
-        await this.updateSimulation(simulationId, {});
+        // Update the simulation's updated_at timestamp
+        await this.updateSimulation(simulationId, {
+            updated_at: new Date().toISOString()
+        });
     }
 
     // Delete a simulation
