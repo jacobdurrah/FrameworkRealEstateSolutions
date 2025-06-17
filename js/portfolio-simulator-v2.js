@@ -28,6 +28,9 @@ window.portfolioState = portfolioState;
 // Calculator instances (initialized after DOM load)
 let loanCalc, roiCalc, cashFlowCalc, equityCalc;
 
+// Debounce timer for input updates
+let updateDebounceTimer = null;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize calculators after ensuring classes are loaded
@@ -120,7 +123,8 @@ function renderTimelineTable() {
         tr.innerHTML = `
             <td>
                 <input type="number" class="editable number" value="${row.month}" 
-                       onchange="updateTimeline(${row.id}, 'month', this.value)" min="0">
+                       onchange="updateTimeline(${row.id}, 'month', this.value)"
+                       oninput="updateTimeline(${row.id}, 'month', this.value)" min="0">
             </td>
             <td>
                 <select class="table-select" onchange="updateTimeline(${row.id}, 'action', this.value)">
@@ -137,12 +141,14 @@ function renderTimelineTable() {
             </td>
             <td>
                 <input type="number" class="editable number currency" value="${row.price}" 
-                       onchange="updateTimeline(${row.id}, 'price', this.value)" min="0"
+                       onchange="updateTimeline(${row.id}, 'price', this.value)"
+                       oninput="updateTimeline(${row.id}, 'price', this.value)" min="0"
                        ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td>
                 <input type="number" class="editable number percentage" value="${row.downPercent}" 
-                       onchange="updateTimeline(${row.id}, 'downPercent', this.value)" 
+                       onchange="updateTimeline(${row.id}, 'downPercent', this.value)"
+                       oninput="updateTimeline(${row.id}, 'downPercent', this.value)" 
                        min="0" max="100" step="5"
                        ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
@@ -150,20 +156,23 @@ function renderTimelineTable() {
             <td class="number currency">${formatCurrency(row.loanAmount)}</td>
             <td>
                 <input type="number" class="editable number percentage" value="${row.rate}" 
-                       onchange="updateTimeline(${row.id}, 'rate', this.value)" 
+                       onchange="updateTimeline(${row.id}, 'rate', this.value)"
+                       oninput="updateTimeline(${row.id}, 'rate', this.value)" 
                        min="0" max="20" step="0.25"
                        ${row.action === 'wait' ? 'disabled' : ''}>
             </td>
             <td>
                 <input type="number" class="editable number" value="${row.term}" 
-                       onchange="updateTimeline(${row.id}, 'term', this.value)" 
+                       onchange="updateTimeline(${row.id}, 'term', this.value)"
+                       oninput="updateTimeline(${row.id}, 'term', this.value)" 
                        min="1" max="30" step="1"
                        ${row.action === 'wait' ? 'disabled' : ''}>
             </td>
             <td class="number currency">${formatCurrency(row.payment)}</td>
             <td>
                 <input type="number" class="editable number currency" value="${row.rent}" 
-                       onchange="updateTimeline(${row.id}, 'rent', this.value)" min="0"
+                       onchange="updateTimeline(${row.id}, 'rent', this.value)"
+                       oninput="updateTimeline(${row.id}, 'rent', this.value)" min="0"
                        ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td class="table-actions">
@@ -180,6 +189,12 @@ function renderTimelineTable() {
  * Update timeline data
  */
 function updateTimeline(id, field, value) {
+    // Clear any existing debounce timer
+    if (updateDebounceTimer) {
+        clearTimeout(updateDebounceTimer);
+    }
+    
+    // Immediate update for display
     const row = timelineData.find(r => r.id === id);
     if (!row) return;
     
@@ -190,30 +205,38 @@ function updateTimeline(id, field, value) {
     
     row[field] = value;
     
-    // Recalculate dependent fields
+    // Recalculate dependent fields immediately
     if (field === 'price' || field === 'downPercent') {
         row.downAmount = row.price * (row.downPercent / 100);
         row.loanAmount = row.price - row.downAmount;
     }
     
-    // Recalculate payment if loan parameters change
-    if (['price', 'downPercent', 'rate', 'term'].includes(field) && row.loanAmount > 0) {
-        try {
-            const loanResult = loanCalc.calculate({
-                principal: row.loanAmount,
-                interestRate: row.rate,
-                termYears: row.term
-            });
-            row.payment = loanResult.monthlyPayment;
-        } catch (error) {
-            console.error('Loan calculation error:', error);
-            row.payment = 0;
+    // Debounce the expensive calculations
+    updateDebounceTimer = setTimeout(() => {
+        // Recalculate payment if loan parameters change
+        if (['price', 'downPercent', 'rate', 'term'].includes(field) && row.loanAmount > 0) {
+            try {
+                if (loanCalc && typeof loanCalc.calculate === 'function') {
+                    const loanResult = loanCalc.calculate({
+                        principal: row.loanAmount,
+                        interestRate: row.rate,
+                        termYears: row.term
+                    });
+                    row.payment = loanResult.monthlyPayment;
+                } else {
+                    console.warn('Loan calculator not available');
+                    row.payment = 0;
+                }
+            } catch (error) {
+                console.error('Loan calculation error:', error);
+                row.payment = 0;
+            }
         }
-    }
-    
-    // Update calculations and refresh the calculated fields in the table
-    renderTimelineTable();
-    recalculateAll();
+        
+        // Update calculations and refresh the calculated fields in the table
+        renderTimelineTable();
+        recalculateAll();
+    }, 250); // 250ms debounce
 }
 
 /**
