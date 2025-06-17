@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Portfolio Simulator V2</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .metric {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #212529;
+        }
+    </style>
+</head>
+<body>
+    <h1>Portfolio Simulator V2 Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Quick Tests</h2>
+        <button onclick="testCalculators()">Test Calculators</button>
+        <button onclick="testSimpleProperty()">Test Simple Property</button>
+        <button onclick="test10kPortfolio()">Test $10k Portfolio</button>
+        <button onclick="openSimulator()">Open Full Simulator</button>
+        
+        <div id="testResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Calculator Test Results</h2>
+        <div id="calculatorResults" class="metrics"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Simulator Preview</h2>
+        <iframe id="simulatorFrame" src="portfolio-simulator-v2.html"></iframe>
+    </div>
+
+    <!-- Load calculators -->
+    <script src="js/calculators/base-calculator.js"></script>
+    <script src="js/calculators/loan-calculator.js"></script>
+    <script src="js/calculators/roi-calculator.js"></script>
+    <script src="js/calculators/cashflow-calculator.js"></script>
+    <script src="js/calculators/equity-calculator.js"></script>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function testCalculators() {
+            const results = document.getElementById('calculatorResults');
+            results.innerHTML = '';
+            
+            try {
+                // Test Loan Calculator
+                const loanCalc = new LoanCalculator();
+                const loanResult = loanCalc.calculate({
+                    principal: 200000,
+                    interestRate: 4.5,
+                    termYears: 30
+                });
+                
+                results.innerHTML += `
+                    <div class="metric">
+                        <div class="metric-label">Loan Calculator</div>
+                        <div class="metric-value">$${loanResult.monthlyPayment.toFixed(2)}/mo</div>
+                        <small>$200k @ 4.5% for 30yr</small>
+                    </div>
+                `;
+                
+                // Test ROI Calculator
+                const roiCalc = new ROICalculator();
+                const roiResult = roiCalc.calculate({
+                    purchasePrice: 250000,
+                    currentValue: 250000,
+                    totalCashInvested: 62500,
+                    monthlyRent: 2500,
+                    monthlyExpenses: 875,
+                    monthlyDebtService: 900
+                });
+                
+                results.innerHTML += `
+                    <div class="metric">
+                        <div class="metric-label">ROI Calculator</div>
+                        <div class="metric-value">${roiResult.cashOnCashReturn.toFixed(2)}%</div>
+                        <small>Cash-on-Cash Return</small>
+                    </div>
+                `;
+                
+                // Test Cash Flow Calculator
+                const cashFlowCalc = new CashFlowCalculator();
+                const cfResult = cashFlowCalc.calculate({
+                    monthlyRent: 2500,
+                    propertyValue: 250000,
+                    monthlyDebtService: 900,
+                    useDefaultRatios: true
+                });
+                
+                results.innerHTML += `
+                    <div class="metric">
+                        <div class="metric-label">Cash Flow Calculator</div>
+                        <div class="metric-value">$${cfResult.netCashFlow}/mo</div>
+                        <small>Net Monthly Cash Flow</small>
+                    </div>
+                `;
+                
+                // Test Equity Calculator
+                const equityCalc = new EquityCalculator();
+                const equityResult = equityCalc.calculate({
+                    currentValue: 300000,
+                    mortgageBalance: 180000,
+                    purchasePrice: 250000,
+                    initialDownPayment: 50000
+                });
+                
+                results.innerHTML += `
+                    <div class="metric">
+                        <div class="metric-label">Equity Calculator</div>
+                        <div class="metric-value">${equityResult.equityPercentage.toFixed(1)}%</div>
+                        <small>Equity Position</small>
+                    </div>
+                `;
+                
+                addResult('All calculators tested successfully!', 'success');
+                
+            } catch (error) {
+                addResult(`Calculator test failed: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function testSimpleProperty() {
+            addResult('Testing simple property addition...', 'info');
+            
+            const frame = document.getElementById('simulatorFrame');
+            const win = frame.contentWindow;
+            
+            // Wait for frame to load
+            if (!win.updateTimeline) {
+                addResult('Simulator not loaded yet. Please wait and try again.', 'error');
+                return;
+            }
+            
+            // Simulate adding a property
+            const firstRow = win.timelineData[0];
+            if (firstRow) {
+                win.updateTimeline(firstRow.id, 'property', '123 Test Street');
+                win.updateTimeline(firstRow.id, 'price', 250000);
+                win.updateTimeline(firstRow.id, 'downPercent', 20);
+                win.updateTimeline(firstRow.id, 'rate', 4.5);
+                win.updateTimeline(firstRow.id, 'term', 30);
+                win.updateTimeline(firstRow.id, 'rent', 2500);
+                
+                addResult('Property added successfully!', 'success');
+                
+                // Check results
+                setTimeout(() => {
+                    const state = win.portfolioState;
+                    addResult(`Properties: ${state.totals.propertyCount}`, 'info');
+                    addResult(`Monthly Income: $${state.totals.monthlyIncome}`, 'info');
+                    addResult(`Net Cash Flow: $${state.totals.netCashFlow}`, 'info');
+                }, 500);
+            }
+        }
+
+        function test10kPortfolio() {
+            addResult('Building $10k/month portfolio...', 'info');
+            
+            const frame = document.getElementById('simulatorFrame');
+            const win = frame.contentWindow;
+            
+            if (!win.newSimulation) {
+                addResult('Simulator not loaded yet. Please wait and try again.', 'error');
+                return;
+            }
+            
+            // Clear and start fresh
+            win.timelineData = [];
+            
+            const properties = [
+                { address: '123 Duplex Lane', price: 320000, rent: 3200, down: 25 },
+                { address: '456 Rental Ave', price: 250000, rent: 2400, down: 20 },
+                { address: '789 Triplex St', price: 450000, rent: 4500, down: 25 },
+                { address: '321 Apartment Blvd', price: 580000, rent: 5200, down: 25 },
+                { address: '654 Second Duplex', price: 340000, rent: 3400, down: 20 },
+                { address: '987 Premium Home', price: 380000, rent: 3800, down: 20 },
+                { address: '111 Goal Duplex', price: 300000, rent: 3000, down: 20 }
+            ];
+            
+            // Add properties
+            properties.forEach((prop, index) => {
+                win.addTimelineRow();
+                const row = win.timelineData[index];
+                win.updateTimeline(row.id, 'month', index * 6);
+                win.updateTimeline(row.id, 'property', prop.address);
+                win.updateTimeline(row.id, 'price', prop.price);
+                win.updateTimeline(row.id, 'downPercent', prop.down);
+                win.updateTimeline(row.id, 'rate', 4.75);
+                win.updateTimeline(row.id, 'term', 30);
+                win.updateTimeline(row.id, 'rent', prop.rent);
+            });
+            
+            setTimeout(() => {
+                const state = win.portfolioState;
+                addResult(`Portfolio built with ${state.totals.propertyCount} properties`, 'success');
+                addResult(`Monthly Income: $${state.totals.monthlyIncome.toLocaleString()}`, 'success');
+                addResult(`Net Cash Flow: $${state.totals.netCashFlow.toLocaleString()}`, 'success');
+                addResult(`Cash-on-Cash Return: ${state.totals.cashOnCash.toFixed(2)}%`, 'success');
+            }, 1000);
+        }
+
+        function openSimulator() {
+            window.open('portfolio-simulator-v2.html', '_blank');
+        }
+
+        // Run calculator test on load
+        window.addEventListener('load', () => {
+            setTimeout(testCalculators, 500);
+        });
+    </script>
+</body>
+</html>

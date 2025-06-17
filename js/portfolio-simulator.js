@@ -22,8 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
     
     if (!initialized) {
-        alert('Failed to initialize. Please check your connection.');
-        return;
+        console.warn('Failed to initialize API. Running in offline mode.');
+        // Show refresh button as fallback
+        const refreshBtn = document.getElementById('refreshTimelineBtn');
+        if (refreshBtn) refreshBtn.style.display = 'inline-flex';
     }
     
     // Load saved simulations
@@ -35,6 +37,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (simulationId) {
         await loadSimulation(simulationId);
     }
+    
+    // Listen for connection status changes
+    window.addEventListener('simulationApiStatus', (event) => {
+        const { status } = event.detail;
+        const refreshBtn = document.getElementById('refreshTimelineBtn');
+        if (refreshBtn) {
+            refreshBtn.style.display = status === 'error' ? 'inline-flex' : 'none';
+        }
+    });
 });
 
 // Start a new simulation
@@ -254,6 +265,12 @@ function updateSimulationUI() {
 function updatePhasesList() {
     const container = document.getElementById('phasesList');
     
+    // Add null check to prevent errors
+    if (!container) {
+        console.warn('phasesList element not found in DOM');
+        return;
+    }
+    
     if (currentPhases.length === 0) {
         container.innerHTML = '<p style="color: var(--text-secondary);">No phases added yet. Click "Add Property" to begin planning.</p>';
         return;
@@ -313,24 +330,28 @@ async function runSimulation() {
 // Update metrics display
 function updateMetrics() {
     const state = stateManager.getCurrentState();
+    
+    // Get all metric elements with null checks
+    const incomeEl = document.getElementById('currentIncome');
+    const propertiesEl = document.getElementById('totalProperties');
+    const equityEl = document.getElementById('totalEquity');
+    const roiEl = document.getElementById('currentROI');
+    
     if (!state || !state.summary) {
-        document.getElementById('currentIncome').textContent = '$0';
-        document.getElementById('totalProperties').textContent = '0';
-        document.getElementById('totalEquity').textContent = '$0';
-        document.getElementById('currentROI').textContent = '0%';
+        if (incomeEl) incomeEl.textContent = '$0';
+        if (propertiesEl) propertiesEl.textContent = '0';
+        if (equityEl) equityEl.textContent = '$0';
+        if (roiEl) roiEl.textContent = '0%';
         return;
     }
     
     const summary = state.summary;
     
-    document.getElementById('currentIncome').textContent = 
-        financialCalc.formatCurrency(summary.monthlyIncome);
-    document.getElementById('totalProperties').textContent = 
-        summary.totalProperties;
-    document.getElementById('totalEquity').textContent = 
-        financialCalc.formatCurrency(summary.totalEquity);
-    document.getElementById('currentROI').textContent = 
-        `${summary.roi}%`;
+    // Update only if elements exist
+    if (incomeEl) incomeEl.textContent = financialCalc.formatCurrency(summary.monthlyIncome);
+    if (propertiesEl) propertiesEl.textContent = summary.totalProperties;
+    if (equityEl) equityEl.textContent = financialCalc.formatCurrency(summary.totalEquity);
+    if (roiEl) roiEl.textContent = `${summary.roi}%`;
 }
 
 // Update metrics with growth percentages
@@ -1003,7 +1024,10 @@ function showExportOptionsModal() {
             <div class="modal-body">
                 <p>Choose your export format:</p>
                 <div class="export-options">
-                    <button class="btn btn-primary" onclick="exportAsHTML()">
+                    <button class="btn btn-primary" onclick="exportAsExcel()">
+                        <i class="fas fa-file-excel"></i> Excel with Formulas
+                    </button>
+                    <button class="btn btn-outline" onclick="exportAsHTML()">
                         <i class="fas fa-file-alt"></i> Full Report (HTML)
                     </button>
                     <button class="btn btn-outline" onclick="exportAsCSV()">
@@ -1011,12 +1035,54 @@ function showExportOptionsModal() {
                     </button>
                 </div>
                 <p class="export-note">
-                    <i class="fas fa-info-circle"></i> The HTML report can be opened in your browser and printed to PDF
+                    <i class="fas fa-info-circle"></i> Excel export includes formulas for ROI, cash flow, and break-even analysis
                 </p>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
+}
+
+// Export as Excel with formulas
+function exportAsExcel() {
+    // Close modal
+    document.querySelector('.modal').remove();
+    
+    // Initialize Excel exporter
+    const exporter = new ExcelExporter();
+    
+    // Export with formulas
+    try {
+        exporter.exportToExcel(currentSimulation, currentPhases, stateManager);
+        
+        // Show success message
+        const notification = document.createElement('div');
+        notification.className = 'notification success';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            Excel file exported successfully with formulas included!
+        `;
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.remove(), 3000);
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Error exporting to Excel: ' + error.message);
+    }
 }
 
 // Export as comprehensive HTML report
@@ -1504,10 +1570,41 @@ function reconstructTimelineFromPhases() {
     // The actual timeline rendering happens in updateTimelineView which reads from phases
 }
 
+// Refresh timeline - manual trigger
+function refreshTimeline() {
+    console.log('Manually refreshing timeline...');
+    
+    // Force state recalculation
+    if (stateManager) {
+        stateManager.recalculateState();
+    }
+    
+    // Update timeline view
+    updateTimelineView();
+    
+    // Update metrics
+    updateMetrics();
+    
+    // Try to reconnect if disconnected
+    if (simulationAPI && simulationAPI.connectionStatus !== 'connected') {
+        simulationAPI.init(
+            window.APP_CONFIG.SUPABASE_URL,
+            window.APP_CONFIG.SUPABASE_ANON_KEY
+        ).then(initialized => {
+            if (initialized && currentSimulation) {
+                loadSimulation(currentSimulation.id);
+            }
+        });
+    }
+}
+
 // Update timeline view with cards
 function updateTimelineView() {
     const track = document.getElementById('timelineTrack');
-    if (!track) return;
+    if (!track) {
+        console.warn('Timeline track element not found');
+        return;
+    }
     
     // Clear all cards
     track.innerHTML = '';

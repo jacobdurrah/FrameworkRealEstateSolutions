@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Simulator V2 - Framework Real Estate Solutions</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #16a085;
+            --light-gray: #ecf0f1;
+            --medium-gray: #95a5a6;
+            --dark-gray: #34495e;
+            --bg-color: #f8f9fa;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #dfe6e9;
+            --card-bg: #ffffff;
+            --hover-bg: #e8f4f8;
+            --table-header-bg: #2c3e50;
+            --table-header-text: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #dfe6e9;
+            --input-focus: #3498db;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        .header {
+            background: var(--secondary-color);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .header-nav a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .header-nav a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .control-panel-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-secondary {
+            background: var(--medium-gray);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--dark-gray);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-info {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138d75;
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .spreadsheet-container {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .spreadsheet-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Table Styles */
+        .table-section {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .table-header {
+            background: var(--table-header-bg);
+            color: var(--table-header-text);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--light-gray);
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background: var(--hover-bg);
+        }
+
+        /* Editable Cell Styles */
+        .editable {
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            padding: 0.25rem 0.5rem;
+            cursor: text;
+            transition: all 0.2s;
+        }
+
+        .editable:hover {
+            border-color: var(--input-border);
+        }
+
+        .editable:focus {
+            outline: none;
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .editable.error {
+            border-color: var(--danger-color);
+            background: #ffe6e6;
+        }
+
+        /* Select Dropdown in Table */
+        .table-select {
+            width: 100%;
+            padding: 0.25rem;
+            border: 1px solid var(--input-border);
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Number Formatting */
+        .number {
+            text-align: right;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .currency {
+            color: var(--success-color);
+        }
+
+        .currency.negative {
+            color: var(--danger-color);
+        }
+
+        .percentage {
+            color: var(--info-color);
+        }
+
+        /* Action Buttons in Table */
+        .table-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        /* Summary Section Styles */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .summary-card {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .summary-value.positive {
+            color: var(--success-color);
+        }
+
+        .summary-value.negative {
+            color: var(--danger-color);
+        }
+
+        /* Equation Panel */
+        .equation-panel {
+            background: white;
+            border-radius: 8px;
+            margin-top: 1rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .equation-header {
+            background: var(--info-color);
+            color: white;
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .equation-header:hover {
+            background: #138d75;
+        }
+
+        .equation-content {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .equation-content.active {
+            display: block;
+        }
+
+        .equation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .equation-item {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .equation-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .equation-formula {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .equation-example {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Loading and Status */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid var(--light-gray);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark-gray);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Add Row Button */
+        .add-row-btn {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px dashed var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+        }
+
+        .add-row-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: var(--hover-bg);
+        }
+
+        /* Property Breakdown */
+        .property-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .property-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .property-address {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .property-metrics {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>Portfolio Simulator V2</h1>
+            <nav class="header-nav">
+                <a href="index.html">Home</a>
+                <a href="portfolio-simulator.html">Simulator V1</a>
+                <a href="property-finder.html">Property Finder</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <div class="control-panel-content">
+            <button class="btn btn-primary" onclick="newSimulation()">
+                <i class="fas fa-file"></i> New Simulation
+            </button>
+            <button class="btn btn-success" onclick="saveSimulation()">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <button class="btn btn-secondary" onclick="loadSimulation()">
+                <i class="fas fa-folder-open"></i> Load
+            </button>
+            <button class="btn btn-info" onclick="exportData()">
+                <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-info" onclick="toggleEquations()">
+                <i class="fas fa-calculator"></i> Formulas
+            </button>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+                <span id="simulationName" style="font-weight: 600;">New Simulation</span>
+                <span id="autoSaveStatus" style="color: var(--text-secondary); font-size: 0.85rem;">
+                    <i class="fas fa-check-circle"></i> Saved
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Spreadsheet Layout -->
+        <div class="spreadsheet-container">
+            <!-- Timeline Table -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>Timeline Events</h2>
+                    <button class="btn btn-sm btn-primary" onclick="addTimelineRow()">
+                        <i class="fas fa-plus"></i> Add Event
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="timelineTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Month</th>
+                                <th style="width: 100px;">Action</th>
+                                <th>Property</th>
+                                <th class="number">Price</th>
+                                <th class="number">Down %</th>
+                                <th class="number">Down $</th>
+                                <th class="number">Loan</th>
+                                <th class="number">Rate %</th>
+                                <th class="number">Term</th>
+                                <th class="number">Payment</th>
+                                <th class="number">Rent</th>
+                                <th style="width: 80px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timelineBody">
+                            <!-- Timeline rows will be added here -->
+                        </tbody>
+                    </table>
+                    <button class="add-row-btn" onclick="addTimelineRow()">
+                        <i class="fas fa-plus"></i> Add Timeline Event
+                    </button>
+                </div>
+            </div>
+
+            <!-- Portfolio Summary -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>Portfolio Summary</h2>
+                    <button class="btn btn-sm btn-secondary" onclick="refreshSummary()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="summary-grid">
+                    <!-- Overview Cards -->
+                    <div class="summary-card">
+                        <div class="summary-label">Total Properties</div>
+                        <div class="summary-value" id="totalProperties">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Portfolio Value</div>
+                        <div class="summary-value positive" id="portfolioValue">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total Equity</div>
+                        <div class="summary-value positive" id="totalEquity">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total Debt</div>
+                        <div class="summary-value negative" id="totalDebt">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Monthly Income</div>
+                        <div class="summary-value positive" id="monthlyIncome">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Monthly Expenses</div>
+                        <div class="summary-value negative" id="monthlyExpenses">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Net Cash Flow</div>
+                        <div class="summary-value" id="netCashFlow">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Cash-on-Cash</div>
+                        <div class="summary-value percentage" id="cashOnCash">0%</div>
+                    </div>
+                </div>
+
+                <!-- Property Breakdown -->
+                <div style="padding: 1rem; border-top: 1px solid var(--border-color);">
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem;">Property Breakdown</h3>
+                    <ul class="property-list" id="propertyList">
+                        <!-- Property items will be added here -->
+                    </ul>
+                </div>
+
+                <!-- Loan Breakdown -->
+                <div style="padding: 1rem; border-top: 1px solid var(--border-color);">
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem;">Loan Breakdown</h3>
+                    <ul class="property-list" id="loanList">
+                        <!-- Loan items will be added here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equation Panel -->
+        <div class="equation-panel" id="equationPanel">
+            <div class="equation-header" onclick="toggleEquations()">
+                <h3>Financial Formulas & Calculations</h3>
+                <i class="fas fa-chevron-down" id="equationToggle"></i>
+            </div>
+            <div class="equation-content" id="equationContent">
+                <div class="equation-grid">
+                    <!-- Loan Formulas -->
+                    <div class="equation-item">
+                        <div class="equation-name">Monthly Payment (PMT)</div>
+                        <div class="equation-formula">PMT = P × [r(1+r)^n] / [(1+r)^n - 1]</div>
+                        <div class="equation-example">
+                            P = Principal, r = Monthly rate, n = Total payments<br>
+                            Example: $200,000 @ 4.5% for 30 years = $1,013.37/month
+                        </div>
+                    </div>
+
+                    <!-- ROI Formulas -->
+                    <div class="equation-item">
+                        <div class="equation-name">Cap Rate</div>
+                        <div class="equation-formula">Cap Rate = (NOI / Purchase Price) × 100</div>
+                        <div class="equation-example">
+                            NOI = Annual rent - Operating expenses<br>
+                            Example: $24,000 NOI / $300,000 = 8% Cap Rate
+                        </div>
+                    </div>
+
+                    <!-- Cash Flow -->
+                    <div class="equation-item">
+                        <div class="equation-name">Cash Flow</div>
+                        <div class="equation-formula">Cash Flow = Rent - Expenses - Debt Service</div>
+                        <div class="equation-example">
+                            Monthly: $2,500 - $875 - $900 = $725<br>
+                            Annual: $725 × 12 = $8,700
+                        </div>
+                    </div>
+
+                    <!-- Cash on Cash -->
+                    <div class="equation-item">
+                        <div class="equation-name">Cash-on-Cash Return</div>
+                        <div class="equation-formula">CoC = (Annual Cash Flow / Cash Invested) × 100</div>
+                        <div class="equation-example">
+                            $8,700 annual CF / $50,000 invested = 17.4%<br>
+                            Good: >8%, Excellent: >12%
+                        </div>
+                    </div>
+
+                    <!-- Equity -->
+                    <div class="equation-item">
+                        <div class="equation-name">Equity</div>
+                        <div class="equation-formula">Equity = Property Value - Mortgage Balance</div>
+                        <div class="equation-example">
+                            $300,000 value - $180,000 mortgage = $120,000<br>
+                            Equity % = 40% (120k/300k)
+                        </div>
+                    </div>
+
+                    <!-- LTV -->
+                    <div class="equation-item">
+                        <div class="equation-name">Loan-to-Value (LTV)</div>
+                        <div class="equation-formula">LTV = (Loan Amount / Property Value) × 100</div>
+                        <div class="equation-example">
+                            $180,000 loan / $300,000 value = 60% LTV<br>
+                            Lower LTV = More equity, less risk
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Calculator Scripts -->
+    <script src="js/calculators/base-calculator.js"></script>
+    <script src="js/calculators/loan-calculator.js"></script>
+    <script src="js/calculators/roi-calculator.js"></script>
+    <script src="js/calculators/cashflow-calculator.js"></script>
+    <script src="js/calculators/equity-calculator.js"></script>
+
+    <!-- Main Application Script -->
+    <script src="js/portfolio-simulator-v2.js"></script>
+</body>
+</html>
