@@ -12,6 +12,12 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:ui": "playwright test --ui",
     "test:report": "playwright show-report test-results/html",
+    "test:api": "playwright test api-connection.spec.js",
+    "test:calculator": "playwright test financial-calculator.spec.js",
+    "test:state": "playwright test state-management.spec.js",
+    "test:timeline": "playwright test timeline-property-display.spec.js",
+    "test:journey": "playwright test user-journey.spec.js",
+    "test:all": "playwright test --reporter=html",
     "lint": "eslint .",
     "dev": "node test-local.js",
     "deploy": "vercel --prod"

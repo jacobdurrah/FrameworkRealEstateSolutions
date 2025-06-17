@@ -5,24 +5,85 @@ class SimulationAPIService {
     constructor() {
         this.initialized = false;
         this.client = null;
+        this.connectionStatus = 'disconnected';
+        this.retryCount = 0;
+        this.maxRetries = 3;
+        this.retryDelay = 1000; // Start with 1 second
     }
 
     // Initialize with Supabase client
     async init(supabaseUrl, supabaseKey) {
-        if (this.initialized) return true;
+        if (this.initialized && this.connectionStatus === 'connected') return true;
 
         try {
             const { createClient } = window.supabase;
-            this.client = createClient(supabaseUrl, supabaseKey);
+            this.client = createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true
+                },
+                realtime: {
+                    params: {
+                        eventsPerSecond: 10
+                    }
+                }
+            });
+            
+            // Test the connection
+            const { error } = await this.client.from('simulations').select('count').limit(1);
+            if (error) throw error;
+            
             this.initialized = true;
-            console.log('Simulation API service initialized');
+            this.connectionStatus = 'connected';
+            this.retryCount = 0;
+            console.log('Simulation API service initialized and connected');
+            this.notifyConnectionStatus('connected');
             return true;
         } catch (error) {
             console.error('Failed to initialize Simulation API service:', error);
+            this.connectionStatus = 'error';
+            this.notifyConnectionStatus('error', error.message);
             return false;
         }
     }
 
+    // Retry operation with exponential backoff
+    async retryOperation(operation) {
+        let lastError;
+        
+        for (let i = 0; i <= this.maxRetries; i++) {
+            try {
+                // Check connection before attempting operation
+                if (!this.initialized || this.connectionStatus !== 'connected') {
+                    await this.init(window.APP_CONFIG?.SUPABASE_URL, window.APP_CONFIG?.SUPABASE_ANON_KEY);
+                }
+                
+                const result = await operation();
+                this.retryCount = 0; // Reset on success
+                return result;
+            } catch (error) {
+                lastError = error;
+                console.warn(`Operation failed (attempt ${i + 1}/${this.maxRetries + 1}):`, error);
+                
+                if (i < this.maxRetries) {
+                    const delay = this.retryDelay * Math.pow(2, i); // Exponential backoff
+                    console.log(`Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        
+        throw lastError;
+    }
+    
+    // Notify UI about connection status
+    notifyConnectionStatus(status, message = '') {
+        const event = new CustomEvent('simulationApiStatus', {
+            detail: { status, message, timestamp: new Date() }
+        });
+        window.dispatchEvent(event);
+    }
+    
     // Get user's email from localStorage or prompt
     getUserEmail() {
         let email = localStorage.getItem('simulationUserEmail');
@@ -50,18 +111,43 @@ class SimulationAPIService {
             strategy_type: data.strategyType || 'balanced'
         };
 
-        const { data: result, error } = await this.client
-            .from('simulations')
-            .insert([simulation])
-            .select()
-            .single();
+        try {
+            const { data: result, error } = await this.retryOperation(async () => {
+                return await this.client
+                    .from('simulations')
+                    .insert([simulation])
+                    .select()
+                    .single();
+            });
 
-        if (error) {
-            console.error('Error creating simulation:', error);
-            return { error };
+            if (error) {
+                console.error('Error creating simulation:', error);
+                return { error };
+            }
+
+            return { data: result };
+        } catch (error) {
+            console.error('Failed to create simulation after retries, using offline mode:', error);
+            
+            // Fallback to offline storage
+            if (window.offlineStorage) {
+                const offlineId = `offline_sim_${Date.now()}`;
+                const offlineSimulation = {
+                    ...simulation,
+                    id: offlineId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                window.offlineStorage.saveSimulation(offlineId, offlineSimulation);
+                window.offlineStorage.markForSync('simulation', offlineSimulation);
+                
+                this.notifyConnectionStatus('offline', 'Simulation saved offline. Will sync when connection returns.');
+                return { data: offlineSimulation };
+            }
+            
+            return { error: { message: 'Connection failed. Please check your internet connection and try again.' } };
         }
-
-        return { data: result };
     }
 
     // Get all simulations for current user
@@ -69,18 +155,26 @@ class SimulationAPIService {
         const userEmail = this.getUserEmail();
         if (!userEmail) return [];
 
-        const { data, error } = await this.client
-            .from('simulations')
-            .select('*')
-            .eq('user_email', userEmail)
-            .order('updated_at', { ascending: false });
+        try {
+            const { data, error } = await this.retryOperation(async () => {
+                return await this.client
+                    .from('simulations')
+                    .select('*')
+                    .eq('user_email', userEmail)
+                    .order('updated_at', { ascending: false });
+            });
 
-        if (error) {
-            console.error('Error fetching simulations:', error);
+            if (error) {
+                console.error('Error fetching simulations:', error);
+                return [];
+            }
+
+            return data || [];
+        } catch (error) {
+            console.error('Failed to fetch simulations after retries:', error);
+            this.notifyConnectionStatus('error', 'Failed to load simulations');
             return [];
         }
-
-        return data || [];
     }
 
     // Get a specific simulation with all related data
