@@ -21,14 +21,26 @@ let portfolioState = {
     }
 };
 
-// Calculator instances
-const loanCalc = new LoanCalculator();
-const roiCalc = new ROICalculator();
-const cashFlowCalc = new CashFlowCalculator();
-const equityCalc = new EquityCalculator();
+// Make key variables available globally for testing
+window.timelineData = timelineData;
+window.portfolioState = portfolioState;
+
+// Calculator instances (initialized after DOM load)
+let loanCalc, roiCalc, cashFlowCalc, equityCalc;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize calculators after ensuring classes are loaded
+    if (typeof LoanCalculator !== 'undefined') {
+        loanCalc = new LoanCalculator();
+        roiCalc = new ROICalculator();
+        cashFlowCalc = new CashFlowCalculator();
+        equityCalc = new EquityCalculator();
+    } else {
+        console.error('Calculator classes not loaded! Check script loading order.');
+        return;
+    }
+    
     initializeSimulator();
     loadFromLocalStorage();
 });
@@ -673,3 +685,15 @@ function refreshSummary() {
         icon.classList.remove('fa-spin');
     }, 500);
 }
+
+// Make functions available globally
+window.updateTimeline = updateTimeline;
+window.addTimelineRow = addTimelineRow;
+window.deleteTimelineRow = deleteTimelineRow;
+window.recalculateAll = recalculateAll;
+window.newSimulation = newSimulation;
+window.saveSimulation = saveSimulation;
+window.loadSimulation = loadSimulation;
+window.exportData = exportData;
+window.toggleEquations = toggleEquations;
+window.refreshSummary = refreshSummary;

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Live Portfolio Simulator V2</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Live Portfolio Simulator V2</h1>
+    
+    <div class="test-section">
+        <h2>Direct Link Tests</h2>
+        <p>Click these links to test navigation:</p>
+        <a href="https://frameworkrealestatesolutions.com/portfolio-simulator.html" target="_blank">Open Portfolio Simulator V1</a> |
+        <a href="https://frameworkrealestatesolutions.com/portfolio-simulator-v2.html" target="_blank">Open Portfolio Simulator V2</a>
+    </div>
+
+    <div class="test-section">
+        <h2>Live Site Status</h2>
+        <button onclick="checkLiveSite()">Check Live Site Status</button>
+        <div id="siteStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Live Site Preview</h2>
+        <iframe src="https://frameworkrealestatesolutions.com/portfolio-simulator-v2.html"></iframe>
+    </div>
+
+    <script>
+        async function checkLiveSite() {
+            const statusDiv = document.getElementById('siteStatus');
+            statusDiv.innerHTML = '<div class="result">Checking...</div>';
+            
+            try {
+                // Check main page
+                const v2Response = await fetch('https://frameworkrealestatesolutions.com/portfolio-simulator-v2.html');
+                const v2Text = await v2Response.text();
+                
+                // Check calculator files
+                const calcResponse = await fetch('https://frameworkrealestatesolutions.com/js/calculators/base-calculator.js');
+                const calcText = await calcResponse.text();
+                
+                // Check main JS
+                const jsResponse = await fetch('https://frameworkrealestatesolutions.com/js/portfolio-simulator-v2.js');
+                const jsText = await jsResponse.text();
+                
+                let results = '<div class="result success">✅ Live Site Status:</div>';
+                results += `<div class="result">V2 Page: ${v2Response.ok ? '✅ Loaded' : '❌ Failed'} (${v2Text.length} bytes)</div>`;
+                results += `<div class="result">Calculators: ${calcResponse.ok ? '✅ Loaded' : '❌ Failed'} (${calcText.length} bytes)</div>`;
+                results += `<div class="result">Main JS: ${jsResponse.ok ? '✅ Loaded' : '❌ Failed'} (${jsText.length} bytes)</div>`;
+                
+                // Check for specific content
+                if (v2Text.includes('Portfolio Simulator V2')) {
+                    results += '<div class="result success">✅ Page title found</div>';
+                }
+                if (v2Text.includes('js/calculators/base-calculator.js')) {
+                    results += '<div class="result success">✅ Calculator scripts referenced</div>';
+                }
+                if (v2Text.includes('portfolio-simulator-v2.js')) {
+                    results += '<div class="result success">✅ Main script referenced</div>';
+                }
+                
+                statusDiv.innerHTML = results;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
