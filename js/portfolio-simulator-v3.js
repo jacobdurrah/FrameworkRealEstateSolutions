@@ -133,16 +133,31 @@ async function generateStrategy() {
             throw new Error('No strategies could be generated. Please try different parameters.');
         }
         
-        // Select default strategy (balanced)
-        const balancedStrategy = strategies.find(s => s.approach === 'balanced') || strategies[0];
-        selectStrategy(balancedStrategy);
+        // Check if any strategy is feasible
+        const feasibleStrategies = strategies.filter(s => s.feasibility);
+        if (feasibleStrategies.length === 0) {
+            console.warn('No feasible strategies found, showing best attempts');
+            showV3Warning(`Unable to achieve $${v3State.parsedGoal.targetMonthlyIncome}/month within ${v3State.parsedGoal.timeHorizon} months. Showing closest possible strategies.`);
+        }
+        
+        // Select default strategy (balanced if feasible, otherwise best attempt)
+        const defaultStrategy = strategies.find(s => s.approach === 'balanced' && s.feasibility) ||
+                               strategies.find(s => s.approach === 'balanced') ||
+                               strategies[0];
+        selectStrategy(defaultStrategy);
         
         // Show strategy options
         displayStrategyOptions(strategies);
         
         // Show results sections
         document.getElementById('strategyOptionsSection').style.display = 'block';
-        document.getElementById('v2Components').style.display = 'block';
+        
+        // Only show timeline if we have events
+        if (defaultStrategy.timeline && defaultStrategy.timeline.length > 0) {
+            document.getElementById('v2Components').style.display = 'block';
+        } else {
+            showV3Warning('No investment events could be generated with the given constraints. Try adjusting your goals.');
+        }
         
     } catch (error) {
         console.error('Strategy generation error:', error);
@@ -195,22 +210,33 @@ function displayStrategyOptions(strategies) {
             <h4>${getStrategyTitle(strategy.approach)}</h4>
             <div class="strategy-metrics">
                 <div class="metric">
-                    <span class="metric-label">Time to Goal:</span>
+                    <span class="metric-label">Time Used:</span>
                     <span class="metric-value">${strategy.monthsToGoal} months</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Properties Needed:</span>
-                    <span class="metric-value">${strategy.propertyCount}</span>
+                    <span class="metric-label">Properties:</span>
+                    <span class="metric-value">${strategy.propertyCount || 0}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Total Investment:</span>
                     <span class="metric-value">${formatCurrency(strategy.totalInvestment)}</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Success Rate:</span>
-                    <span class="metric-value">${strategy.feasibility ? '✅ Achievable' : '⚠️ Challenging'}</span>
+                    <span class="metric-label">Monthly Income:</span>
+                    <span class="metric-value">${formatCurrency(strategy.finalMonthlyIncome)}/mo</span>
                 </div>
             </div>
+            ${!strategy.feasibility ? `
+                <div style="background: #fee; padding: 8px; border-radius: 4px; margin: 10px 0;">
+                    <i class="fas fa-exclamation-circle" style="color: #e74c3c;"></i>
+                    Goal not achieved: Only reaches ${formatCurrency(strategy.finalMonthlyIncome)}/mo
+                </div>
+            ` : `
+                <div style="background: #d4edda; padding: 8px; border-radius: 4px; margin: 10px 0;">
+                    <i class="fas fa-check-circle" style="color: #27ae60;"></i>
+                    Goal achieved!
+                </div>
+            `}
             <p class="strategy-description">${strategy.description}</p>
         </div>
     `).join('');
@@ -421,6 +447,21 @@ function hideV3Error() {
     const errorEl = document.getElementById('v3ErrorMessage');
     if (errorEl) {
         errorEl.style.display = 'none';
+    }
+}
+
+/**
+ * Show warning message
+ */
+function showV3Warning(message) {
+    // For now, use the error message element with warning styling
+    const errorEl = document.getElementById('v3ErrorMessage');
+    if (errorEl) {
+        errorEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+        errorEl.style.display = 'block';
+        errorEl.style.background = '#fff3cd';
+        errorEl.style.color = '#856404';
+        errorEl.style.border = '1px solid #ffeaa7';
     }
 }
 

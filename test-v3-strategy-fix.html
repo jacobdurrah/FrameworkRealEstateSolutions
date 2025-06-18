@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V3 Strategy Generation Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #34495e;
+            color: white;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>V3 Strategy Generation Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Scenarios</h2>
+        <p>Test various goal inputs to ensure strategy generation works properly:</p>
+        
+        <h3>1. Achievable Goal</h3>
+        <input type="text" class="test-input" id="goal1" value="I want $5K passive income in 3 years with $50K capital and can save $2K/month">
+        <button class="btn" onclick="testGoal('goal1', 'result1')">Test Goal</button>
+        <div id="result1" class="result" style="display:none;"></div>
+
+        <h3>2. Challenging Goal</h3>
+        <input type="text" class="test-input" id="goal2" value="I want $10K passive income in 2 years with $30K capital">
+        <button class="btn" onclick="testGoal('goal2', 'result2')">Test Goal</button>
+        <div id="result2" class="result" style="display:none;"></div>
+
+        <h3>3. Impossible Goal</h3>
+        <input type="text" class="test-input" id="goal3" value="I want $50K passive income in 1 year with $10K capital">
+        <button class="btn" onclick="testGoal('goal3', 'result3')">Test Goal</button>
+        <div id="result3" class="result" style="display:none;"></div>
+
+        <h3>4. Edge Case - Low Capital</h3>
+        <input type="text" class="test-input" id="goal4" value="I want $2K passive income in 5 years with $5K capital">
+        <button class="btn" onclick="testGoal('goal4', 'result4')">Test Goal</button>
+        <div id="result4" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div id="consoleOutput" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; font-family: monospace; max-height: 300px; overflow-y: auto;">
+            Console output will appear here...
+        </div>
+    </div>
+
+    <!-- Load V3 Scripts -->
+    <script src="js/goal-parser.js"></script>
+    <script src="js/strategy-generator.js"></script>
+
+    <script>
+        // Capture console output
+        const consoleDiv = document.getElementById('consoleOutput');
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logToDiv('LOG', args);
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            logToDiv('WARN', args);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logToDiv('ERROR', args);
+        };
+
+        function logToDiv(type, args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const color = type === 'ERROR' ? '#ff6b6b' : type === 'WARN' ? '#ffd93d' : '#95e1d3';
+            consoleDiv.innerHTML += `<div style="color: ${color};">[${type}] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        async function testGoal(inputId, resultId) {
+            const goalText = document.getElementById(inputId).value;
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            
+            // Clear console
+            consoleDiv.innerHTML = 'Testing goal: ' + goalText + '<br><br>';
+            
+            try {
+                // Parse goal
+                const parser = new GoalParser();
+                const parsedGoal = parser.parse(goalText);
+                
+                // Generate strategies
+                const generator = new StrategyGenerator();
+                const strategies = await generator.generateMultipleStrategies(parsedGoal);
+                
+                // Build result display
+                let html = `
+                    <div class="success">✓ Strategy generation completed</div>
+                    <h4>Parsed Goal:</h4>
+                    <ul>
+                        <li>Target Income: $${parsedGoal.targetMonthlyIncome}/month</li>
+                        <li>Timeline: ${parsedGoal.timeHorizon} months</li>
+                        <li>Starting Capital: $${parsedGoal.startingCapital}</li>
+                        <li>Monthly Contributions: $${parsedGoal.monthlyContributions}</li>
+                    </ul>
+                    <h4>Generated Strategies:</h4>
+                `;
+                
+                strategies.forEach(strategy => {
+                    const statusClass = strategy.feasibility ? 'success' : 'warning';
+                    const statusIcon = strategy.feasibility ? '✓' : '⚠️';
+                    
+                    html += `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <h5>${strategy.approach.charAt(0).toUpperCase() + strategy.approach.slice(1)} Strategy</h5>
+                            <div class="${statusClass}">${statusIcon} ${strategy.feasibility ? 'Goal Achievable' : 'Goal Not Achievable'}</div>
+                            <table>
+                                <tr>
+                                    <td><strong>Timeline Events:</strong></td>
+                                    <td>${strategy.timeline.length}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Properties:</strong></td>
+                                    <td>${strategy.propertyCount}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Time Used:</strong></td>
+                                    <td>${strategy.monthsToGoal} months</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Investment:</strong></td>
+                                    <td>$${strategy.totalInvestment.toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Final Monthly Income:</strong></td>
+                                    <td>$${strategy.finalMonthlyIncome.toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Income Gap:</strong></td>
+                                    <td>${strategy.feasibility ? 'None' : `$${parsedGoal.targetMonthlyIncome - strategy.finalMonthlyIncome} short`}</td>
+                                </tr>
+                            </table>
+                            ${strategy.timeline.length > 0 ? `
+                                <details>
+                                    <summary>View Timeline (${strategy.timeline.length} events)</summary>
+                                    <pre>${JSON.stringify(strategy.timeline, null, 2)}</pre>
+                                </details>
+                            ` : '<div class="warning">No timeline events generated</div>'}
+                        </div>
+                    `;
+                });
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Error: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

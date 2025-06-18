@@ -156,42 +156,77 @@ class StrategyGenerator {
         let flipCount = 0;
         let iterations = 0;
         const MAX_ITERATIONS = 100; // Prevent infinite loops
+        let lastMonth = state.currentMonth;
         
         while (state.monthlyIncome < goal.targetMonthlyIncome && 
                state.currentMonth < goal.timeHorizon && 
                iterations < MAX_ITERATIONS) {
             iterations++;
+            
+            // Process any scheduled events (like flip completions)
+            this.processScheduledEvents(state, state.currentMonth);
+            
             const incomeGap = goal.targetMonthlyIncome - state.monthlyIncome;
             const timeRemaining = goal.timeHorizon - state.currentMonth;
             
-            // Decision logic
-            if (state.cashAvailable < 30000 && state.monthlyIncome > 1000 && flipCount < 3) {
-                // Do a flip to generate capital
+            // More robust decision logic
+            let actionTaken = false;
+            
+            // First priority: If we have very little cash and time, need to generate capital
+            if (state.cashAvailable < 20000 && timeRemaining > 6 && flipCount < 3) {
                 if (this.canDoFlip(state)) {
                     this.addFlipProject(strategy, state, state.currentMonth);
                     flipCount++;
+                    actionTaken = true;
                 }
-            } else if (incomeGap > 5000 && timeRemaining > 12 && state.cashAvailable > 50000) {
-                // Try BRRR for efficient capital use
-                this.addBRRRProject(strategy, state, state.currentMonth);
-            } else {
-                // Default to rental purchase
+            }
+            
+            // Second priority: If we have moderate cash and big income gap, try BRRR
+            if (!actionTaken && incomeGap > 3000 && timeRemaining > 8 && state.cashAvailable > 40000) {
+                const brrrCost = this.getRandomInRange(65000, 100000); // Total BRRR investment
+                if (state.cashAvailable >= brrrCost) {
+                    this.addBRRRProject(strategy, state, state.currentMonth);
+                    actionTaken = true;
+                }
+            }
+            
+            // Default: Try to buy a rental
+            if (!actionTaken) {
                 const downPayment = this.assumptions.avgPropertyPrice * this.assumptions.rentalDownPayment;
                 const closingCosts = this.assumptions.avgPropertyPrice * 0.03;
                 const totalCashNeeded = downPayment + closingCosts;
                 
                 if (state.cashAvailable >= totalCashNeeded) {
                     this.addRentalPurchase(strategy, state, state.currentMonth);
+                    actionTaken = true;
                 } else {
                     // Wait for funds
                     const monthsToWait = this.calculateWaitTime(state, totalCashNeeded);
-                    if (monthsToWait > 0 && state.currentMonth + monthsToWait <= goal.timeHorizon) {
+                    if (monthsToWait > 0 && monthsToWait < 24 && state.currentMonth + monthsToWait <= goal.timeHorizon) {
                         state.currentMonth += monthsToWait;
                         state.cashAvailable += monthsToWait * (state.monthlyIncome + state.monthlyContributions);
+                        
+                        // Process scheduled events during wait time
+                        for (let m = lastMonth + 1; m <= state.currentMonth; m++) {
+                            this.processScheduledEvents(state, m);
+                        }
                     } else {
-                        break;
+                        // Can't afford anything in reasonable time
+                        state.currentMonth++;
+                        state.cashAvailable += state.monthlyIncome + state.monthlyContributions;
+                        
+                        // If we've advanced 6 months without action, break
+                        if (state.currentMonth - lastMonth > 6) {
+                            console.log('Breaking: No viable actions for 6 months');
+                            break;
+                        }
                     }
                 }
+            }
+            
+            // Update last action month
+            if (actionTaken) {
+                lastMonth = state.currentMonth;
             }
             
             // Safety check to prevent infinite loops
@@ -339,11 +374,16 @@ class StrategyGenerator {
             endMonth: month + this.assumptions.flipDuration
         });
         
-        // Schedule cash infusion from flip
-        setTimeout(() => {
-            state.cashAvailable += this.assumptions.avgFlipProfit;
-            state.monthlyIncome += monthlyInterest; // Remove holding cost
-        }, 0);
+        // Schedule cash infusion from flip - handle it properly when the flip sells
+        // Store flip details for later processing
+        const flipEndMonth = month + this.assumptions.flipDuration;
+        state.scheduledEvents = state.scheduledEvents || [];
+        state.scheduledEvents.push({
+            month: flipEndMonth,
+            type: 'flip_complete',
+            cashInflow: this.assumptions.avgFlipProfit + loanAmount, // Profit + loan payoff
+            monthlyIncomeAdjustment: monthlyInterest // Remove holding cost
+        });
         
         state.currentMonth = month + 1;
     }
@@ -423,9 +463,14 @@ class StrategyGenerator {
      * Check if flip is feasible
      */
     canDoFlip(state) {
-        const minCashNeeded = 50000; // Rough minimum for flip
-        return state.cashAvailable >= minCashNeeded && 
-               state.monthlyIncome >= 500; // Can cover some holding costs
+        // More realistic flip requirements
+        const purchasePrice = 50000; // Typical flip purchase
+        const downPayment = purchasePrice * this.assumptions.flipDownPayment; // 15%
+        const rehabCost = 30000; // Average rehab
+        const closingCosts = purchasePrice * 0.03;
+        const minCashNeeded = downPayment + rehabCost + closingCosts + 5000; // Plus buffer
+        
+        return state.cashAvailable >= minCashNeeded;
     }
 
     /**
@@ -518,6 +563,26 @@ class StrategyGenerator {
     }
 
     /**
+     * Process scheduled events (like flip completions)
+     */
+    processScheduledEvents(state, currentMonth) {
+        if (!state.scheduledEvents) return;
+        
+        const eventsToProcess = state.scheduledEvents.filter(event => event.month === currentMonth);
+        
+        eventsToProcess.forEach(event => {
+            if (event.type === 'flip_complete') {
+                state.cashAvailable += event.cashInflow;
+                state.monthlyIncome += event.monthlyIncomeAdjustment;
+                console.log(`Flip completed at month ${currentMonth}: +$${event.cashInflow} cash`);
+            }
+        });
+        
+        // Remove processed events
+        state.scheduledEvents = state.scheduledEvents.filter(event => event.month > currentMonth);
+    }
+
+    /**
      * Generate fallback strategy
      */
     generateFallbackStrategy(goal) {
@@ -530,7 +595,8 @@ class StrategyGenerator {
             finalMonthlyIncome: 0,
             feasibility: false,
             description: 'Unable to generate optimal strategy. Consider adjusting your goals or increasing capital.',
-            metrics: {}
+            metrics: {},
+            failureReason: 'Could not find a viable investment path within the given constraints'
         };
     }
 }
