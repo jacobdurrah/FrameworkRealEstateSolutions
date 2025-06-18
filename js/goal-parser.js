@@ -46,6 +46,24 @@ class GoalParser {
                 /prefer\s+(flips?|rentals?|brr+|buy.?and.?hold|brrr+)/i,
                 /(flip.?heavy|rental.?heavy|mixed|combination)/i,
                 /focus\s+on\s+(flips?|rentals?|brr+)/i
+            ],
+            
+            // Rent patterns
+            rent: [
+                /rent\s+(?:is|are|of)\s*\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?\s*(?:per\s+unit)?/i,
+                /rents?\s+(?:are|is)\s*\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?/i,
+                /\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?\s+(?:in\s+)?rent/i,
+                /monthly\s+rent\s+(?:is|of)\s*\$?([\d,]+)/i,
+                /rental\s+income\s+(?:is|of)\s*\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month)?/i
+            ],
+            
+            // Expense patterns
+            expenses: [
+                /expenses?\s+(?:are|is)\s*\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?\s*(?:per\s+unit)?/i,
+                /\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?\s+(?:in\s+)?expenses?/i,
+                /monthly\s+expenses?\s+(?:are|is|of)\s*\$?([\d,]+)/i,
+                /(?:property|unit)\s+has\s+\$?([\d,]+)\s+in\s+expenses?/i,
+                /operating\s+expenses?\s+(?:are|is|of)\s*\$?([\d,]+)\s*(?:\/month|\/mo)?/i
             ]
         };
         
@@ -56,7 +74,9 @@ class GoalParser {
             startingCapital: 50000,
             monthlyContributions: 0,
             preferredStrategies: [],
-            riskTolerance: 'balanced'
+            riskTolerance: 'balanced',
+            rentPerUnit: 1200,  // Default rent
+            monthlyExpensesPerUnit: 350  // Default expenses
         };
     }
 
@@ -75,6 +95,8 @@ class GoalParser {
             monthlyContributions: this.extractMonthlyContribution(input),
             preferredStrategies: this.extractStrategies(input),
             riskTolerance: this.extractRiskTolerance(input),
+            rentPerUnit: this.extractRent(input),
+            monthlyExpensesPerUnit: this.extractExpenses(input),
             raw: input
         };
 
@@ -209,6 +231,36 @@ class GoalParser {
     }
 
     /**
+     * Extract rent per unit
+     */
+    extractRent(input) {
+        for (const pattern of this.patterns.rent) {
+            const match = input.match(pattern);
+            if (match) {
+                const amount = this.parseAmount(match[1]);
+                console.log('Extracted rent per unit:', amount, 'from match:', match[0]);
+                return amount;
+            }
+        }
+        return null; // Will use default
+    }
+
+    /**
+     * Extract expenses per unit
+     */
+    extractExpenses(input) {
+        for (const pattern of this.patterns.expenses) {
+            const match = input.match(pattern);
+            if (match) {
+                const amount = this.parseAmount(match[1]);
+                console.log('Extracted expenses per unit:', amount, 'from match:', match[0]);
+                return amount;
+            }
+        }
+        return null; // Will use default
+    }
+
+    /**
      * Parse amount from string
      */
     parseAmount(amountStr) {
@@ -246,7 +298,11 @@ class GoalParser {
         
         // Add computed fields
         result.totalCapitalAvailable = result.startingCapital + (result.monthlyContributions * result.timeHorizon);
-        result.requiredProperties = Math.ceil(result.targetMonthlyIncome / 400); // Rough estimate
+        
+        // Calculate required properties based on actual cash flow per unit
+        const cashFlowPerUnit = result.rentPerUnit - result.monthlyExpensesPerUnit;
+        result.requiredProperties = Math.ceil(result.targetMonthlyIncome / cashFlowPerUnit);
+        result.cashFlowPerUnit = cashFlowPerUnit;
         
         return result;
     }
@@ -260,22 +316,30 @@ class GoalParser {
         
         // Check which fields were successfully parsed
         if (parsed.targetMonthlyIncome !== this.defaults.targetMonthlyIncome) {
-            confidence += 25;
+            confidence += 20;
             fields++;
         }
         if (parsed.timeHorizon !== this.defaults.timeHorizon) {
-            confidence += 25;
+            confidence += 20;
             fields++;
         }
         if (parsed.startingCapital !== this.defaults.startingCapital) {
-            confidence += 25;
+            confidence += 20;
             fields++;
         }
         if (parsed.monthlyContributions > 0) {
-            confidence += 15;
+            confidence += 10;
             fields++;
         }
         if (parsed.preferredStrategies.length > 0) {
+            confidence += 10;
+            fields++;
+        }
+        if (parsed.rentPerUnit !== this.defaults.rentPerUnit) {
+            confidence += 10;
+            fields++;
+        }
+        if (parsed.monthlyExpensesPerUnit !== this.defaults.monthlyExpensesPerUnit) {
             confidence += 10;
             fields++;
         }
@@ -296,7 +360,9 @@ class GoalParser {
             "Build a portfolio that produces $5,000 monthly passive income in 2 years with $30K starting capital.",
             "Need $15K per month rental income within 5 years. Starting with $100K, aggressive approach is fine.",
             "Generate $8K/mo in 24 months using BRRR strategy. Have $75K cash.",
-            "Create $12,000 monthly income with buy-and-hold rentals. $60K to invest, conservative approach preferred."
+            "Create $12,000 monthly income with buy-and-hold rentals. $60K to invest, conservative approach preferred.",
+            "I want $2,000/month in 12 months. Rent is $1,300/month per unit. Expenses are $400/month.",
+            "Build portfolio for $5K/month. Properties rent for $1,500 with $250 in expenses."
         ];
     }
 }

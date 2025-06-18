@@ -1474,6 +1474,11 @@
             const script = document.createElement('script');
             script.src = 'tests/portfolio-simulator-v3.test.js';
             document.body.appendChild(script);
+            
+            // Load rent/expense tests
+            const rentScript = document.createElement('script');
+            rentScript.src = 'tests/portfolio-v3-rent-expense.test.js';
+            document.body.appendChild(rentScript);
         }
     </script>
 </body>

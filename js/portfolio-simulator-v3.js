@@ -137,8 +137,11 @@ async function generateStrategy() {
         const minRent = document.getElementById('minRent').value;
         const maxRent = document.getElementById('maxRent').value;
         
+        // Use average of min/max rent as the rent per unit
+        const avgRent = Math.round((parseInt(minRent) + parseInt(maxRent)) / 2);
+        
         goalText = `Target income: $${targetIncome}/month. Timeline: ${timeline} months. Starting capital: $${startingCapital}. Monthly savings: $${monthlySavings}/month. `;
-        goalText += `Prefer ${strategy} strategy. Target rent range: $${minRent}-$${maxRent}/month.`;
+        goalText += `Prefer ${strategy} strategy. Rent is $${avgRent}/month per unit.`;
         
         // Add advanced options
         if (!document.getElementById('allowBRRR').checked) goalText += ' No BRRR.';
@@ -249,6 +252,9 @@ function displayParsedGoal(goal) {
                     <li><strong>Timeline:</strong> ${goal.timeHorizon} months</li>
                     <li><strong>Starting Capital:</strong> ${formatCurrency(goal.startingCapital)}</li>
                     <li><strong>Monthly Savings:</strong> ${formatCurrency(goal.monthlyContributions)}</li>
+                    <li><strong>Rent per Unit:</strong> ${formatCurrency(goal.rentPerUnit)}/month</li>
+                    <li><strong>Expenses per Unit:</strong> ${formatCurrency(goal.monthlyExpensesPerUnit)}/month</li>
+                    <li><strong>Cash Flow per Unit:</strong> ${formatCurrency(goal.cashFlowPerUnit)}/month</li>
                     ${goal.preferredStrategies && goal.preferredStrategies.length > 0 ? 
                         `<li><strong>Preferences:</strong> ${goal.preferredStrategies.join(', ')}</li>` : ''}
                 </ul>

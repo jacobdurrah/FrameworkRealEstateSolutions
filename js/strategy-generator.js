@@ -66,6 +66,14 @@ class StrategyGenerator {
      * Generate a single strategy
      */
     async generateStrategy(parsedGoal, approach = 'balanced') {
+        // Override default assumptions with parsed values if provided
+        if (parsedGoal.rentPerUnit) {
+            this.assumptions.avgMonthlyRent = parsedGoal.rentPerUnit;
+        }
+        if (parsedGoal.monthlyExpensesPerUnit) {
+            this.assumptions.monthlyExpenses = parsedGoal.monthlyExpensesPerUnit;
+        }
+        
         const strategy = {
             approach: approach,
             timeline: [],
@@ -75,7 +83,12 @@ class StrategyGenerator {
             finalMonthlyIncome: 0,
             feasibility: true,
             description: '',
-            metrics: {}
+            metrics: {},
+            assumptions: {
+                rent: this.assumptions.avgMonthlyRent,
+                expenses: this.assumptions.monthlyExpenses,
+                cashFlowPerUnit: this.assumptions.avgMonthlyRent - this.assumptions.monthlyExpenses
+            }
         };
 
         // Initialize simulation state
@@ -296,7 +309,7 @@ class StrategyGenerator {
      */
     addRentalPurchase(strategy, state, month) {
         const price = this.getRandomInRange(this.assumptions.priceRange.min, this.assumptions.priceRange.max);
-        const rent = this.estimateRent(price);
+        const rent = this.assumptions.avgMonthlyRent; // Use parsed or default rent
         const downPayment = price * this.assumptions.rentalDownPayment;
         const loanAmount = price - downPayment;
         const monthlyPayment = this.calculateMortgagePayment(loanAmount, this.assumptions.rentalInterestRate, this.assumptions.loanTermYears);
@@ -494,6 +507,16 @@ class StrategyGenerator {
         strategy.totalInvestment = state.totalInvested;
         strategy.finalMonthlyIncome = state.monthlyIncome;
         strategy.feasibility = state.monthlyIncome >= goal.targetMonthlyIncome;
+        strategy.propertyCount = state.properties.length;
+        
+        // If goal not achieved, add warning to description
+        if (!strategy.feasibility && state.monthlyIncome > 0) {
+            const achievedPercent = Math.round((state.monthlyIncome / goal.targetMonthlyIncome) * 100);
+            const shortfall = goal.targetMonthlyIncome - state.monthlyIncome;
+            strategy.description += ` ⚠️ Goal not achieved — best result is $${Math.round(state.monthlyIncome)}/month using ${state.properties.length} properties in ${state.currentMonth} months (${achievedPercent}% of target, $${Math.round(shortfall)}/month short).`;
+        } else if (!strategy.feasibility && state.monthlyIncome === 0) {
+            strategy.description += ` ⚠️ Unable to generate any income with given constraints. Consider increasing capital, timeline, or adjusting rent/expense expectations.`;
+        }
         
         // Additional metrics
         strategy.metrics = {
@@ -505,7 +528,8 @@ class StrategyGenerator {
                 state.properties.reduce((sum, p) => sum + p.price, 0) / state.properties.length : 0,
             totalEquity: this.calculateTotalEquity(state.properties),
             cashOnCashReturn: state.totalInvested > 0 ? 
-                (state.monthlyIncome * 12 / state.totalInvested * 100) : 0
+                (state.monthlyIncome * 12 / state.totalInvested * 100) : 0,
+            goalAchievement: (state.monthlyIncome / goal.targetMonthlyIncome * 100)
         };
     }
 
@@ -528,15 +552,9 @@ class StrategyGenerator {
      * Estimate rent based on property price
      */
     estimateRent(propertyPrice) {
-        // Detroit market: roughly 1-1.5% of property value per month
-        const rentRatio = this.getRandomInRange(0.01, 0.015);
-        const baseRent = propertyPrice * rentRatio;
-        
-        // Ensure within reasonable range
-        return Math.max(
-            this.assumptions.rentRange.min,
-            Math.min(this.assumptions.rentRange.max, baseRent)
-        );
+        // Use the configured rent (from parsed goal or defaults)
+        // This allows consistent rent across all properties
+        return this.assumptions.avgMonthlyRent;
     }
 
     /**
