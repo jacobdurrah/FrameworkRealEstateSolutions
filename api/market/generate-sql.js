@@ -15,9 +15,9 @@ export default async function handler(req, res) {
   }
 
   // Check for Anthropic API key
-  const anthropicKey = process.env.ANTHROPIC_API_KEY || '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';
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) {
-    return res.status(500).json({ error: 'Anthropic API key not configured' });
+    return res.status(500).json({ error: 'Anthropic API key not configured. Please set ANTHROPIC_API_KEY environment variable.' });
   }
 
   try {
