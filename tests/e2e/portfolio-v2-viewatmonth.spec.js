@@ -10,9 +10,14 @@ test.describe('Portfolio Simulator V2 - View at Month Functionality', () => {
     // Wait for page to load
     await page.waitForSelector('h1:has-text("Portfolio Simulator V2")');
     
+    // Handle confirm dialog
+    page.on('dialog', dialog => dialog.accept());
+    
     // Clear any existing data
     await page.click('button:has-text("New Simulation")');
-    await page.click('button:has-text("OK")'); // Confirm dialog
+    
+    // Wait for the page to reset
+    await page.waitForTimeout(500);
   });
 
   test('should update financial metrics when changing View at month', async ({ page }) => {
