@@ -10,7 +10,7 @@ class AIQueryProcessor {
             this.apiBaseUrl = 'http://localhost:3000/api';
         } else if (window.location.hostname === 'frameworkrealestatesolutions.com') {
             // Production site needs to use Vercel API URL
-            this.apiBaseUrl = 'https://framework-frf4lt9i9-jacob-durrahs-projects.vercel.app/api';
+            this.apiBaseUrl = 'https://framework-as6vqlxv3-jacob-durrahs-projects.vercel.app/api';
         } else {
             // For Vercel preview/staging URLs
             this.apiBaseUrl = '/api';
