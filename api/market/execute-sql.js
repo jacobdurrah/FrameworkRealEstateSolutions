@@ -146,24 +146,38 @@ export default async function handler(req, res) {
     // Extract WHERE conditions (simplified parsing)
     const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
     if (whereMatch) {
-      const conditions = whereMatch[1];
+      let conditions = whereMatch[1];
       
       // Check if we have OR conditions that need special handling
       if (conditions.toUpperCase().includes(' OR ')) {
-        // Handle OR conditions for name searches (buyer/seller)
+        // Handle OR conditions for same field with different values (e.g., buyer_name ILIKE '%DURRAH%' OR buyer_name ILIKE '%JACOB%')
+        const sameFieldOrPattern = /\((\w+)\s+ILIKE\s+'([^']+)'\s+OR\s+\1\s+ILIKE\s+'([^']+)'\)/i;
+        const sameFieldMatch = conditions.match(sameFieldOrPattern);
+        if (sameFieldMatch) {
+          const [, field, value1, value2] = sameFieldMatch;
+          // Use Supabase's or() method for same field with multiple values
+          query = query.or(`${field}.ilike.${value1},${field}.ilike.${value2}`);
+          
+          // Remove this condition from the string
+          conditions = conditions.replace(sameFieldOrPattern, '').trim();
+        }
+        
+        // Handle OR conditions for name searches across different fields (buyer/seller)
         const nameOrPattern = /\((buyer_name\s+ILIKE\s+'([^']+)'\s+OR\s+seller_name\s+ILIKE\s+'([^']+)')\)/i;
         const nameOrMatch = conditions.match(nameOrPattern);
         if (nameOrMatch) {
           const searchValue = nameOrMatch[2] || nameOrMatch[3];
           // Use Supabase's or() method
           query = query.or(`buyer_name.ilike.${searchValue},seller_name.ilike.${searchValue}`);
+          
+          // Remove this condition from the string
+          conditions = conditions.replace(nameOrPattern, '').trim();
         }
         
-        // Handle any remaining simple conditions after OR groups
-        const remainingConditions = conditions.replace(nameOrPattern, '').trim();
-        if (remainingConditions && remainingConditions !== 'AND' && remainingConditions !== 'OR') {
-          // Process remaining conditions below
-          console.log('Remaining conditions after OR:', remainingConditions);
+        // Process any remaining conditions that are not OR conditions
+        if (conditions && !conditions.match(/^\s*(AND|OR)\s*$/)) {
+          // Continue processing remaining conditions below
+          console.log('Processing remaining conditions:', conditions);
         }
       } else {
         // No OR conditions, process normally

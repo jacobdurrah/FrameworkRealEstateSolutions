@@ -72,29 +72,33 @@ Additional fields available from parcels (accessed as parcels.field_name):
 IMPORTANT RULES:
 1. ALWAYS query sales_transactions table, NOT recent_sales
 2. Names are stored as "LASTNAME, FIRSTNAME" (e.g., "DURRAH, JACOB" not "Jacob Durrah")
-3. When searching for "FirstName LastName", convert to "LASTNAME, FIRSTNAME"
+3. When searching for a person, use flexible matching patterns:
+   - For "FirstName LastName": Use buyer_name ILIKE '%LASTNAME%' OR buyer_name ILIKE '%FIRSTNAME%'
+   - This ensures matches even with middle names or suffixes
 4. Use ILIKE for case-insensitive text matching with % wildcards
-5. For names: buyer_name ILIKE '%lastname%firstname%' OR seller_name ILIKE '%lastname%firstname%'
-6. For addresses: property_address ILIKE '%search term%'
-7. For city: property_city ILIKE '%detroit%' (but most are Detroit by default)
-8. Always include LIMIT 100 to prevent overwhelming responses
-9. Return ONLY the SQL query, no explanations or markdown
-10. The query must start with SELECT
-11. NEVER use CASE statements in GROUP BY clauses - they cause PostgreSQL errors
-12. For "most active participants" or "who made the most transactions" queries:
+5. For buyer searches: buyer_name ILIKE '%lastname%' OR buyer_name ILIKE '%firstname%'
+6. For seller searches: seller_name ILIKE '%lastname%' OR seller_name ILIKE '%firstname%'
+7. For addresses: property_address ILIKE '%search term%'
+8. For city: property_city ILIKE '%detroit%' (but most are Detroit by default)
+9. Always include LIMIT 100 to prevent overwhelming responses
+10. Return ONLY the SQL query, no explanations or markdown
+11. The query must start with SELECT
+12. NEVER use CASE statements in GROUP BY clauses - they cause PostgreSQL errors
+13. For "most active participants" or "who made the most transactions" queries:
     - Choose to focus on EITHER buyers OR sellers, not both
     - Default to buyers unless specifically asked about sellers
     - DO NOT use UNION queries or subqueries
-13. Keep queries simple - avoid UNION, subqueries, or complex JOINs
-14. The parcels table is automatically joined - DO NOT add manual JOIN statements
-15. To access parcels data, use parcels.field_name (e.g., parcels.owner_full_name, parcels.assessed_value)
+14. Keep queries simple - avoid UNION, subqueries, or complex JOINs
+15. The parcels table is automatically joined - DO NOT add manual JOIN statements
+16. To access parcels data, use parcels.field_name (e.g., parcels.owner_full_name, parcels.assessed_value)
 
 NOTE: The parcels table is AUTOMATICALLY joined to all queries. You don't need to add JOIN statements.
 To access parcels data in your queries, simply reference it as parcels.field_name.
 
 Examples:
-- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE buyer_name ILIKE '%durrah%jacob%' ORDER BY sale_date DESC LIMIT 100
-- "Properties sold by John Smith" -> SELECT * FROM sales_transactions WHERE seller_name ILIKE '%smith%john%' ORDER BY sale_date DESC LIMIT 100
+- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%DURRAH%' OR buyer_name ILIKE '%JACOB%') ORDER BY sale_date DESC LIMIT 100
+- "Properties sold by John Smith" -> SELECT * FROM sales_transactions WHERE (seller_name ILIKE '%SMITH%' OR seller_name ILIKE '%JOHN%') ORDER BY sale_date DESC LIMIT 100
+- "Jacob Durrah purchases" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%DURRAH%' OR buyer_name ILIKE '%JACOB%') ORDER BY sale_date DESC LIMIT 100
 - "Sales in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023 ORDER BY sale_date DESC LIMIT 100
 - "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE sale_terms ILIKE '%cash%' AND sale_price > 100000 ORDER BY sale_date DESC LIMIT 100
 - "Properties in 48214" -> SELECT * FROM sales_transactions WHERE property_zip = '48214' ORDER BY sale_date DESC LIMIT 100
