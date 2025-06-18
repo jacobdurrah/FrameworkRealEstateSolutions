@@ -35,7 +35,9 @@ export default async function handler(req, res) {
 
   // Check for Supabase credentials
   const supabaseUrl = process.env.SUPABASE_URL || 'https://gzswtqlvffqcpifdyrnf.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || 
+                      process.env.SUPABASE_ANON_KEY || 
+                      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6c3d0cWx2ZmZxY3BpZmR5cm5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MzM5ODcsImV4cCI6MjA2NTUwOTk4N30.8WTX9v2GD2MziYqfVn-ZBURcVqaCvjkdQjBUlv2-GgI';
 
   if (!supabaseKey) {
     return res.status(500).json({ error: 'Supabase credentials not configured' });
