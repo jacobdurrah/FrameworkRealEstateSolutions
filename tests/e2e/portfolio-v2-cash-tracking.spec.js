@@ -123,6 +123,9 @@ test.describe('Portfolio V2 Cash Tracking', () => {
         
         const priceInput = page.locator('input[onchange*="price"]').first();
         
+        // Clear any existing value first
+        await priceInput.clear();
+        
         // Type slowly to detect if updates happen per keystroke
         await priceInput.click();
         await priceInput.type('2', { delay: 100 });

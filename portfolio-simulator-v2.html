@@ -399,6 +399,61 @@
             color: var(--text-secondary);
         }
 
+        /* Instructions Panel - extends equation panel styles */
+        .instructions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .instruction-section {
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .instruction-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .instruction-section h5 {
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .instruction-section ol, 
+        .instruction-section ul {
+            margin-left: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .instruction-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .instruction-section ul ul,
+        .instruction-section ol ul {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tip {
+            background: #e8f5e9;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--success-color);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
         /* Loading and Status */
         .loading {
             display: flex;
@@ -553,6 +608,9 @@
             </button>
             <button class="btn btn-info" onclick="toggleEquations()">
                 <i class="fas fa-calculator"></i> Formulas
+            </button>
+            <button class="btn btn-info" onclick="toggleInstructions()">
+                <i class="fas fa-question-circle"></i> Help
             </button>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
                 <span id="simulationName" style="font-weight: 600;">New Simulation</span>
@@ -759,6 +817,195 @@
                             $180,000 loan / $300,000 value = 60% LTV<br>
                             Lower LTV = More equity, less risk
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Panel -->
+        <div class="equation-panel" id="instructionsPanel" style="margin-top: 2rem;">
+            <div class="equation-header" onclick="toggleInstructions()">
+                <h3>How to Use Portfolio Simulator V2</h3>
+                <i class="fas fa-chevron-down" id="instructionsToggle"></i>
+            </div>
+            <div class="equation-content" id="instructionsContent">
+                <div class="instructions-grid">
+                    <!-- Getting Started -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-rocket"></i> Getting Started</h4>
+                        <ol>
+                            <li><strong>Add Event:</strong> Click "Add Event" to create a new timeline entry</li>
+                            <li><strong>Set Month:</strong> Enter the month number (0 = today, 12 = 1 year)</li>
+                            <li><strong>Choose Action:</strong> Select Buy, Sell, Refinance, or Wait</li>
+                            <li><strong>Enter Details:</strong> Fill in property address, price, and financial details</li>
+                            <li><strong>View Summary:</strong> Check the Portfolio Summary for real-time calculations</li>
+                        </ol>
+                    </div>
+
+                    <!-- Fix and Flip Strategy -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-hammer"></i> Fix-and-Flip Strategy</h4>
+                        <ol>
+                            <li><strong>Initial Purchase:</strong>
+                                <ul>
+                                    <li>Add a "Buy" event at month 0</li>
+                                    <li>Enter Total Project Cost (Purchase + Rehab) as the price</li>
+                                    <li>Set down payment to 10-20% of total project cost</li>
+                                    <li>Set monthly expenses (loan interest, utilities, insurance)</li>
+                                    <li>Set rent to $0 during rehab period</li>
+                                </ul>
+                            </li>
+                            <li><strong>Hold Period:</strong>
+                                <ul>
+                                    <li>Add "Wait" events for months 1-5 (typical rehab time)</li>
+                                    <li>Keep expenses active during this period</li>
+                                </ul>
+                            </li>
+                            <li><strong>Sale:</strong>
+                                <ul>
+                                    <li>Add a "Sell" event at month 6</li>
+                                    <li>Enter the After Repair Value (ARV) as sale price</li>
+                                    <li>Check "Cash from Sales" to see your profit</li>
+                                </ul>
+                            </li>
+                        </ol>
+                        <div class="tip">
+                            <strong>💡 Tip:</strong> Use the time projection feature to see your total return at sale month
+                        </div>
+                    </div>
+
+                    <!-- BRRR Strategy -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-sync-alt"></i> BRRR Strategy</h4>
+                        <p><em>Buy, Rehab, Rent, Refinance, Repeat</em></p>
+                        <ol>
+                            <li><strong>Initial Purchase & Rehab:</strong>
+                                <ul>
+                                    <li>Follow Fix-and-Flip steps 1-2</li>
+                                    <li>Use total project cost as purchase price</li>
+                                </ul>
+                            </li>
+                            <li><strong>Refinance (Simulated):</strong>
+                                <ul>
+                                    <li>Add "Sell" event at month 6 with ARV price</li>
+                                    <li>Immediately add new "Buy" event at same month</li>
+                                    <li>Enter same property address and ARV as new purchase price</li>
+                                    <li>Set 20-25% down payment (standard refinance terms)</li>
+                                    <li>Enter market rent for the property</li>
+                                    <li>Add realistic monthly expenses</li>
+                                </ul>
+                            </li>
+                            <li><strong>Hold & Repeat:</strong>
+                                <ul>
+                                    <li>Property now shows rental income</li>
+                                    <li>Use cash from refinance for next BRRR deal</li>
+                                    <li>Add new properties following same pattern</li>
+                                </ul>
+                            </li>
+                        </ol>
+                        <div class="tip">
+                            <strong>💡 Tip:</strong> Track your "Total Cash on Hand" to see available capital for next deal
+                        </div>
+                    </div>
+
+                    <!-- Traditional Buy & Hold -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-home"></i> Traditional Buy & Hold</h4>
+                        <ol>
+                            <li><strong>Purchase:</strong>
+                                <ul>
+                                    <li>Add "Buy" event with property details</li>
+                                    <li>Enter purchase price and down payment %</li>
+                                    <li>Set loan terms (rate and term)</li>
+                                    <li>Enter expected monthly rent</li>
+                                    <li>Set monthly expenses (maintenance, insurance, taxes)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Analysis:</strong>
+                                <ul>
+                                    <li>Check Net Cash Flow (should be positive)</li>
+                                    <li>Review Cash-on-Cash return (target 8%+)</li>
+                                    <li>Monitor equity growth over time</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <!-- Portfolio Features -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-chart-line"></i> Advanced Features</h4>
+                        <h5>Time-Based Projections</h5>
+                        <ul>
+                            <li>Use "View at month" to see future portfolio values</li>
+                            <li>Properties appreciate at 3% annually</li>
+                            <li>See accumulated rental income over time</li>
+                            <li>Track total interest paid on loans</li>
+                        </ul>
+                        
+                        <h5>Cash Tracking</h5>
+                        <ul>
+                            <li><strong>Rental Income:</strong> Net rent after expenses and loan payments</li>
+                            <li><strong>Cash from Sales:</strong> Sale proceeds minus loan payoff</li>
+                            <li><strong>Total Cash on Hand:</strong> Combined available capital</li>
+                        </ul>
+
+                        <h5>Data Management</h5>
+                        <ul>
+                            <li><strong>Save:</strong> Store your simulation with a custom name</li>
+                            <li><strong>Load:</strong> Retrieve saved simulations</li>
+                            <li><strong>Export:</strong> Download data as JSON file</li>
+                            <li><strong>Auto-save:</strong> Changes saved every 5 seconds</li>
+                        </ul>
+                    </div>
+
+                    <!-- Tips & Best Practices -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-lightbulb"></i> Tips & Best Practices</h4>
+                        <ul>
+                            <li><strong>Accurate Expenses:</strong> Include all costs - insurance, taxes, maintenance, HOA, utilities</li>
+                            <li><strong>Conservative Estimates:</strong> Better to overestimate expenses and underestimate income</li>
+                            <li><strong>Timeline Planning:</strong> Set realistic months for each event</li>
+                            <li><strong>Regular Reviews:</strong> Use time projections to plan 5+ years ahead</li>
+                            <li><strong>Multiple Scenarios:</strong> Save different simulations to compare strategies</li>
+                        </ul>
+                    </div>
+
+                    <!-- Common Scenarios -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-tasks"></i> Common Scenarios</h4>
+                        <h5>House Hacking</h5>
+                        <ol>
+                            <li>Buy property with low down payment (3-5%)</li>
+                            <li>Set rent = income from other units/rooms</li>
+                            <li>Set expenses = your portion after tenant contributions</li>
+                        </ol>
+
+                        <h5>Refinance Existing Property</h5>
+                        <ol>
+                            <li>Add "Refinance" event at current month</li>
+                            <li>Select the property to refinance</li>
+                            <li>Update rate and term to new loan terms</li>
+                            <li>System maintains property and updates payment</li>
+                        </ol>
+
+                        <h5>Partnership Deals</h5>
+                        <ol>
+                            <li>Enter your portion of down payment</li>
+                            <li>Set rent and expenses to your ownership percentage</li>
+                            <li>Track your actual cash flow and returns</li>
+                        </ol>
+                    </div>
+
+                    <!-- Troubleshooting -->
+                    <div class="instruction-section">
+                        <h4><i class="fas fa-tools"></i> Troubleshooting</h4>
+                        <ul>
+                            <li><strong>Calculations not updating?</strong> Click out of input fields (blur) to trigger updates</li>
+                            <li><strong>Can't sell property?</strong> Make sure property address matches exactly</li>
+                            <li><strong>Wrong loan payment?</strong> Check that loan amount is correct (Price - Down Payment)</li>
+                            <li><strong>Missing cash flow?</strong> Verify rent and expenses are entered</li>
+                            <li><strong>Time projections off?</strong> Check that event months are set correctly</li>
+                        </ul>
                     </div>
                 </div>
             </div>

@@ -651,6 +651,17 @@ function toggleEquations() {
 }
 
 /**
+ * Toggle instructions panel
+ */
+function toggleInstructions() {
+    const content = document.getElementById('instructionsContent');
+    const toggle = document.getElementById('instructionsToggle');
+    
+    content.classList.toggle('active');
+    toggle.className = content.classList.contains('active') ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+}
+
+/**
  * New simulation
  */
 function newSimulation() {
@@ -850,5 +861,6 @@ window.saveSimulation = saveSimulation;
 window.loadSimulation = loadSimulation;
 window.exportData = exportData;
 window.toggleEquations = toggleEquations;
+window.toggleInstructions = toggleInstructions;
 window.refreshSummary = refreshSummary;
 window.updateSummaryMonth = updateSummaryMonth;
