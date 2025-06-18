@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Simulator V2 - Framework Real Estate Solutions</title>
+    <title>Portfolio Simulator V3 - AI Strategy Generator - Framework Real Estate Solutions</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -595,16 +595,227 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
         }
+
+        /* V3 Goal Input Section */
+        .goal-input-section {
+            background: white;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1400px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .goal-input-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .goal-input-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .goal-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .goal-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .example-queries {
+            margin-top: 1rem;
+        }
+
+        .example-query {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            background: var(--light-gray);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .example-query:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Strategy Options */
+        .strategy-options-section {
+            background: white;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1400px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .strategy-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .strategy-card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .strategy-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .strategy-card.selected {
+            border-color: var(--primary-color);
+            background: var(--hover-bg);
+        }
+
+        .strategy-metrics {
+            margin: 1rem 0;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Real Listings Toggle */
+        .listings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .listings-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .listings-summary {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .matched-listing {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .matched-listing:last-child {
+            border-bottom: none;
+        }
+
+        /* Loading State */
+        .v3-loading {
+            text-align: center;
+            padding: 2rem;
+            display: none;
+        }
+
+        .v3-loading .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--light-gray);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .v3-error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: var(--danger-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        /* V3 Container Adjustments */
+        #v2Components {
+            margin-top: 2rem;
+        }
+
+        .parsed-goal-summary {
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .parsed-goal-summary h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .parsed-goal-summary ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .parsed-goal-summary li {
+            margin: 0.5rem 0;
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <h1>Portfolio Simulator V2 <span style="font-size: 0.7em; color: #3498db;">(Excel-like)</span></h1>
+            <h1>Portfolio Simulator V3 <span style="font-size: 0.7em; color: #3498db;">(AI-Powered)</span></h1>
             <nav class="header-nav">
                 <a href="index.html">Home</a>
-                <a href="portfolio-simulator.html">Simulator V1 (Original)</a>
+                <a href="portfolio-simulator.html">Simulator V1</a>
+                <a href="portfolio-simulator-v2.html">Simulator V2</a>
+                <a href="market-analysis.html">Market Analysis</a>
                 <a href="property-finder.html">Property Finder</a>
             </nav>
         </div>
@@ -640,8 +851,68 @@
         </div>
     </div>
 
-    <!-- Main Container -->
-    <div class="main-container">
+    <!-- V3 Goal Input Section -->
+    <div class="goal-input-section">
+        <div class="goal-input-header">
+            <i class="fas fa-brain fa-2x" style="color: var(--primary-color);"></i>
+            <h2>Describe Your Real Estate Investment Goal</h2>
+        </div>
+        
+        <textarea id="goalInput" class="goal-textarea" 
+                  placeholder="Example: Build a portfolio that generates $10K/month within 36 months. I have $50K to start and can save $2K/month. Prefer a mix of rentals and flips.">
+        </textarea>
+        
+        <div style="margin-top: 1rem;">
+            <button class="btn btn-primary" onclick="generateStrategy()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                <i class="fas fa-rocket"></i> Generate Strategy
+            </button>
+        </div>
+        
+        <div class="example-queries">
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Try these examples:</p>
+            <div id="exampleQueries">
+                <!-- Examples will be loaded here -->
+            </div>
+        </div>
+        
+        <div id="parsedGoalDisplay" style="margin-top: 1rem;">
+            <!-- Parsed goal will be displayed here -->
+        </div>
+    </div>
+
+    <!-- V3 Strategy Options Section -->
+    <div class="strategy-options-section" id="strategyOptionsSection">
+        <h3>Choose Your Investment Strategy</h3>
+        
+        <div class="strategy-comparison" id="strategyComparison">
+            <!-- Strategy cards will be displayed here -->
+        </div>
+        
+        <div class="listings-toggle">
+            <input type="checkbox" id="useRealListings" onchange="applyRealListings()">
+            <label for="useRealListings" style="cursor: pointer; font-weight: 500;">
+                🔄 Replace simulated properties with real Detroit listings
+            </label>
+        </div>
+        
+        <div id="listingsSummary" class="listings-summary">
+            <!-- Real listings summary will be displayed here -->
+        </div>
+    </div>
+
+    <!-- V3 Loading State -->
+    <div class="v3-loading" id="v3LoadingState">
+        <div class="loading-spinner"></div>
+        <p class="loading-message" style="margin-top: 1rem;">Generating strategy...</p>
+    </div>
+
+    <!-- V3 Error State -->
+    <div class="v3-error" id="v3ErrorMessage">
+        <!-- Error message will be displayed here -->
+    </div>
+
+    <!-- Main Container (V2 Components) -->
+    <div class="main-container" id="v2Components" style="display: none;">
         <!-- Spreadsheet Layout -->
         <div class="spreadsheet-container">
             <!-- Timeline Table -->
@@ -1051,5 +1322,12 @@
 
     <!-- Main Application Script -->
     <script src="js/portfolio-simulator-v2.js"></script>
+    
+    <!-- V3 Scripts -->
+    <script src="js/property-api.js"></script>
+    <script src="js/listings-matcher.js"></script>
+    <script src="js/goal-parser.js"></script>
+    <script src="js/strategy-generator.js"></script>
+    <script src="js/portfolio-simulator-v3.js"></script>
 </body>
 </html>
