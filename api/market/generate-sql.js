@@ -53,7 +53,7 @@ Examples:
 - "Cash sales over 100k" -> Filter by terms_of_sale and sale_price`;
 
     const aiResponse = await anthropic.messages.create({
-      model: "claude-3-sonnet-20240229",
+      model: "claude-3-5-sonnet-20241022",
       system: systemPrompt,
       messages: [
         { role: "user", content: `Convert this request to SQL: "${prompt}"` }
@@ -91,7 +91,7 @@ Examples:
 
     // Generate explanation
     const explanationResponse = await anthropic.messages.create({
-      model: "claude-3-sonnet-20240229",
+      model: "claude-3-5-sonnet-20241022",
       system: "Explain this SQL query in simple terms for a non-technical user.",
       messages: [
         { role: "user", content: finalSQL }
