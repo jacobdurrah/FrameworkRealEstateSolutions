@@ -290,16 +290,39 @@ export default async function handler(req, res) {
     // Log results for debugging
     console.log(`Query returned ${data?.length || 0} rows`);
 
+    // Process data to flatten parcels fields and remove internal metadata
+    const processedData = (data || []).map(row => {
+      const processedRow = {};
+      
+      // Copy main sales_transactions fields
+      Object.keys(row).forEach(key => {
+        if (key === 'parcels' && typeof row[key] === 'object' && row[key] !== null) {
+          // Flatten parcels data with prefixed field names
+          Object.entries(row[key]).forEach(([parcelKey, parcelValue]) => {
+            // Skip internal/metadata fields from parcels
+            if (!['created_at', 'updated_at', 'id', 'data_source', 'sync_status'].includes(parcelKey)) {
+              processedRow[`parcel_${parcelKey}`] = parcelValue;
+            }
+          });
+        } else {
+          // Copy non-parcels fields directly
+          processedRow[key] = row[key];
+        }
+      });
+      
+      return processedRow;
+    });
+
     // Return results with metadata
     res.status(200).json({ 
-      data: data || [],
-      rowCount: data?.length || 0,
+      data: processedData,
+      rowCount: processedData.length,
       sql: sql,
       executionTime: new Date().toISOString(),
       debug: {
         parsedTable: tableMatch[1],
         parsedConditions: whereMatch ? whereMatch[1] : null,
-        resultCount: data?.length || 0
+        resultCount: processedData.length
       }
     });
 

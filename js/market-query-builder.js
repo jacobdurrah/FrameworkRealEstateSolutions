@@ -243,7 +243,30 @@ class MarketQueryBuilder {
         }
 
         // Extract headers from first result
-        const headers = Object.keys(results[0]);
+        let headers = Object.keys(results[0]);
+        
+        // Filter out internal/system columns that shouldn't be displayed
+        const excludedColumns = [
+            'data_source', 'Data Source', 'datasource',
+            'created_at', 'updated_at', 
+            'id', '_id', 'uuid',
+            'sync_status', 'import_batch',
+            'internal_id', 'row_number',
+            'parcel_created_at', 'parcel_updated_at',
+            'parcel_id', 'parcel_data_source',
+            'parcel_sync_status'
+        ];
+        
+        headers = headers.filter(header => {
+            // Remove exact matches (case-insensitive)
+            const headerLower = header.toLowerCase();
+            return !excludedColumns.some(excluded => 
+                headerLower === excluded.toLowerCase()
+            );
+        });
+        
+        // Also filter out parcels object if it exists
+        headers = headers.filter(header => header !== 'parcels');
         
         // Format rows
         const rows = results.map(row => {
