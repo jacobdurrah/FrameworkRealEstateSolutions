@@ -17,9 +17,14 @@ let portfolioState = {
         monthlyExpenses: 0,
         netCashFlow: 0,
         cashOnCash: 0,
-        totalCashInvested: 0
+        totalCashInvested: 0,
+        totalInterestPaid: 0,
+        cashOnHand: 0
     }
 };
+
+// Current viewing month for projections
+let currentViewMonth = 0;
 
 // Make key variables available globally for testing
 window.timelineData = timelineData;
@@ -83,7 +88,8 @@ function addTimelineRow() {
         rate: 4.5,
         term: 30,
         payment: 0,
-        rent: 0
+        rent: 0,
+        monthlyExpenses: 0
     };
     
     timelineData.push(newRow);
@@ -175,6 +181,12 @@ function renderTimelineTable() {
                        oninput="updateTimeline(${row.id}, 'rent', this.value)" min="0"
                        ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
+            <td>
+                <input type="number" class="editable number currency" value="${row.monthlyExpenses || 0}" 
+                       onchange="updateTimeline(${row.id}, 'monthlyExpenses', this.value)"
+                       oninput="updateTimeline(${row.id}, 'monthlyExpenses', this.value)" min="0"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
+            </td>
             <td class="table-actions">
                 <button class="btn btn-sm btn-danger" onclick="deleteTimelineRow(${row.id})">
                     <i class="fas fa-trash"></i>
@@ -199,7 +211,7 @@ function updateTimeline(id, field, value) {
     if (!row) return;
     
     // Convert values to appropriate types
-    if (['month', 'price', 'downPercent', 'rate', 'term', 'rent'].includes(field)) {
+    if (['month', 'price', 'downPercent', 'rate', 'term', 'rent', 'monthlyExpenses'].includes(field)) {
         value = parseFloat(value) || 0;
     }
     
@@ -214,21 +226,26 @@ function updateTimeline(id, field, value) {
     // Debounce the expensive calculations
     updateDebounceTimer = setTimeout(() => {
         // Recalculate payment if loan parameters change
-        if (['price', 'downPercent', 'rate', 'term'].includes(field) && row.loanAmount > 0) {
-            try {
-                if (loanCalc && typeof loanCalc.calculate === 'function') {
-                    const loanResult = loanCalc.calculate({
-                        principal: row.loanAmount,
-                        interestRate: row.rate,
-                        termYears: row.term
-                    });
-                    row.payment = loanResult.monthlyPayment;
-                } else {
-                    console.warn('Loan calculator not available');
+        if (['price', 'downPercent', 'rate', 'term'].includes(field)) {
+            if (row.loanAmount > 0) {
+                try {
+                    if (loanCalc && typeof loanCalc.calculate === 'function') {
+                        const loanResult = loanCalc.calculate({
+                            principal: row.loanAmount,
+                            interestRate: row.rate,
+                            termYears: row.term
+                        });
+                        row.payment = loanResult.monthlyPayment;
+                    } else {
+                        console.warn('Loan calculator not available');
+                        row.payment = 0;
+                    }
+                } catch (error) {
+                    console.error('Loan calculation error:', error);
                     row.payment = 0;
                 }
-            } catch (error) {
-                console.error('Loan calculation error:', error);
+            } else {
+                // No loan if 100% down payment
                 row.payment = 0;
             }
         }
@@ -256,7 +273,9 @@ function recalculateAll() {
             monthlyExpenses: 0,
             netCashFlow: 0,
             cashOnCash: 0,
-            totalCashInvested: 0
+            totalCashInvested: 0,
+            totalInterestPaid: 0,
+            cashOnHand: 0
         }
     };
     
@@ -311,6 +330,7 @@ function processBuyEvent(event) {
         purchasePrice: event.price,
         currentValue: event.price, // Assume no instant appreciation
         monthlyRent: event.rent,
+        monthlyExpenses: event.monthlyExpenses || 0,
         purchaseMonth: event.month
     };
     
@@ -409,8 +429,11 @@ function processRefinanceEvent(event) {
 function calculatePortfolioMetrics() {
     const totals = portfolioState.totals;
     
-    // Calculate total monthly expenses (simplified - 35% of rent)
-    totals.monthlyExpenses = totals.monthlyIncome * 0.35;
+    // Calculate total monthly expenses from properties
+    totals.monthlyExpenses = 0;
+    Object.values(portfolioState.properties).forEach(property => {
+        totals.monthlyExpenses += property.monthlyExpenses || 0;
+    });
     
     // Add debt service to expenses
     Object.values(portfolioState.loans).forEach(loan => {
@@ -420,6 +443,11 @@ function calculatePortfolioMetrics() {
     // Calculate net cash flow
     totals.netCashFlow = totals.monthlyIncome - totals.monthlyExpenses;
     
+    // Apply time-based projections if viewing future
+    if (currentViewMonth > 0) {
+        applyTimeProjections(currentViewMonth);
+    }
+    
     // Calculate total equity
     totals.totalEquity = totals.portfolioValue - totals.totalDebt;
     
@@ -428,6 +456,75 @@ function calculatePortfolioMetrics() {
         const annualCashFlow = totals.netCashFlow * 12;
         totals.cashOnCash = (annualCashFlow / totals.totalCashInvested) * 100;
     }
+}
+
+/**
+ * Apply time-based projections
+ */
+function applyTimeProjections(monthsInFuture) {
+    const totals = portfolioState.totals;
+    const annualAppreciationRate = 0.03; // 3% annually
+    const monthlyAppreciationRate = Math.pow(1 + annualAppreciationRate, 1/12) - 1;
+    
+    // Reset values for recalculation
+    totals.portfolioValue = 0;
+    totals.totalDebt = 0;
+    totals.totalInterestPaid = 0;
+    totals.cashOnHand = 0;
+    
+    // Calculate for each property
+    Object.values(portfolioState.properties).forEach(property => {
+        const monthsOwned = Math.min(monthsInFuture - property.purchaseMonth, monthsInFuture);
+        if (monthsOwned > 0) {
+            // Apply appreciation
+            const appreciationFactor = Math.pow(1 + monthlyAppreciationRate, monthsOwned);
+            property.currentValue = property.purchasePrice * appreciationFactor;
+            totals.portfolioValue += property.currentValue;
+            
+            // Calculate cash accumulated from this property
+            const propertyCashFlow = property.monthlyRent - (property.monthlyExpenses || 0);
+            totals.cashOnHand += propertyCashFlow * monthsOwned;
+        }
+    });
+    
+    // Calculate loan balances and interest paid
+    Object.values(portfolioState.loans).forEach(loan => {
+        const monthsPaid = Math.min(monthsInFuture - loan.startMonth, monthsInFuture);
+        if (monthsPaid > 0 && loan.originalAmount > 0) {
+            // Calculate remaining balance using amortization formula
+            const r = loan.rate / 100 / 12; // Monthly rate
+            const n = loan.term * 12; // Total payments
+            
+            if (r > 0) {
+                const remainingPayments = Math.max(n - monthsPaid, 0);
+                if (remainingPayments > 0) {
+                    loan.currentBalance = loan.monthlyPayment * 
+                        (1 - Math.pow(1 + r, -remainingPayments)) / r;
+                } else {
+                    loan.currentBalance = 0;
+                }
+                
+                // Calculate total interest paid
+                const totalPaid = loan.monthlyPayment * monthsPaid;
+                const principalPaid = loan.originalAmount - loan.currentBalance;
+                const interestPaid = totalPaid - principalPaid;
+                if (interestPaid > 0) {
+                    totals.totalInterestPaid += interestPaid;
+                }
+            } else {
+                // No interest loan
+                loan.currentBalance = Math.max(loan.originalAmount - (loan.monthlyPayment * monthsPaid), 0);
+            }
+            
+            totals.totalDebt += loan.currentBalance;
+            
+            // Subtract loan payments from cash on hand
+            totals.cashOnHand -= loan.monthlyPayment * monthsPaid;
+        }
+    });
+    
+    // Total invested remains the same (initial investments)
+    totals.totalInvested = totals.totalCashInvested;
 }
 
 /**
@@ -448,6 +545,9 @@ function updateSummaryDisplay() {
     cashFlowElement.className = totals.netCashFlow >= 0 ? 'summary-value positive' : 'summary-value negative';
     
     document.getElementById('cashOnCash').textContent = `${totals.cashOnCash.toFixed(2)}%`;
+    document.getElementById('totalInvested').textContent = formatCurrency(totals.totalInvested || totals.totalCashInvested);
+    document.getElementById('totalInterestPaid').textContent = formatCurrency(totals.totalInterestPaid);
+    document.getElementById('cashOnHand').textContent = formatCurrency(totals.cashOnHand);
 }
 
 /**
@@ -566,11 +666,18 @@ function newSimulation() {
                 monthlyExpenses: 0,
                 netCashFlow: 0,
                 cashOnCash: 0,
-                totalCashInvested: 0
+                totalCashInvested: 0,
+                totalInterestPaid: 0,
+                cashOnHand: 0
             }
         };
         
         document.getElementById('simulationName').textContent = 'New Simulation';
+        
+        // Reset summary month view
+        currentViewMonth = 0;
+        document.getElementById('summaryMonth').value = 0;
+        document.getElementById('summaryYears').textContent = '(Today)';
         
         // Add initial row
         addTimelineRow();
@@ -709,6 +816,25 @@ function refreshSummary() {
     }, 500);
 }
 
+/**
+ * Update summary month view
+ */
+function updateSummaryMonth() {
+    const monthInput = document.getElementById('summaryMonth');
+    const yearsSpan = document.getElementById('summaryYears');
+    
+    currentViewMonth = parseInt(monthInput.value) || 0;
+    
+    if (currentViewMonth === 0) {
+        yearsSpan.textContent = '(Today)';
+    } else {
+        const years = (currentViewMonth / 12).toFixed(1);
+        yearsSpan.textContent = `(${years} years)`;
+    }
+    
+    recalculateAll();
+}
+
 // Make functions available globally
 window.updateTimeline = updateTimeline;
 window.addTimelineRow = addTimelineRow;
@@ -720,3 +846,4 @@ window.loadSimulation = loadSimulation;
 window.exportData = exportData;
 window.toggleEquations = toggleEquations;
 window.refreshSummary = refreshSummary;
+window.updateSummaryMonth = updateSummaryMonth;

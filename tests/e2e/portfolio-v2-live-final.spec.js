@@ -81,7 +81,11 @@ test.describe('Portfolio V2 Live Site Final Tests', () => {
         
         // Should restore the saved data
         await expect(page.locator('#simulationName')).toContainText('Live Test Simulation');
-        await expect(page.locator('input[placeholder="Property address"]').first()).toHaveValue('456 Save Test Ave');
+        
+        // Check if property was restored (may need to wait for render)
+        await page.waitForTimeout(500);
+        const propertyInput = await page.locator('input[placeholder="Property address"]').first();
+        await expect(propertyInput).toHaveValue('456 Save Test Ave');
     });
 
     test('should build simple portfolio with multiple properties', async ({ page }) => {
@@ -128,7 +132,7 @@ test.describe('Portfolio V2 Live Site Final Tests', () => {
         
         // Check key formulas are shown
         await expect(page.locator('.equation-name:has-text("Monthly Payment")')).toBeVisible();
-        await expect(page.locator('.equation-formula')).toContainText('PMT = P × [r(1+r)^n]');
+        await expect(page.locator('.equation-formula').first()).toContainText('PMT = P × [r(1+r)^n]');
         
         // Toggle closed
         await page.click('.equation-header');
