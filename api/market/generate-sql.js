@@ -32,24 +32,26 @@ export default async function handler(req, res) {
     // Detailed system prompt with schema information
     const systemPrompt = `You are a SQL expert for a PostgreSQL Supabase database containing Detroit property sales data.
 
-Table: property_sales
+Table: sales_transactions
 Fields:
-- seller_name: The person/entity selling the property (text)
-- buyer_name: The person/entity buying the property (text)
+- grantor or seller_name: The person/entity selling the property (text)
+- grantee or buyer_name: The person/entity buying the property (text)
 - sale_date: Date of the transaction (date)
 - sale_price: Sale amount in USD (numeric)
-- property_address: Property location (text)
-- city: City name (text) - usually 'Detroit'
-- state: State (text) - usually 'MI'
-- zip_code: ZIP code (text)
+- property_address or street_address: Property location (text)
+- property_city: City name (text)
+- property_state: State code (text)
+- property_zip: ZIP code (text)
 - parcel_id: Unique property identifier (text)
 - terms_of_sale: Type of sale/deed (text)
 - property_class: Property classification (text)
 
 Important notes:
+- IMPORTANT: Check BOTH field variations (e.g., buyer_name OR grantee) because data uses different field names
 - Use ILIKE for case-insensitive text matching with % wildcards
-- For names, use partial matching: LOWER(buyer_name) LIKE '%jacob durrah%'
-- For city searches, use exact match: LOWER(city) = 'detroit'
+- For names, use: (buyer_name ILIKE '%jacob durrah%' OR grantee ILIKE '%jacob durrah%')
+- For city searches, use: property_city ILIKE '%detroit%'
+- For addresses, check both: (property_address ILIKE '%search%' OR street_address ILIKE '%search%')
 - Always include appropriate LIMIT to prevent overwhelming responses
 - Return clean, formatted SQL without markdown blocks
 - IMPORTANT: Return ONLY the SQL query, no explanations or markdown
@@ -57,10 +59,11 @@ Important notes:
 - The query must start with SELECT
 
 Examples:
-- "What did Jacob Durrah buy?" -> SELECT * FROM property_sales WHERE LOWER(buyer_name) LIKE '%jacob durrah%'
-- "Properties sold in 2023" -> SELECT * FROM property_sales WHERE EXTRACT(YEAR FROM sale_date) = 2023
-- "Cash sales over 100k" -> SELECT * FROM property_sales WHERE terms_of_sale ILIKE '%cash%' AND sale_price > 100000
-- "Show me flips in East English Village" -> Find properties bought and sold within 12 months in that area`;
+- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%jacob durrah%' OR grantee ILIKE '%jacob durrah%')
+- "Properties sold in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023
+- "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE terms_of_sale ILIKE '%cash%' AND sale_price > 100000
+- "Properties in Detroit" -> SELECT * FROM sales_transactions WHERE property_city ILIKE '%detroit%'
+- "2404 Pennsylvania" -> SELECT * FROM sales_transactions WHERE (property_address ILIKE '%2404%pennsylvania%' OR street_address ILIKE '%2404%pennsylvania%')`;
 
     const aiResponse = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",

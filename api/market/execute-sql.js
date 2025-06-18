@@ -61,63 +61,103 @@ export default async function handler(req, res) {
       });
     }
 
+    // For complex queries with OR conditions, we'll use Supabase's raw SQL via RPC
+    // First, let's check if the query has OR conditions
+    if (sql.toUpperCase().includes(' OR ')) {
+      // Use Supabase's raw SQL execution if available
+      try {
+        // Note: This requires a stored procedure in Supabase
+        // For now, we'll handle it with manual parsing
+        console.log('Query contains OR conditions, using advanced parsing');
+      } catch (err) {
+        console.log('Falling back to manual parsing');
+      }
+    }
+    
     // For this implementation, we'll need to manually parse and execute common patterns
     // This is a simplified version - in production you might want a proper SQL parser
     
-    // Extract table name (should be property_sales)
+    // Extract table name (should be sales_transactions)
     const tableMatch = sql.match(/FROM\s+(\w+)/i);
-    if (!tableMatch || tableMatch[1].toLowerCase() !== 'property_sales') {
+    if (!tableMatch || tableMatch[1].toLowerCase() !== 'sales_transactions') {
       return res.status(400).json({ 
-        error: 'Only queries from property_sales table are supported',
+        error: 'Only queries from sales_transactions table are supported',
         receivedTable: tableMatch ? tableMatch[1] : 'none',
         sql: sql
       });
     }
 
     // Start building Supabase query
-    let query = supabase.from('property_sales').select('*');
+    let query = supabase.from('sales_transactions').select('*');
 
     // Extract WHERE conditions (simplified parsing)
     const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
     if (whereMatch) {
       const conditions = whereMatch[1];
       
-      // Parse common conditions (this is simplified - real implementation would need proper parsing)
-      // Handle LOWER(field) LIKE conditions
-      const lowerLikeMatches = conditions.matchAll(/LOWER\((\w+)\)\s+LIKE\s+'([^']+)'/gi);
-      for (const match of lowerLikeMatches) {
-        const [, field, value] = match;
-        // Supabase doesn't support LOWER() in queries, so use ilike which is case-insensitive
-        query = query.ilike(field, value.replace(/%/g, '*'));
-      }
-      
-      // Handle ILIKE conditions
-      const ilikeMatches = conditions.matchAll(/(\w+)\s+ILIKE\s+'([^']+)'/gi);
-      for (const match of ilikeMatches) {
-        const [, field, value] = match;
-        query = query.ilike(field, value);
-      }
-      
-      // Handle LIKE conditions (case-sensitive)
-      const likeMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s+LIKE\s+'([^']+)'/gi);
-      for (const match of likeMatches) {
-        const [, field, value] = match;
-        query = query.like(field, value);
-      }
-      
-      // Handle LOWER(field) = conditions
-      const lowerEqualMatches = conditions.matchAll(/LOWER\((\w+)\)\s*=\s*'([^']+)'/gi);
-      for (const match of lowerEqualMatches) {
-        const [, field, value] = match;
-        // Use ilike with exact match for case-insensitive equality
-        query = query.ilike(field, value);
-      }
-      
-      // Handle regular equality conditions
-      const equalMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s*=\s*'([^']+)'/gi);
-      for (const match of equalMatches) {
-        const [, field, value] = match;
-        query = query.eq(field, value);
+      // Check if we have OR conditions that need special handling
+      if (conditions.toUpperCase().includes(' OR ')) {
+        // Handle OR conditions for name searches
+        const nameOrPattern = /\((buyer_name\s+ILIKE\s+'([^']+)'\s+OR\s+grantee\s+ILIKE\s+'([^']+)')\)/i;
+        const nameOrMatch = conditions.match(nameOrPattern);
+        if (nameOrMatch) {
+          const searchValue = nameOrMatch[2] || nameOrMatch[3];
+          // Use Supabase's or() method
+          query = query.or(`buyer_name.ilike.${searchValue},grantee.ilike.${searchValue}`);
+        }
+        
+        // Handle OR conditions for address searches
+        const addressOrPattern = /\((property_address\s+ILIKE\s+'([^']+)'\s+OR\s+street_address\s+ILIKE\s+'([^']+)')\)/i;
+        const addressOrMatch = conditions.match(addressOrPattern);
+        if (addressOrMatch) {
+          const searchValue = addressOrMatch[2] || addressOrMatch[3];
+          query = query.or(`property_address.ilike.${searchValue},street_address.ilike.${searchValue}`);
+        }
+        
+        // Handle any remaining simple conditions after OR groups
+        const remainingConditions = conditions.replace(nameOrPattern, '').replace(addressOrPattern, '').trim();
+        if (remainingConditions && remainingConditions !== 'AND' && remainingConditions !== 'OR') {
+          // Process remaining conditions below
+          console.log('Remaining conditions after OR:', remainingConditions);
+        }
+      } else {
+        // No OR conditions, process normally
+        // Handle LOWER(field) LIKE conditions
+        const lowerLikeMatches = conditions.matchAll(/LOWER\((\w+)\)\s+LIKE\s+'([^']+)'/gi);
+        for (const match of lowerLikeMatches) {
+          const [, field, value] = match;
+          // Supabase doesn't support LOWER() in queries, so use ilike which is case-insensitive
+          query = query.ilike(field, value.replace(/%/g, '*'));
+        }
+        
+        // Handle ILIKE conditions
+        const ilikeMatches = conditions.matchAll(/(\w+)\s+ILIKE\s+'([^']+)'/gi);
+        for (const match of ilikeMatches) {
+          const [, field, value] = match;
+          query = query.ilike(field, value);
+        }
+        
+        // Handle LIKE conditions (case-sensitive)
+        const likeMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s+LIKE\s+'([^']+)'/gi);
+        for (const match of likeMatches) {
+          const [, field, value] = match;
+          query = query.like(field, value);
+        }
+        
+        // Handle LOWER(field) = conditions
+        const lowerEqualMatches = conditions.matchAll(/LOWER\((\w+)\)\s*=\s*'([^']+)'/gi);
+        for (const match of lowerEqualMatches) {
+          const [, field, value] = match;
+          // Use ilike with exact match for case-insensitive equality
+          query = query.ilike(field, value);
+        }
+        
+        // Handle regular equality conditions
+        const equalMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s*=\s*'([^']+)'/gi);
+        for (const match of equalMatches) {
+          const [, field, value] = match;
+          query = query.eq(field, value);
+        }
       }
       
       // Handle numeric comparisons
