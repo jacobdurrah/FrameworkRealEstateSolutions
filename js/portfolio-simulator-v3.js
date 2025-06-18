@@ -17,6 +17,11 @@ let v3State = {
 
 // Initialize V3
 document.addEventListener('DOMContentLoaded', () => {
+    // Ensure timelineData is initialized
+    if (!window.timelineData) {
+        window.timelineData = [];
+    }
+    
     // Initialize components
     v3State.listingsMatcher = new ListingsMatcher();
     
@@ -25,6 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load example queries
     loadExampleQueries();
+    
+    // Log initialization
+    console.log('Portfolio Simulator V3 initialized');
+    console.log('V2 functions available:', {
+        renderTimelineTable: typeof renderTimelineTable === 'function',
+        recalculateAll: typeof recalculateAll === 'function',
+        addTimelineRow: typeof addTimelineRow === 'function'
+    });
 });
 
 /**
@@ -275,13 +288,17 @@ function applyStrategyToTimeline(strategy) {
     // Clear existing timeline
     window.timelineData = [];
     
+    // Log for debugging
+    console.log('Applying strategy to timeline:', strategy);
+    console.log('Strategy timeline events:', strategy.timeline);
+    
     // Convert strategy events to V2 timeline format
-    strategy.timeline.forEach(event => {
-        window.timelineData.push({
+    strategy.timeline.forEach((event, index) => {
+        const timelineEvent = {
             id: Date.now() + Math.random(),
             month: event.month,
             action: event.action,
-            property: event.property || `Property ${window.timelineData.length + 1}`,
+            property: event.property || `Property ${index + 1}`,
             price: event.price,
             downPercent: event.downPercent || 20,
             downAmount: event.price * (event.downPercent || 20) / 100,
@@ -290,14 +307,38 @@ function applyStrategyToTimeline(strategy) {
             term: event.term || 30,
             payment: event.payment || 0,
             rent: event.rent || 0,
-            monthlyExpenses: event.monthlyExpenses || 350
-        });
+            monthlyExpenses: event.monthlyExpenses || 350,
+            salePrice: event.salePrice || 0
+        };
+        
+        // Add to timeline
+        window.timelineData.push(timelineEvent);
+        console.log(`Added timeline event ${index + 1}:`, timelineEvent);
     });
+    
+    console.log('Total timeline events:', window.timelineData.length);
+    
+    // Show V2 components section
+    const v2Components = document.getElementById('v2Components');
+    if (v2Components) {
+        v2Components.style.display = 'block';
+    }
     
     // Refresh V2 display
     if (typeof renderTimelineTable === 'function') {
+        console.log('Calling renderTimelineTable...');
         renderTimelineTable();
         recalculateAll();
+        
+        // Scroll to timeline section for visibility
+        const timelineSection = document.querySelector('.table-section');
+        if (timelineSection && window.timelineData.length > 0) {
+            setTimeout(() => {
+                timelineSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
+        }
+    } else {
+        console.error('renderTimelineTable function not found!');
     }
 }
 
