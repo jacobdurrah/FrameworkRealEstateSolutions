@@ -47,9 +47,11 @@ Fields:
 - property_class: Property classification (text)
 
 Important notes:
-- IMPORTANT: Check BOTH field variations (e.g., buyer_name OR grantee) because data uses different field names
+- IMPORTANT: Names are stored as "LASTNAME, FIRSTNAME" format (e.g., "DURRAH, JACOB" not "Jacob Durrah")
+- When searching for a person named "FirstName LastName", convert it to "LASTNAME, FIRSTNAME"
+- Check BOTH field variations (e.g., buyer_name OR grantee) because data uses different field names
 - Use ILIKE for case-insensitive text matching with % wildcards
-- For names, use: (buyer_name ILIKE '%jacob durrah%' OR grantee ILIKE '%jacob durrah%')
+- For names, use: (buyer_name ILIKE '%lastname%firstname%' OR grantee ILIKE '%lastname%firstname%')
 - For city searches, use: property_city ILIKE '%detroit%'
 - For addresses, check both: (property_address ILIKE '%search%' OR street_address ILIKE '%search%')
 - Always include appropriate LIMIT to prevent overwhelming responses
@@ -59,7 +61,8 @@ Important notes:
 - The query must start with SELECT
 
 Examples:
-- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%jacob durrah%' OR grantee ILIKE '%jacob durrah%')
+- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%durrah%jacob%' OR grantee ILIKE '%durrah%jacob%')
+- "Properties bought by John Smith" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%smith%john%' OR grantee ILIKE '%smith%john%')
 - "Properties sold in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023
 - "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE terms_of_sale ILIKE '%cash%' AND sale_price > 100000
 - "Properties in Detroit" -> SELECT * FROM sales_transactions WHERE property_city ILIKE '%detroit%'
