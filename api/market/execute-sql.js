@@ -64,16 +64,18 @@ export default async function handler(req, res) {
     // For this implementation, we'll need to manually parse and execute common patterns
     // This is a simplified version - in production you might want a proper SQL parser
     
-    // Extract table name (should be sales_transactions)
+    // Extract table name (should be property_sales)
     const tableMatch = sql.match(/FROM\s+(\w+)/i);
-    if (!tableMatch || tableMatch[1].toLowerCase() !== 'sales_transactions') {
+    if (!tableMatch || tableMatch[1].toLowerCase() !== 'property_sales') {
       return res.status(400).json({ 
-        error: 'Only queries from sales_transactions table are supported' 
+        error: 'Only queries from property_sales table are supported',
+        receivedTable: tableMatch ? tableMatch[1] : 'none',
+        sql: sql
       });
     }
 
     // Start building Supabase query
-    let query = supabase.from('sales_transactions').select('*');
+    let query = supabase.from('property_sales').select('*');
 
     // Extract WHERE conditions (simplified parsing)
     const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
@@ -81,6 +83,14 @@ export default async function handler(req, res) {
       const conditions = whereMatch[1];
       
       // Parse common conditions (this is simplified - real implementation would need proper parsing)
+      // Handle LOWER(field) LIKE conditions
+      const lowerLikeMatches = conditions.matchAll(/LOWER\((\w+)\)\s+LIKE\s+'([^']+)'/gi);
+      for (const match of lowerLikeMatches) {
+        const [, field, value] = match;
+        // Supabase doesn't support LOWER() in queries, so use ilike which is case-insensitive
+        query = query.ilike(field, value.replace(/%/g, '*'));
+      }
+      
       // Handle ILIKE conditions
       const ilikeMatches = conditions.matchAll(/(\w+)\s+ILIKE\s+'([^']+)'/gi);
       for (const match of ilikeMatches) {
@@ -88,8 +98,23 @@ export default async function handler(req, res) {
         query = query.ilike(field, value);
       }
       
-      // Handle equality conditions
-      const equalMatches = conditions.matchAll(/(\w+)\s*=\s*'([^']+)'/gi);
+      // Handle LIKE conditions (case-sensitive)
+      const likeMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s+LIKE\s+'([^']+)'/gi);
+      for (const match of likeMatches) {
+        const [, field, value] = match;
+        query = query.like(field, value);
+      }
+      
+      // Handle LOWER(field) = conditions
+      const lowerEqualMatches = conditions.matchAll(/LOWER\((\w+)\)\s*=\s*'([^']+)'/gi);
+      for (const match of lowerEqualMatches) {
+        const [, field, value] = match;
+        // Use ilike with exact match for case-insensitive equality
+        query = query.ilike(field, value);
+      }
+      
+      // Handle regular equality conditions
+      const equalMatches = conditions.matchAll(/(?<!LOWER\()(\w+)\s*=\s*'([^']+)'/gi);
       for (const match of equalMatches) {
         const [, field, value] = match;
         query = query.eq(field, value);
@@ -135,6 +160,10 @@ export default async function handler(req, res) {
       query = query.limit(100); // Default limit
     }
 
+    // Log the SQL query for debugging
+    console.log('Executing SQL:', sql);
+    console.log('Parsed conditions:', whereMatch ? whereMatch[1] : 'none');
+
     // Execute query
     const { data, error } = await query;
 
@@ -143,16 +172,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ 
         error: 'Database query failed',
         details: error.message,
+        sql: sql,
         suggestion: 'Try simplifying your query or using the pre-built query patterns'
       });
     }
+
+    // Log results for debugging
+    console.log(`Query returned ${data?.length || 0} rows`);
 
     // Return results with metadata
     res.status(200).json({ 
       data: data || [],
       rowCount: data?.length || 0,
       sql: sql,
-      executionTime: new Date().toISOString()
+      executionTime: new Date().toISOString(),
+      debug: {
+        parsedTable: tableMatch[1],
+        parsedConditions: whereMatch ? whereMatch[1] : null,
+        resultCount: data?.length || 0
+      }
     });
 
   } catch (error) {
