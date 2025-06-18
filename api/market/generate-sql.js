@@ -51,7 +51,7 @@ Important notes:
 - Limit results to prevent overwhelming responses
 - Return clean, formatted SQL without markdown blocks
 - IMPORTANT: Return ONLY the SQL query, no explanations or markdown
-- Do NOT include backticks or ```sql blocks
+- Do NOT include backticks or sql code blocks
 - The query must start with SELECT
 
 Examples:
