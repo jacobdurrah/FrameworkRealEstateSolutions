@@ -47,6 +47,9 @@ Important notes:
 - For names, use partial matching with % wildcards
 - Limit results to prevent overwhelming responses
 - Return clean, formatted SQL without markdown blocks
+- IMPORTANT: Return ONLY the SQL query, no explanations or markdown
+- Do NOT include backticks or ```sql blocks
+- The query must start with SELECT
 
 Examples:
 - "What did John Smith buy?" -> Search buyer_name and grantee for John Smith
@@ -64,8 +67,12 @@ Examples:
     });
 
     let generatedSQL = aiResponse.content[0].text.trim();
-    // Remove trailing semicolon if present
-    generatedSQL = generatedSQL.replace(/;\s*$/, '');
+    
+    // Clean up the SQL - remove markdown blocks if present
+    generatedSQL = generatedSQL.replace(/```sql\s*/gi, '').replace(/```\s*/g, '');
+    
+    // Remove any leading/trailing whitespace and semicolons
+    generatedSQL = generatedSQL.trim().replace(/;\s*$/, '');
 
     // Basic SQL validation
     const sqlUpper = generatedSQL.toUpperCase();
