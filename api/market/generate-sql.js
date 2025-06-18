@@ -114,8 +114,12 @@ Examples:
   } catch (error) {
     console.error('SQL generation error:', error);
     
-    if (error.message?.includes('API key') || error.message?.includes('api_key')) {
-      return res.status(500).json({ error: 'Anthropic API key is invalid or not configured' });
+    if (error.message?.includes('API key') || error.message?.includes('api_key') || error.message?.includes('invalid x-api-key')) {
+      return res.status(500).json({ 
+        error: 'Anthropic API key is invalid or expired',
+        instructions: 'Please check that your API key is valid at https://console.anthropic.com/settings/keys',
+        details: 'The API key may have been revoked or expired. Generate a new key and update ANTHROPIC_API_KEY in Vercel.'
+      });
     }
     
     if (error.message?.includes('rate limit')) {

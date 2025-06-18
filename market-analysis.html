@@ -636,8 +636,8 @@
                 // Hide loading
                 document.getElementById('loadingState').style.display = 'none';
                 
-                // Show error
-                showError(error.message);
+                // Show error with details if available
+                showError(error.message, error.details || null);
             }
         }
 
@@ -775,8 +775,8 @@
                 // Hide loading
                 document.getElementById('loadingState').style.display = 'none';
                 
-                // Show error
-                showError(error.message);
+                // Show error with details if available
+                showError(error.message, error.details || null);
             }
         }
 
@@ -825,9 +825,26 @@
         }
 
         // Show error
-        function showError(message) {
+        function showError(message, details = null) {
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
+            
+            // Check if it's an API key error
+            if (message.includes('API key') || (details && details.includes('API key'))) {
+                errorDiv.innerHTML = `
+                    <strong>API Configuration Issue:</strong><br>
+                    The AI feature requires a valid Anthropic API key.<br>
+                    <br>
+                    <strong>For site administrators:</strong><br>
+                    1. Visit <a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a> to check your API key<br>
+                    2. Update the ANTHROPIC_API_KEY in your Vercel environment variables<br>
+                    3. Redeploy the application<br>
+                    <br>
+                    <em>In the meantime, you can use the pattern-based search by turning off AI Mode.</em>
+                `;
+            } else {
+                errorDiv.textContent = message;
+            }
+            
             errorDiv.style.display = 'block';
         }
 
