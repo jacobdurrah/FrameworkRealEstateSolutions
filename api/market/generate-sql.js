@@ -62,7 +62,9 @@ Examples:
       max_tokens: 500
     });
 
-    const generatedSQL = aiResponse.content[0].text.trim();
+    let generatedSQL = aiResponse.content[0].text.trim();
+    // Remove trailing semicolon if present
+    generatedSQL = generatedSQL.replace(/;\s*$/, '');
 
     // Basic SQL validation
     const sqlUpper = generatedSQL.toUpperCase();
