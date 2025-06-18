@@ -43,10 +43,8 @@ vercel --prod
 ```
 
 ## Your API Key
-You provided this key earlier:
-```
-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
-```
+You'll need to use the Anthropic API key you provided earlier. 
+Format: `sk-ant-api03-...`
 
 ## Verification
 After setting up, test the AI mode:
