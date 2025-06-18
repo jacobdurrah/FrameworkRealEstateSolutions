@@ -1,7 +1,21 @@
 // Shared CORS configuration
 export function configureCORS(req, res) {
-  // Always allow the main domain
-  res.setHeader('Access-Control-Allow-Origin', 'https://frameworkrealestatesolutions.com');
+  // Allow both production and localhost
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://frameworkrealestatesolutions.com',
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Default to production domain
+    res.setHeader('Access-Control-Allow-Origin', 'https://frameworkrealestatesolutions.com');
+  }
+  
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(

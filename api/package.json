@@ -1,0 +1,17 @@
+{
+  "name": "framework-realestate-api",
+  "version": "1.0.0",
+  "description": "API endpoints for Framework Real Estate Solutions",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "@anthropic-ai/sdk": "^0.17.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

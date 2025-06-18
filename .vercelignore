@@ -1,0 +1,16 @@
+node_modules
+*.csv
+docs
+backend-scripts
+test-results
+playwright-report
+playwright-report-live
+*.png
+tests
+.git
+.gitignore
+*.log
+package-lock.json
+test-*.html
+DEPLOYMENT_GUIDE.md
+env.example

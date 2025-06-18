@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test AI Market Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .sql-code {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>AI Market Analysis Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Generate SQL from Natural Language</h2>
+        <input type="text" id="testPrompt" value="What properties did Jacob Durrah buy?" style="width: 400px;">
+        <button onclick="testGenerateSQL()">Test Generate SQL</button>
+        <div id="sqlResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Execute SQL</h2>
+        <textarea id="testSQL" rows="5" cols="80">SELECT * FROM sales_transactions 
+WHERE (buyer_name ILIKE '%Jacob%Durrah%' OR grantee ILIKE '%Jacob%Durrah%') 
+LIMIT 10</textarea>
+        <br>
+        <button onclick="testExecuteSQL()">Test Execute SQL</button>
+        <div id="execResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: End-to-End AI Query</h2>
+        <input type="text" id="e2ePrompt" value="Show me all cash sales above $100k in 2023" style="width: 400px;">
+        <button onclick="testE2E()">Test End-to-End</button>
+        <div id="e2eResult"></div>
+    </div>
+
+    <script src="js/ai-query-processor.js"></script>
+    <script>
+        const aiProcessor = new AIQueryProcessor();
+
+        async function testGenerateSQL() {
+            const prompt = document.getElementById('testPrompt').value;
+            const resultDiv = document.getElementById('sqlResult');
+            
+            try {
+                resultDiv.innerHTML = 'Generating SQL...';
+                const result = await aiProcessor.processQuery(prompt);
+                resultDiv.innerHTML = `
+                    <div class="success">Success!</div>
+                    <div><strong>SQL:</strong></div>
+                    <div class="sql-code">${result.sql}</div>
+                    <div><strong>Explanation:</strong> ${result.explanation}</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testExecuteSQL() {
+            const sql = document.getElementById('testSQL').value;
+            const resultDiv = document.getElementById('execResult');
+            
+            try {
+                resultDiv.innerHTML = 'Executing SQL...';
+                const result = await aiProcessor.executeSQL(sql);
+                resultDiv.innerHTML = `
+                    <div class="success">Success!</div>
+                    <div>Row Count: ${result.rowCount}</div>
+                    <div>First few results:</div>
+                    <pre>${JSON.stringify(result.data.slice(0, 3), null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testE2E() {
+            const prompt = document.getElementById('e2ePrompt').value;
+            const resultDiv = document.getElementById('e2eResult');
+            
+            try {
+                resultDiv.innerHTML = 'Processing...';
+                const result = await aiProcessor.processAndExecute(prompt);
+                resultDiv.innerHTML = `
+                    <div class="success">Success!</div>
+                    <div><strong>Prompt:</strong> ${result.prompt}</div>
+                    <div><strong>Generated SQL:</strong></div>
+                    <div class="sql-code">${result.sql}</div>
+                    <div><strong>Explanation:</strong> ${result.explanation}</div>
+                    <div><strong>Results:</strong> ${result.rowCount} rows found</div>
+                    <div>First result:</div>
+                    <pre>${JSON.stringify(result.data[0], null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

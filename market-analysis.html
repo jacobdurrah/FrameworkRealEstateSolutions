@@ -139,6 +139,7 @@
             display: flex;
             gap: 1rem;
             margin-top: 1rem;
+            align-items: center;
         }
 
         .btn {
@@ -324,6 +325,47 @@
             margin-top: 0.25rem;
         }
 
+        /* SQL Preview Section */
+        .sql-preview-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+        }
+
+        .sql-preview-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .sql-explanation {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: #1565c0;
+            border-left: 4px solid #1976d2;
+        }
+
+        .sql-code {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .sql-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header-content {
@@ -383,6 +425,14 @@
                 <button class="btn btn-secondary" onclick="clearQuery()">
                     <i class="fas fa-times"></i> Clear
                 </button>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="aiModeToggle" style="margin-right: 5px;">
+                        <span style="font-size: 0.9rem;">AI Mode (Beta)</span>
+                    </label>
+                    <i class="fas fa-info-circle" style="color: var(--medium-gray); cursor: help;" 
+                       title="Enable AI-powered natural language queries. Requires OpenAI API key configured on server."></i>
+                </div>
             </div>
 
             <div class="suggestions">
@@ -390,6 +440,21 @@
                 <div class="suggestion-chips" id="suggestionChips">
                     <!-- Suggestions will be populated here -->
                 </div>
+            </div>
+        </div>
+
+        <!-- SQL Preview Section (for AI mode) -->
+        <div class="sql-preview-section" id="sqlPreviewSection" style="display: none;">
+            <h3>Generated SQL Query</h3>
+            <div class="sql-explanation" id="sqlExplanation"></div>
+            <pre class="sql-code" id="sqlCode"></pre>
+            <div class="sql-actions">
+                <button class="btn btn-primary" onclick="executeSQLQuery()">
+                    <i class="fas fa-database"></i> Execute Query
+                </button>
+                <button class="btn btn-secondary" onclick="modifyQuery()">
+                    <i class="fas fa-edit"></i> Modify
+                </button>
             </div>
         </div>
 
@@ -443,12 +508,15 @@
     <script src="js/sales-api.js"></script>
     <script src="js/sql-generator.js"></script>
     <script src="js/market-query-builder.js"></script>
+    <script src="js/ai-query-processor.js"></script>
     
     <script>
         // Initialize query builder
         let queryBuilder;
+        let aiProcessor;
         let currentResults = null;
         let currentQueryInfo = null;
+        let currentSQL = null;
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
@@ -461,11 +529,23 @@
             queryBuilder = new MarketQueryBuilder();
             await queryBuilder.init();
             
+            // Initialize AI processor
+            aiProcessor = new AIQueryProcessor();
+            
             // Load suggestions
             loadSuggestions();
             
             // Load query history
             loadQueryHistory();
+            
+            // Set up AI mode toggle
+            const aiToggle = document.getElementById('aiModeToggle');
+            aiToggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    showInfo('AI Mode enabled. Your queries will be processed using natural language AI.');
+                }
+                loadSuggestions(); // Reload suggestions for AI mode
+            });
             
             // Set up enter key handler
             document.getElementById('queryInput').addEventListener('keypress', (e) => {
@@ -477,9 +557,22 @@
 
         // Load query suggestions
         function loadSuggestions() {
-            const suggestions = queryBuilder.getQuerySuggestions('');
-            const container = document.getElementById('suggestionChips');
+            const isAIMode = document.getElementById('aiModeToggle').checked;
+            let suggestions;
             
+            if (isAIMode) {
+                suggestions = [
+                    "What properties did Jacob Durrah buy in Detroit?",
+                    "Show me all cash sales above $100k in 2023",
+                    "Who bought the most properties in 48214?",
+                    "List all flips in the past year",
+                    "What was the highest sale price this month?"
+                ];
+            } else {
+                suggestions = queryBuilder.getQuerySuggestions('');
+            }
+            
+            const container = document.getElementById('suggestionChips');
             container.innerHTML = suggestions.map(suggestion => 
                 `<div class="suggestion-chip" onclick="useSuggestion('${suggestion.replace(/'/g, "\\'")}')">${suggestion}</div>`
             ).join('');
@@ -502,23 +595,42 @@
             // Hide previous results/errors
             hideError();
             document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('sqlPreviewSection').style.display = 'none';
             
             // Show loading
             document.getElementById('loadingState').style.display = 'block';
 
             try {
-                const result = await queryBuilder.processQuery(input);
-                currentResults = result.results;
-                currentQueryInfo = result.query;
+                const isAIMode = document.getElementById('aiModeToggle').checked;
                 
-                // Hide loading
-                document.getElementById('loadingState').style.display = 'none';
-                
-                // Display results
-                displayResults(result);
-                
-                // Update history
-                loadQueryHistory();
+                if (isAIMode) {
+                    // AI Mode: Generate SQL first
+                    const { sql, explanation } = await aiProcessor.processQuery(input);
+                    currentSQL = sql;
+                    
+                    // Hide loading
+                    document.getElementById('loadingState').style.display = 'none';
+                    
+                    // Show SQL preview
+                    document.getElementById('sqlExplanation').textContent = explanation;
+                    document.getElementById('sqlCode').textContent = aiProcessor.formatSQL(sql);
+                    document.getElementById('sqlPreviewSection').style.display = 'block';
+                    
+                } else {
+                    // Pattern-based mode
+                    const result = await queryBuilder.processQuery(input);
+                    currentResults = result.results;
+                    currentQueryInfo = result.query;
+                    
+                    // Hide loading
+                    document.getElementById('loadingState').style.display = 'none';
+                    
+                    // Display results
+                    displayResults(result);
+                    
+                    // Update history
+                    loadQueryHistory();
+                }
                 
             } catch (error) {
                 // Hide loading
@@ -621,6 +733,95 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Execute SQL query (AI mode)
+        async function executeSQLQuery() {
+            if (!currentSQL) return;
+            
+            // Hide SQL preview
+            document.getElementById('sqlPreviewSection').style.display = 'none';
+            
+            // Show loading
+            document.getElementById('loadingState').style.display = 'block';
+            
+            try {
+                const results = await aiProcessor.executeSQL(currentSQL);
+                
+                // Hide loading
+                document.getElementById('loadingState').style.display = 'none';
+                
+                // Format results for display
+                const formattedResult = {
+                    results: results.data || [],
+                    query: {
+                        type: 'custom',
+                        description: 'AI-generated query',
+                        sql: currentSQL
+                    }
+                };
+                
+                currentResults = formattedResult.results;
+                currentQueryInfo = formattedResult.query;
+                
+                // Display results
+                displayResults(formattedResult);
+                
+                // Update history
+                saveQueryToHistory(document.getElementById('queryInput').value, formattedResult.query);
+                loadQueryHistory();
+                
+            } catch (error) {
+                // Hide loading
+                document.getElementById('loadingState').style.display = 'none';
+                
+                // Show error
+                showError(error.message);
+            }
+        }
+
+        // Modify query (go back to input)
+        function modifyQuery() {
+            document.getElementById('sqlPreviewSection').style.display = 'none';
+            document.getElementById('queryInput').focus();
+        }
+
+        // Save query to history
+        function saveQueryToHistory(input, queryInfo) {
+            const history = JSON.parse(localStorage.getItem('marketAnalysisHistory') || '[]');
+            history.unshift({
+                input: input,
+                query: queryInfo,
+                timestamp: Date.now()
+            });
+            // Keep only last 20 queries
+            if (history.length > 20) history.pop();
+            localStorage.setItem('marketAnalysisHistory', JSON.stringify(history));
+        }
+
+        // Show info message
+        function showInfo(message) {
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #e3f2fd;
+                color: #1565c0;
+                padding: 1rem 1.5rem;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            infoDiv.textContent = message;
+            document.body.appendChild(infoDiv);
+            
+            setTimeout(() => {
+                infoDiv.style.opacity = '0';
+                infoDiv.style.transition = 'opacity 0.3s';
+                setTimeout(() => infoDiv.remove(), 300);
+            }, 3000);
         }
 
         // Show error
