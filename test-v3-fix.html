@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V3 Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>V3 Fix Verification Tests</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Goal Parser Isolation</h2>
+        <button class="btn" onclick="testGoalParser()">Test Goal Parser</button>
+        <div id="goalParserResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Strategy Generator Isolation</h2>
+        <button class="btn" onclick="testStrategyGenerator()">Test Strategy Generator</button>
+        <div id="strategyGeneratorResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Infinite Loop Prevention</h2>
+        <button class="btn" onclick="testInfiniteLoopPrevention()">Test Loop Prevention</button>
+        <div id="loopPreventionResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Full V3 Flow</h2>
+        <button class="btn" onclick="testFullV3Flow()">Test Full Flow</button>
+        <div id="fullFlowResult" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Load V3 Scripts -->
+    <script src="js/goal-parser.js"></script>
+    <script src="js/strategy-generator.js"></script>
+
+    <script>
+        // Test Goal Parser
+        function testGoalParser() {
+            const resultDiv = document.getElementById('goalParserResult');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const parser = new GoalParser();
+                const testInput = "I want to generate $10K/month within 36 months. I have $50K to start and can save $2K/month.";
+                
+                console.time('Goal Parsing');
+                const result = parser.parse(testInput);
+                console.timeEnd('Goal Parsing');
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Goal Parser Working!</div>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Goal Parser Error: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        // Test Strategy Generator
+        async function testStrategyGenerator() {
+            const resultDiv = document.getElementById('strategyGeneratorResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div>Testing strategy generator...</div>';
+            
+            try {
+                const generator = new StrategyGenerator();
+                const testGoal = {
+                    targetMonthlyIncome: 10000,
+                    timeHorizon: 36,
+                    startingCapital: 50000,
+                    monthlyContributions: 2000
+                };
+                
+                console.time('Strategy Generation');
+                const strategy = await generator.generateStrategy(testGoal, 'balanced');
+                console.timeEnd('Strategy Generation');
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Strategy Generator Working!</div>
+                    <div>Timeline Events: ${strategy.timeline.length}</div>
+                    <div>Properties: ${strategy.propertyCount}</div>
+                    <div>Time to Goal: ${strategy.monthsToGoal} months</div>
+                    <details>
+                        <summary>View Full Strategy</summary>
+                        <pre>${JSON.stringify(strategy, null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Strategy Generator Error: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        // Test Infinite Loop Prevention
+        async function testInfiniteLoopPrevention() {
+            const resultDiv = document.getElementById('loopPreventionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div>Testing with edge case parameters...</div>';
+            
+            try {
+                const generator = new StrategyGenerator();
+                
+                // Test with impossible goal (should not hang)
+                const impossibleGoal = {
+                    targetMonthlyIncome: 100000, // Very high target
+                    timeHorizon: 12, // Very short timeline
+                    startingCapital: 1000, // Very low capital
+                    monthlyContributions: 0 // No contributions
+                };
+                
+                console.time('Edge Case Test');
+                const strategy = await generator.generateStrategy(impossibleGoal, 'aggressive');
+                console.timeEnd('Edge Case Test');
+                
+                // Check console for iteration limit warnings
+                const warnings = console.warn.calls || [];
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ No Infinite Loop Detected!</div>
+                    <div>Strategy completed with ${strategy.timeline.length} events</div>
+                    <div>Final income: $${strategy.finalMonthlyIncome}/month</div>
+                    <div class="${strategy.feasibility ? 'success' : 'error'}">
+                        Goal feasibility: ${strategy.feasibility ? 'Achievable' : 'Not achievable'}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Test Error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test Full V3 Flow
+        async function testFullV3Flow() {
+            const resultDiv = document.getElementById('fullFlowResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div>Running full V3 flow...</div>';
+            
+            try {
+                // Step 1: Parse goal
+                const parser = new GoalParser();
+                const goalText = "I want to generate $10K/month within 36 months. I have $50K to start and can save $2K/month.";
+                
+                console.time('Full V3 Flow');
+                const parsedGoal = parser.parse(goalText);
+                
+                // Step 2: Generate strategies
+                const generator = new StrategyGenerator();
+                
+                // Add timeout
+                const strategyPromise = generator.generateMultipleStrategies(parsedGoal);
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout after 10 seconds')), 10000)
+                );
+                
+                const strategies = await Promise.race([strategyPromise, timeoutPromise]);
+                console.timeEnd('Full V3 Flow');
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Full V3 Flow Completed Successfully!</div>
+                    <div>Parsed Goal:</div>
+                    <ul>
+                        <li>Target: $${parsedGoal.targetMonthlyIncome}/month</li>
+                        <li>Timeline: ${parsedGoal.timeHorizon} months</li>
+                        <li>Capital: $${parsedGoal.startingCapital}</li>
+                    </ul>
+                    <div>Generated Strategies: ${strategies.length}</div>
+                    ${strategies.map(s => `
+                        <div style="margin-top: 10px; padding: 10px; border: 1px solid #ddd;">
+                            <strong>${s.approach.charAt(0).toUpperCase() + s.approach.slice(1)} Strategy</strong>
+                            <ul>
+                                <li>Properties: ${s.propertyCount}</li>
+                                <li>Time to Goal: ${s.monthsToGoal} months</li>
+                                <li>Total Investment: $${s.totalInvestment.toLocaleString()}</li>
+                                <li>Final Income: $${s.finalMonthlyIncome.toLocaleString()}/month</li>
+                                <li>Feasible: ${s.feasibility ? 'Yes ✓' : 'No ✗'}</li>
+                            </ul>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Full Flow Error: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        // Override console.warn to capture warnings
+        const originalWarn = console.warn;
+        console.warn.calls = [];
+        console.warn = function(...args) {
+            console.warn.calls.push(args);
+            originalWarn.apply(console, args);
+        };
+    </script>
+</body>
+</html>

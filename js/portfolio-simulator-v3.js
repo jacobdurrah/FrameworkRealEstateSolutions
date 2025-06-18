@@ -106,16 +106,32 @@ async function generateStrategy() {
 
     try {
         // Parse the goal
+        console.log('Parsing goal:', goalText);
         const parser = new GoalParser();
         v3State.parsedGoal = parser.parse(goalText);
+        console.log('Parsed goal:', v3State.parsedGoal);
         
         // Display parsed goal
         displayParsedGoal(v3State.parsedGoal);
         
-        // Generate strategies
+        // Generate strategies with timeout
+        console.log('Generating strategies...');
         const generator = new StrategyGenerator();
-        const strategies = await generator.generateMultipleStrategies(v3State.parsedGoal);
+        
+        // Add timeout to prevent hanging
+        const strategyPromise = generator.generateMultipleStrategies(v3State.parsedGoal);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Strategy generation timed out after 10 seconds')), 10000)
+        );
+        
+        const strategies = await Promise.race([strategyPromise, timeoutPromise]);
+        console.log('Generated strategies:', strategies.length);
         v3State.generatedStrategies = strategies;
+        
+        // Check if we have valid strategies
+        if (!strategies || strategies.length === 0) {
+            throw new Error('No strategies could be generated. Please try different parameters.');
+        }
         
         // Select default strategy (balanced)
         const balancedStrategy = strategies.find(s => s.approach === 'balanced') || strategies[0];
@@ -141,21 +157,29 @@ async function generateStrategy() {
  */
 function displayParsedGoal(goal) {
     const display = document.getElementById('parsedGoalDisplay');
-    if (!display) return;
+    if (!display) {
+        console.warn('parsedGoalDisplay element not found');
+        return;
+    }
 
-    display.innerHTML = `
-        <div class="parsed-goal-summary">
-            <h4>Understanding Your Goal:</h4>
-            <ul>
-                <li><strong>Target Income:</strong> ${formatCurrency(goal.targetMonthlyIncome)}/month</li>
-                <li><strong>Timeline:</strong> ${goal.timeHorizon} months</li>
-                <li><strong>Starting Capital:</strong> ${formatCurrency(goal.startingCapital)}</li>
-                <li><strong>Monthly Savings:</strong> ${formatCurrency(goal.monthlyContributions)}</li>
-                ${goal.preferredStrategies.length > 0 ? 
-                    `<li><strong>Preferences:</strong> ${goal.preferredStrategies.join(', ')}</li>` : ''}
-            </ul>
-        </div>
-    `;
+    try {
+        display.innerHTML = `
+            <div class="parsed-goal-summary">
+                <h4>Understanding Your Goal:</h4>
+                <ul>
+                    <li><strong>Target Income:</strong> ${formatCurrency(goal.targetMonthlyIncome)}/month</li>
+                    <li><strong>Timeline:</strong> ${goal.timeHorizon} months</li>
+                    <li><strong>Starting Capital:</strong> ${formatCurrency(goal.startingCapital)}</li>
+                    <li><strong>Monthly Savings:</strong> ${formatCurrency(goal.monthlyContributions)}</li>
+                    ${goal.preferredStrategies && goal.preferredStrategies.length > 0 ? 
+                        `<li><strong>Preferences:</strong> ${goal.preferredStrategies.join(', ')}</li>` : ''}
+                </ul>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying parsed goal:', error);
+        display.innerHTML = '<div class="error">Error displaying goal details</div>';
+    }
 }
 
 /**

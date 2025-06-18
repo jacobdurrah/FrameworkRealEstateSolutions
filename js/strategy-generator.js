@@ -113,7 +113,14 @@ class StrategyGenerator {
     generateConservativeStrategy(strategy, state, goal) {
         strategy.description = 'Focus on steady rental acquisitions with minimal risk. Build wealth slowly but surely.';
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && state.currentMonth < goal.timeHorizon) {
+        let iterations = 0;
+        const MAX_ITERATIONS = 100; // Prevent infinite loops
+        
+        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+               state.currentMonth < goal.timeHorizon && 
+               iterations < MAX_ITERATIONS) {
+            iterations++;
+            
             // Check if we can afford a rental
             const downPayment = this.assumptions.avgPropertyPrice * this.assumptions.rentalDownPayment;
             const closingCosts = this.assumptions.avgPropertyPrice * 0.03;
@@ -125,7 +132,7 @@ class StrategyGenerator {
             } else {
                 // Wait and accumulate funds
                 const monthsToWait = this.calculateWaitTime(state, totalCashNeeded);
-                if (monthsToWait > 0 && state.currentMonth + monthsToWait <= goal.timeHorizon) {
+                if (monthsToWait > 0 && monthsToWait < 120 && state.currentMonth + monthsToWait <= goal.timeHorizon) {
                     state.currentMonth += monthsToWait;
                     state.cashAvailable += monthsToWait * (state.monthlyIncome + state.monthlyContributions);
                 } else {
@@ -133,6 +140,10 @@ class StrategyGenerator {
                     break;
                 }
             }
+        }
+        
+        if (iterations >= MAX_ITERATIONS) {
+            console.warn('Conservative strategy generation hit iteration limit');
         }
     }
 
@@ -143,8 +154,13 @@ class StrategyGenerator {
         strategy.description = 'Balanced mix of rentals for income and flips for capital growth. Optimal risk-reward ratio.';
         
         let flipCount = 0;
+        let iterations = 0;
+        const MAX_ITERATIONS = 100; // Prevent infinite loops
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && state.currentMonth < goal.timeHorizon) {
+        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+               state.currentMonth < goal.timeHorizon && 
+               iterations < MAX_ITERATIONS) {
+            iterations++;
             const incomeGap = goal.targetMonthlyIncome - state.monthlyIncome;
             const timeRemaining = goal.timeHorizon - state.currentMonth;
             
@@ -181,6 +197,10 @@ class StrategyGenerator {
             // Safety check to prevent infinite loops
             if (strategy.timeline.length > 100) break;
         }
+        
+        if (iterations >= MAX_ITERATIONS) {
+            console.warn('Balanced strategy generation hit iteration limit');
+        }
     }
 
     /**
@@ -190,8 +210,13 @@ class StrategyGenerator {
         strategy.description = 'Aggressive flip-focused approach for rapid capital growth. Higher risk but faster results.';
         
         let consecutiveFlips = 0;
+        let iterations = 0;
+        const MAX_ITERATIONS = 100; // Prevent infinite loops
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && state.currentMonth < goal.timeHorizon) {
+        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+               state.currentMonth < goal.timeHorizon && 
+               iterations < MAX_ITERATIONS) {
+            iterations++;
             // Prioritize flips early on
             if (consecutiveFlips < 3 && this.canDoFlip(state)) {
                 this.addFlipProject(strategy, state, state.currentMonth);
@@ -224,6 +249,10 @@ class StrategyGenerator {
             
             // Safety check
             if (strategy.timeline.length > 100) break;
+        }
+        
+        if (iterations >= MAX_ITERATIONS) {
+            console.warn('Aggressive strategy generation hit iteration limit');
         }
     }
 
