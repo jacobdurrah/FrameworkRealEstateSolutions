@@ -67,7 +67,11 @@ IMPORTANT RULES:
 9. Return ONLY the SQL query, no explanations or markdown
 10. The query must start with SELECT
 11. NEVER use CASE statements in GROUP BY clauses - they cause PostgreSQL errors
-12. For "most active participants" queries, create separate queries for buyers and sellers
+12. For "most active participants" or "who made the most transactions" queries:
+    - Choose to focus on EITHER buyers OR sellers, not both
+    - Default to buyers unless specifically asked about sellers
+    - DO NOT use UNION queries or subqueries
+13. Keep queries simple - avoid UNION, subqueries, or complex JOINs
 
 If you need to join with a parcels table for additional data:
 - Use: LEFT JOIN parcels ON sales_transactions.parcel_id = parcels.parcel_id
@@ -81,6 +85,8 @@ Examples:
 - "Recent sales" -> SELECT * FROM sales_transactions WHERE sale_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY sale_date DESC LIMIT 100
 - "Most active buyers in 2024" -> SELECT buyer_name, COUNT(*) as purchase_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY purchase_count DESC LIMIT 100
 - "Most active sellers in 2024" -> SELECT seller_name, COUNT(*) as sale_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND seller_name IS NOT NULL GROUP BY seller_name ORDER BY sale_count DESC LIMIT 100
+- "Who made the most transactions in 2024?" -> SELECT buyer_name, COUNT(*) as transaction_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY transaction_count DESC LIMIT 100
+- "Most active participants" -> SELECT buyer_name, COUNT(*) as transaction_count FROM sales_transactions WHERE buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY transaction_count DESC LIMIT 100
 - "Top buyers by total spent" -> SELECT buyer_name, SUM(sale_price) as total_spent, COUNT(*) as property_count FROM sales_transactions WHERE buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY total_spent DESC LIMIT 100`;
 
     const aiResponse = await anthropic.messages.create({

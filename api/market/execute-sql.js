@@ -54,10 +54,23 @@ export default async function handler(req, res) {
     // For now, we'll return a message about this limitation
     
     // Check if the SQL is simple enough to convert
-    if (sqlUpper.includes('JOIN') || sqlUpper.includes('UNION') || sqlUpper.includes('SUBQUERY')) {
+    // Allow UNION queries but not complex JOINs
+    if (sqlUpper.includes('JOIN') && !sqlUpper.includes('UNION')) {
       return res.status(400).json({ 
-        error: 'Complex SQL queries with JOINs or subqueries are not supported yet. Please simplify your query.',
+        error: 'Complex SQL queries with JOINs are not supported yet. Please simplify your query.',
         suggestion: 'Try asking for data from a single perspective, like "Show all purchases by John Smith" or "List properties sold in 2023"'
+      });
+    }
+    
+    // For UNION queries or subqueries, we need to use raw SQL execution
+    if (sqlUpper.includes('UNION') || sqlUpper.includes('FROM (')) {
+      // These complex queries need special handling
+      console.log('Complex UNION/subquery detected, needs special handling');
+      // For now, return a specific error suggesting simpler queries
+      return res.status(400).json({ 
+        error: 'This query is too complex for automatic execution. Please try a simpler query.',
+        suggestion: 'Instead of "most active participants", try "most active buyers" or "most active sellers" separately.',
+        sql: sql
       });
     }
 
