@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Analysis Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #34495e;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #34495e;
+            color: white;
+        }
+        .info {
+            color: #3498db;
+            font-style: italic;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Market Analysis Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Database Connection Test</h2>
+        <button class="btn" onclick="testDatabaseConnection()">Test Connection</button>
+        <div id="dbResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Query Generation Tests</h2>
+        
+        <h3>Test 1: Top Buyers Query</h3>
+        <button class="btn" onclick="testQueryGeneration('Show me the top 10 buyers in Detroit', 'queryGen1')">Generate Query</button>
+        <div id="queryGen1" class="result" style="display:none;"></div>
+
+        <h3>Test 2: Property Flips Query</h3>
+        <button class="btn" onclick="testQueryGeneration('Which properties were flipped in 2024?', 'queryGen2')">Generate Query</button>
+        <div id="queryGen2" class="result" style="display:none;"></div>
+
+        <h3>Test 3: Property Count Query</h3>
+        <button class="btn" onclick="testQueryGeneration('Who owns the most properties in 48204?', 'queryGen3')">Generate Query</button>
+        <div id="queryGen3" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>End-to-End Query Tests</h2>
+        
+        <h3>Test 1: Execute Top Buyers</h3>
+        <button class="btn" onclick="testEndToEnd('Show me the top 5 buyers', 'e2e1')">Execute Query</button>
+        <div id="e2e1" class="result" style="display:none;"></div>
+
+        <h3>Test 2: Execute Top Sellers</h3>
+        <button class="btn" onclick="testEndToEnd('Who are the top sellers?', 'e2e2')">Execute Query</button>
+        <div id="e2e2" class="result" style="display:none;"></div>
+
+        <h3>Test 3: Execute Highest Sale</h3>
+        <button class="btn" onclick="testEndToEnd('What was the highest sale this year?', 'e2e3')">Execute Query</button>
+        <div id="e2e3" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Database Schema Information</h2>
+        <button class="btn" onclick="showDatabaseInfo()">Show Schema</button>
+        <div id="schemaInfo" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/sales-api.js"></script>
+    <script src="js/sql-generator.js"></script>
+    <script src="js/market-query-builder.js"></script>
+
+    <script>
+        let queryBuilder;
+        let salesAPI;
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing test suite...');
+            
+            // Initialize sales API
+            if (!window.salesAPIService) {
+                window.salesAPIService = new SalesAPIService();
+            }
+            salesAPI = window.salesAPIService;
+            
+            // Initialize query builder
+            queryBuilder = new MarketQueryBuilder();
+            await queryBuilder.init();
+            
+            console.log('Test suite ready');
+        });
+
+        // Test database connection
+        async function testDatabaseConnection() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="info">Testing connection...</div>';
+            
+            try {
+                // Check if sales API is ready
+                if (!salesAPI.isReady()) {
+                    throw new Error('Sales API not initialized');
+                }
+                
+                // Try a simple query
+                const { data, error } = await salesAPI.client
+                    .from('sales_transactions')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Database connection successful!</div>
+                    <div>Supabase URL: ${window.APP_CONFIG?.SUPABASE_URL || 'Not configured'}</div>
+                    <div>Table: sales_transactions</div>
+                    <div>Sample record found: ${data && data.length > 0 ? 'Yes' : 'No'}</div>
+                    ${data && data.length > 0 ? `
+                        <details>
+                            <summary>View sample record</summary>
+                            <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                        </details>
+                    ` : ''}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Connection failed: ${error.message}</div>
+                    <div>Please check:</div>
+                    <ul>
+                        <li>Supabase URL is correct</li>
+                        <li>Supabase anon key is valid</li>
+                        <li>Table 'sales_transactions' exists</li>
+                        <li>CORS is enabled on Supabase</li>
+                    </ul>
+                `;
+            }
+        }
+
+        // Test query generation
+        function testQueryGeneration(query, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            
+            try {
+                const sqlGen = new SQLGenerator();
+                const queryInfo = sqlGen.generateQuery(query);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Query generated successfully!</div>
+                    <div><strong>Type:</strong> ${queryInfo.type}</div>
+                    <div><strong>Description:</strong> ${queryInfo.description}</div>
+                    <div><strong>Parameters:</strong> ${JSON.stringify(queryInfo.params)}</div>
+                    <details>
+                        <summary>View SQL</summary>
+                        <pre>${queryInfo.sql}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Query generation failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test end-to-end query execution
+        async function testEndToEnd(query, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="info">Executing query...</div>';
+            
+            try {
+                const result = await queryBuilder.processQuery(query);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ Query executed successfully!</div>
+                    <div><strong>Type:</strong> ${result.query.type}</div>
+                    <div><strong>Rows returned:</strong> ${result.rowCount}</div>
+                    <div><strong>Execution time:</strong> ${result.executionTime}ms</div>
+                `;
+                
+                if (result.results && result.results.length > 0) {
+                    // Build table
+                    const headers = Object.keys(result.results[0]);
+                    const table = `
+                        <table>
+                            <thead>
+                                <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+                                ${result.results.slice(0, 10).map(row => 
+                                    `<tr>${headers.map(h => `<td>${row[h] || '-'}</td>`).join('')}</tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    resultDiv.innerHTML += table;
+                    
+                    if (result.results.length > 10) {
+                        resultDiv.innerHTML += `<div class="info">Showing first 10 of ${result.results.length} results</div>`;
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ Query execution failed: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        // Show database schema information
+        async function showDatabaseInfo() {
+            const resultDiv = document.getElementById('schemaInfo');
+            resultDiv.style.display = 'block';
+            
+            resultDiv.innerHTML = `
+                <h3>Sales Transactions Table Schema</h3>
+                <p>The market analysis queries the following fields:</p>
+                <table>
+                    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                    <tr><td>grantor / seller_name</td><td>text</td><td>Property seller</td></tr>
+                    <tr><td>grantee / buyer_name</td><td>text</td><td>Property buyer</td></tr>
+                    <tr><td>sale_date</td><td>date</td><td>Date of sale</td></tr>
+                    <tr><td>sale_price</td><td>numeric</td><td>Sale price in dollars</td></tr>
+                    <tr><td>street_address / property_address</td><td>text</td><td>Property location</td></tr>
+                    <tr><td>parcel_id</td><td>text</td><td>Unique property identifier</td></tr>
+                    <tr><td>terms_of_sale</td><td>text</td><td>Type of deed/sale</td></tr>
+                    <tr><td>property_class</td><td>text</td><td>Property classification</td></tr>
+                </table>
+                
+                <h3>Configuration</h3>
+                <ul>
+                    <li><strong>Database:</strong> Supabase PostgreSQL</li>
+                    <li><strong>Table:</strong> sales_transactions</li>
+                    <li><strong>Data:</strong> Detroit property sales</li>
+                    <li><strong>Access:</strong> Read-only via anon key</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>

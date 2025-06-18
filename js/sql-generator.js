@@ -99,6 +99,7 @@ class SQLGenerator {
         const year = match[3] || new Date().getFullYear();
         
         return {
+            type: 'top_buyers',
             sql: `
                 WITH buyer_stats AS (
                     SELECT 
@@ -125,7 +126,7 @@ class SQLGenerator {
                 ORDER BY properties_bought DESC
                 LIMIT $2
             `,
-            params: [year, limit],
+            params: { year, limit },
             description: `Top ${limit} property buyers in ${year}`
         };
     }
@@ -173,6 +174,7 @@ class SQLGenerator {
         const year = match[1] || new Date().getFullYear();
         
         return {
+            type: 'highest_sale',
             sql: `
                 SELECT 
                     grantor_name as seller,
@@ -192,7 +194,7 @@ class SQLGenerator {
                 ORDER BY sale_price DESC
                 LIMIT 10
             `,
-            params: [year],
+            params: { year },
             description: `Highest property sales in ${year}`
         };
     }
@@ -248,6 +250,7 @@ class SQLGenerator {
         const zipCode = match[1];
         
         return {
+            type: 'property_count',
             sql: `
                 WITH current_owners AS (
                     SELECT DISTINCT ON (parcel_id)

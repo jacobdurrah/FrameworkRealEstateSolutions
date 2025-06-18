@@ -23,11 +23,11 @@ class MarketQueryBuilder {
             if (window.salesAPIService) {
                 this.salesAPI = window.salesAPIService;
                 if (!this.salesAPI.isReady()) {
-                    // Initialize with Supabase credentials
-                    const supabaseUrl = window.APP_CONFIG?.SUPABASE?.URL || 
+                    // Initialize with Supabase credentials from app config
+                    const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL || 
                         'https://gzswtqlvffqcpifdyrnf.supabase.co';
-                    const supabaseKey = window.APP_CONFIG?.SUPABASE?.ANON_KEY || 
-                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6c3d0cWx2ZmZxY3BpZmR5cm5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjkyMTU2OTAsImV4cCI6MjA0NDc5MTY5MH0.0KMNuu0xBBq_rZzuWOQddPsQUXXNCt2USf5ixXBAAcU';
+                    const supabaseKey = window.APP_CONFIG?.SUPABASE_ANON_KEY || 
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6c3d0cWx2ZmZxY3BpZmR5cm5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MzM5ODcsImV4cCI6MjA2NTUwOTk4N30.8WTX9v2GD2MziYqfVn-ZBURcVqaCvjkdQjBUlv2-GgI';
                     
                     await this.salesAPI.init(supabaseUrl, supabaseKey);
                 }
@@ -49,8 +49,11 @@ class MarketQueryBuilder {
             throw new Error('Please enter a valid query');
         }
 
+        console.log('Processing query:', naturalLanguageInput);
+
         // Generate SQL from natural language
         const queryInfo = this.sqlGenerator.generateQuery(naturalLanguageInput);
+        console.log('Generated query info:', queryInfo);
         
         // Validate query
         this.sqlGenerator.validateQuery(queryInfo);
@@ -65,6 +68,7 @@ class MarketQueryBuilder {
         // Execute query
         try {
             const results = await this.executeQuery(queryInfo);
+            console.log('Query results:', results?.length || 0, 'rows');
             return {
                 query: queryInfo,
                 results: results,
@@ -87,15 +91,21 @@ class MarketQueryBuilder {
         }
 
         try {
-            // Use Supabase client to execute raw SQL
-            const { data, error } = await this.salesAPI.client
-                .rpc('execute_raw_sql', {
-                    query: queryInfo.sql,
-                    params: queryInfo.params
-                });
-
-            if (error) throw error;
-            return data || [];
+            // Execute query based on type using Supabase query builder
+            switch (queryInfo.type) {
+                case 'top_buyers':
+                    return await this.executeTopBuyersQuery(queryInfo);
+                case 'top_sellers':
+                    return await this.executeTopSellersQuery(queryInfo);
+                case 'highest_sale':
+                    return await this.executeHighestSaleQuery(queryInfo);
+                case 'flips':
+                    return await this.executeFlipsQuery(queryInfo);
+                case 'property_count':
+                    return await this.executePropertyCountQuery(queryInfo);
+                default:
+                    return await this.executeGeneralQuery(queryInfo);
+            }
         } catch (error) {
             console.error('Database query error:', error);
             // Fall back to mock data
@@ -409,6 +419,328 @@ class MarketQueryBuilder {
      */
     clearHistory() {
         this.queryHistory = [];
+    }
+
+    /**
+     * Execute top buyers query
+     */
+    async executeTopBuyersQuery(queryInfo) {
+        const year = queryInfo.params?.year || new Date().getFullYear();
+        const limit = queryInfo.params?.limit || 10;
+        
+        try {
+            // Get all transactions for the year
+            const { data, error } = await this.salesAPI.client
+                .from('sales_transactions')
+                .select('grantee, buyer_name, sale_price')
+                .gte('sale_date', `${year}-01-01`)
+                .lte('sale_date', `${year}-12-31`)
+                .gt('sale_price', 1000)
+                .lt('sale_price', 10000000);
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            // Aggregate by buyer
+            const buyerStats = {};
+            data.forEach(row => {
+                const buyer = row.buyer_name || row.grantee;
+                if (!buyer) return;
+                
+                const normalizedBuyer = this.normalizeBuyerName(buyer);
+                if (!buyerStats[normalizedBuyer]) {
+                    buyerStats[normalizedBuyer] = {
+                        buyer_name: normalizedBuyer,
+                        purchase_count: 0,
+                        total_spent: 0,
+                        avg_price: 0
+                    };
+                }
+                
+                buyerStats[normalizedBuyer].purchase_count++;
+                buyerStats[normalizedBuyer].total_spent += row.sale_price || 0;
+            });
+
+            // Calculate averages and sort
+            const results = Object.values(buyerStats)
+                .map(buyer => ({
+                    ...buyer,
+                    avg_price: Math.round(buyer.total_spent / buyer.purchase_count)
+                }))
+                .sort((a, b) => b.purchase_count - a.purchase_count)
+                .slice(0, limit);
+
+            return results;
+        } catch (error) {
+            console.error('Error executing top buyers query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute top sellers query
+     */
+    async executeTopSellersQuery(queryInfo) {
+        const year = queryInfo.params?.year || new Date().getFullYear();
+        const limit = queryInfo.params?.limit || 10;
+        
+        try {
+            const { data, error } = await this.salesAPI.client
+                .from('sales_transactions')
+                .select('grantor, seller_name, sale_price')
+                .gte('sale_date', `${year}-01-01`)
+                .lte('sale_date', `${year}-12-31`)
+                .gt('sale_price', 1000)
+                .lt('sale_price', 10000000);
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            // Aggregate by seller
+            const sellerStats = {};
+            data.forEach(row => {
+                const seller = row.seller_name || row.grantor;
+                if (!seller) return;
+                
+                const normalizedSeller = this.normalizeBuyerName(seller);
+                if (!sellerStats[normalizedSeller]) {
+                    sellerStats[normalizedSeller] = {
+                        seller_name: normalizedSeller,
+                        sale_count: 0,
+                        total_revenue: 0,
+                        avg_sale_price: 0
+                    };
+                }
+                
+                sellerStats[normalizedSeller].sale_count++;
+                sellerStats[normalizedSeller].total_revenue += row.sale_price || 0;
+            });
+
+            // Calculate averages and sort
+            const results = Object.values(sellerStats)
+                .map(seller => ({
+                    ...seller,
+                    avg_sale_price: Math.round(seller.total_revenue / seller.sale_count)
+                }))
+                .sort((a, b) => b.sale_count - a.sale_count)
+                .slice(0, limit);
+
+            return results;
+        } catch (error) {
+            console.error('Error executing top sellers query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute highest sale query
+     */
+    async executeHighestSaleQuery(queryInfo) {
+        const year = queryInfo.params?.year || new Date().getFullYear();
+        
+        try {
+            const { data, error } = await this.salesAPI.client
+                .from('sales_transactions')
+                .select('*')
+                .gte('sale_date', `${year}-01-01`)
+                .lte('sale_date', `${year}-12-31`)
+                .gt('sale_price', 1000)
+                .lt('sale_price', 10000000)
+                .order('sale_price', { ascending: false })
+                .limit(10);
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error executing highest sale query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute flips query
+     */
+    async executeFlipsQuery(queryInfo) {
+        const year = queryInfo.params?.year || new Date().getFullYear();
+        
+        try {
+            // Get all transactions for the year
+            const { data, error } = await this.salesAPI.client
+                .from('sales_transactions')
+                .select('*')
+                .gte('sale_date', `${year}-01-01`)
+                .lte('sale_date', `${year}-12-31`)
+                .gt('sale_price', 1000)
+                .order('sale_date', { ascending: true });
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            // Find flips (properties sold within 12 months of purchase)
+            const flips = [];
+            const propertyHistory = {};
+
+            data.forEach(transaction => {
+                const address = transaction.street_address || transaction.property_address;
+                if (!address) return;
+
+                const normalizedAddress = address.toUpperCase().trim();
+                
+                if (!propertyHistory[normalizedAddress]) {
+                    propertyHistory[normalizedAddress] = [];
+                }
+                
+                // Check if this is a sale of a property we've seen bought
+                const previousPurchases = propertyHistory[normalizedAddress];
+                for (const purchase of previousPurchases) {
+                    const monthsDiff = this.monthsDifference(
+                        new Date(purchase.sale_date), 
+                        new Date(transaction.sale_date)
+                    );
+                    
+                    if (monthsDiff > 0 && monthsDiff <= 12) {
+                        flips.push({
+                            property_address: address,
+                            buy_date: purchase.sale_date,
+                            buy_price: purchase.sale_price,
+                            buyer_name: purchase.buyer_name || purchase.grantee,
+                            sell_date: transaction.sale_date,
+                            sell_price: transaction.sale_price,
+                            seller_name: transaction.seller_name || transaction.grantor,
+                            hold_months: monthsDiff,
+                            gross_profit: (transaction.sale_price || 0) - (purchase.sale_price || 0),
+                            roi_percent: purchase.sale_price > 0 ? 
+                                Math.round(((transaction.sale_price - purchase.sale_price) / purchase.sale_price) * 100) : 0
+                        });
+                    }
+                }
+                
+                propertyHistory[normalizedAddress].push(transaction);
+            });
+
+            // Sort by profit
+            return flips.sort((a, b) => b.gross_profit - a.gross_profit);
+        } catch (error) {
+            console.error('Error executing flips query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute property count query
+     */
+    async executePropertyCountQuery(queryInfo) {
+        const zipCode = queryInfo.params?.zipCode;
+        
+        try {
+            let query = this.salesAPI.client
+                .from('sales_transactions')
+                .select('grantee, buyer_name, property_address, street_address');
+
+            // Add zip code filter if provided
+            if (zipCode) {
+                query = query.or(`property_address.ilike.%${zipCode}%,street_address.ilike.%${zipCode}%`);
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            // Count properties by owner
+            const ownerCounts = {};
+            data.forEach(row => {
+                const owner = row.buyer_name || row.grantee;
+                if (!owner) return;
+                
+                const normalizedOwner = this.normalizeBuyerName(owner);
+                const address = row.street_address || row.property_address;
+                
+                if (!ownerCounts[normalizedOwner]) {
+                    ownerCounts[normalizedOwner] = {
+                        owner_name: normalizedOwner,
+                        properties: new Set(),
+                        property_count: 0
+                    };
+                }
+                
+                if (address) {
+                    ownerCounts[normalizedOwner].properties.add(address.toUpperCase().trim());
+                }
+            });
+
+            // Convert sets to counts and sort
+            const results = Object.values(ownerCounts)
+                .map(owner => ({
+                    owner_name: owner.owner_name,
+                    property_count: owner.properties.size,
+                    sample_properties: Array.from(owner.properties).slice(0, 3).join('; ')
+                }))
+                .filter(owner => owner.property_count > 1)
+                .sort((a, b) => b.property_count - a.property_count)
+                .slice(0, 20);
+
+            return results;
+        } catch (error) {
+            console.error('Error executing property count query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute general query
+     */
+    async executeGeneralQuery(queryInfo) {
+        // For general queries, return recent transactions
+        try {
+            const { data, error } = await this.salesAPI.client
+                .from('sales_transactions')
+                .select('*')
+                .order('sale_date', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error executing general query:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Normalize buyer/seller names for grouping
+     */
+    normalizeBuyerName(name) {
+        if (!name) return 'UNKNOWN';
+        
+        // Remove extra spaces and convert to uppercase
+        let normalized = name.trim().toUpperCase();
+        
+        // Group LLC and company variations
+        if (normalized.includes('LLC') || normalized.includes('INC') || 
+            normalized.includes('CORP') || normalized.includes('TRUST')) {
+            // Keep company names as-is
+            return normalized;
+        }
+        
+        // For individual names, try to normalize variations
+        // This is a simple approach - could be enhanced
+        const parts = normalized.split(/\s+/);
+        if (parts.length >= 2) {
+            // Use first and last name only
+            return `${parts[0]} ${parts[parts.length - 1]}`;
+        }
+        
+        return normalized;
+    }
+
+    /**
+     * Calculate months difference between two dates
+     */
+    monthsDifference(date1, date2) {
+        const months = (date2.getFullYear() - date1.getFullYear()) * 12 + 
+                      (date2.getMonth() - date1.getMonth());
+        return Math.abs(months);
     }
 }
 

@@ -438,6 +438,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/app-config.js"></script>
     <script src="js/config.js"></script>
     <script src="js/sales-api.js"></script>
     <script src="js/sql-generator.js"></script>
@@ -451,6 +452,12 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize sales API service first
+            if (!window.salesAPIService) {
+                window.salesAPIService = new SalesAPIService();
+            }
+            
+            // Initialize query builder
             queryBuilder = new MarketQueryBuilder();
             await queryBuilder.init();
             
