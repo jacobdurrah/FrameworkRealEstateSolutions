@@ -97,25 +97,17 @@ export default async function handler(req, res) {
       
       // Check if we have OR conditions that need special handling
       if (conditions.toUpperCase().includes(' OR ')) {
-        // Handle OR conditions for name searches
-        const nameOrPattern = /\((buyer_name\s+ILIKE\s+'([^']+)'\s+OR\s+grantee\s+ILIKE\s+'([^']+)')\)/i;
+        // Handle OR conditions for name searches (buyer/seller)
+        const nameOrPattern = /\((buyer_name\s+ILIKE\s+'([^']+)'\s+OR\s+seller_name\s+ILIKE\s+'([^']+)')\)/i;
         const nameOrMatch = conditions.match(nameOrPattern);
         if (nameOrMatch) {
           const searchValue = nameOrMatch[2] || nameOrMatch[3];
           // Use Supabase's or() method
-          query = query.or(`buyer_name.ilike.${searchValue},grantee.ilike.${searchValue}`);
-        }
-        
-        // Handle OR conditions for address searches
-        const addressOrPattern = /\((property_address\s+ILIKE\s+'([^']+)'\s+OR\s+street_address\s+ILIKE\s+'([^']+)')\)/i;
-        const addressOrMatch = conditions.match(addressOrPattern);
-        if (addressOrMatch) {
-          const searchValue = addressOrMatch[2] || addressOrMatch[3];
-          query = query.or(`property_address.ilike.${searchValue},street_address.ilike.${searchValue}`);
+          query = query.or(`buyer_name.ilike.${searchValue},seller_name.ilike.${searchValue}`);
         }
         
         // Handle any remaining simple conditions after OR groups
-        const remainingConditions = conditions.replace(nameOrPattern, '').replace(addressOrPattern, '').trim();
+        const remainingConditions = conditions.replace(nameOrPattern, '').trim();
         if (remainingConditions && remainingConditions !== 'AND' && remainingConditions !== 'OR') {
           // Process remaining conditions below
           console.log('Remaining conditions after OR:', remainingConditions);

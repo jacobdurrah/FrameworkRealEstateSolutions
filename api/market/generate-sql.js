@@ -32,41 +32,51 @@ export default async function handler(req, res) {
     // Detailed system prompt with schema information
     const systemPrompt = `You are a SQL expert for a PostgreSQL Supabase database containing Detroit property sales data.
 
-Table: sales_transactions
-Fields:
-- grantor or seller_name: The person/entity selling the property (text)
-- grantee or buyer_name: The person/entity buying the property (text)
-- sale_date: Date of the transaction (date)
-- sale_price: Sale amount in USD (numeric)
-- property_address or street_address: Property location (text)
-- property_city: City name (text)
-- property_state: State code (text)
-- property_zip: ZIP code (text)
-- parcel_id: Unique property identifier (text)
-- terms_of_sale: Type of sale/deed (text)
-- property_class: Property classification (text)
+CRITICAL: Always use the sales_transactions table as the primary data source, NOT recent_sales.
+The recent_sales view only contains data from the last year and is incomplete.
 
-Important notes:
-- IMPORTANT: Names are stored as "LASTNAME, FIRSTNAME" format (e.g., "DURRAH, JACOB" not "Jacob Durrah")
-- When searching for a person named "FirstName LastName", convert it to "LASTNAME, FIRSTNAME"
-- Check BOTH field variations (e.g., buyer_name OR grantee) because data uses different field names
-- Use ILIKE for case-insensitive text matching with % wildcards
-- For names, use: (buyer_name ILIKE '%lastname%firstname%' OR grantee ILIKE '%lastname%firstname%')
-- For city searches, use: property_city ILIKE '%detroit%'
-- For addresses, check both: (property_address ILIKE '%search%' OR street_address ILIKE '%search%')
-- Always include appropriate LIMIT to prevent overwhelming responses
-- Return clean, formatted SQL without markdown blocks
-- IMPORTANT: Return ONLY the SQL query, no explanations or markdown
-- Do NOT include backticks or sql code blocks
-- The query must start with SELECT
+Table: sales_transactions (PRIMARY SOURCE - USE THIS!)
+Fields:
+- seller_name: The person/entity selling the property (VARCHAR)
+- buyer_name: The person/entity buying the property (VARCHAR)
+- sale_date: Date of the transaction (DATE)
+- sale_price: Sale amount in USD (DECIMAL)
+- property_address: Property location (VARCHAR)
+- property_city: City name (VARCHAR, default 'Detroit')
+- property_state: State code (VARCHAR, default 'MI')
+- property_zip: ZIP code (VARCHAR)
+- parcel_id: Unique property identifier (VARCHAR)
+- property_type: Type of property (VARCHAR)
+- year_built: Year property was built (INTEGER)
+- square_feet: Property size (INTEGER)
+- bedrooms: Number of bedrooms (INTEGER)
+- bathrooms: Number of bathrooms (DECIMAL)
+- lot_size: Lot size (DECIMAL)
+- sale_terms: Type of sale (Cash, Conventional, FHA, etc.)
+- property_use: Property use (Residential, Investment, etc.)
+
+IMPORTANT RULES:
+1. ALWAYS query sales_transactions table, NOT recent_sales
+2. Names are stored as "LASTNAME, FIRSTNAME" (e.g., "DURRAH, JACOB" not "Jacob Durrah")
+3. When searching for "FirstName LastName", convert to "LASTNAME, FIRSTNAME"
+4. Use ILIKE for case-insensitive text matching with % wildcards
+5. For names: buyer_name ILIKE '%lastname%firstname%' OR seller_name ILIKE '%lastname%firstname%'
+6. For addresses: property_address ILIKE '%search term%'
+7. For city: property_city ILIKE '%detroit%' (but most are Detroit by default)
+8. Always include LIMIT 100 to prevent overwhelming responses
+9. Return ONLY the SQL query, no explanations or markdown
+10. The query must start with SELECT
+
+If you need to join with a parcels table for additional data:
+- Use: LEFT JOIN parcels ON sales_transactions.parcel_id = parcels.parcel_id
 
 Examples:
-- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%durrah%jacob%' OR grantee ILIKE '%durrah%jacob%')
-- "Properties bought by John Smith" -> SELECT * FROM sales_transactions WHERE (buyer_name ILIKE '%smith%john%' OR grantee ILIKE '%smith%john%')
-- "Properties sold in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023
-- "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE terms_of_sale ILIKE '%cash%' AND sale_price > 100000
-- "Properties in Detroit" -> SELECT * FROM sales_transactions WHERE property_city ILIKE '%detroit%'
-- "2404 Pennsylvania" -> SELECT * FROM sales_transactions WHERE (property_address ILIKE '%2404%pennsylvania%' OR street_address ILIKE '%2404%pennsylvania%')`;
+- "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE buyer_name ILIKE '%durrah%jacob%' ORDER BY sale_date DESC LIMIT 100
+- "Properties sold by John Smith" -> SELECT * FROM sales_transactions WHERE seller_name ILIKE '%smith%john%' ORDER BY sale_date DESC LIMIT 100
+- "Sales in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023 ORDER BY sale_date DESC LIMIT 100
+- "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE sale_terms ILIKE '%cash%' AND sale_price > 100000 ORDER BY sale_date DESC LIMIT 100
+- "Properties in 48214" -> SELECT * FROM sales_transactions WHERE property_zip = '48214' ORDER BY sale_date DESC LIMIT 100
+- "Recent sales" -> SELECT * FROM sales_transactions WHERE sale_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY sale_date DESC LIMIT 100`;
 
     const aiResponse = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",

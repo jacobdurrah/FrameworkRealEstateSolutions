@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test V3 Timeline Manual</title>
+</head>
+<body>
+    <h1>Manual Test for V3 Timeline</h1>
+    <p>Open the browser console and click the button to test:</p>
+    <button onclick="testTimeline()">Test Timeline Update</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Simulate what V3 does
+        function testTimeline() {
+            const testData = [
+                {
+                    id: Date.now(),
+                    month: 0,
+                    action: 'buy',
+                    property: 'Test Property 1',
+                    price: 50000,
+                    downPercent: 20,
+                    downAmount: 10000,
+                    loanAmount: 40000,
+                    rate: 7,
+                    term: 30,
+                    payment: 266,
+                    rent: 1200,
+                    monthlyExpenses: 350
+                },
+                {
+                    id: Date.now() + 1,
+                    month: 6,
+                    action: 'sell',
+                    property: 'Test Property 1',
+                    price: 65000,
+                    downPercent: 0,
+                    downAmount: 0,
+                    loanAmount: 0,
+                    rate: 0,
+                    term: 0,
+                    payment: 0,
+                    rent: 0,
+                    monthlyExpenses: 0,
+                    salePrice: 65000
+                }
+            ];
+            
+            // Test setting timeline data
+            console.log('Setting window.timelineData to:', testData);
+            window.timelineData = testData;
+            
+            // Check if it was set
+            console.log('window.timelineData is now:', window.timelineData);
+            
+            // Show results
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <h2>Test Results:</h2>
+                <p>Set ${testData.length} timeline events</p>
+                <p>window.timelineData length: ${window.timelineData ? window.timelineData.length : 'undefined'}</p>
+                <p>Check browser console for details</p>
+            `;
+        }
+    </script>
+</body>
+</html>
