@@ -66,6 +66,8 @@ IMPORTANT RULES:
 8. Always include LIMIT 100 to prevent overwhelming responses
 9. Return ONLY the SQL query, no explanations or markdown
 10. The query must start with SELECT
+11. NEVER use CASE statements in GROUP BY clauses - they cause PostgreSQL errors
+12. For "most active participants" queries, create separate queries for buyers and sellers
 
 If you need to join with a parcels table for additional data:
 - Use: LEFT JOIN parcels ON sales_transactions.parcel_id = parcels.parcel_id
@@ -76,7 +78,10 @@ Examples:
 - "Sales in 2023" -> SELECT * FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2023 ORDER BY sale_date DESC LIMIT 100
 - "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE sale_terms ILIKE '%cash%' AND sale_price > 100000 ORDER BY sale_date DESC LIMIT 100
 - "Properties in 48214" -> SELECT * FROM sales_transactions WHERE property_zip = '48214' ORDER BY sale_date DESC LIMIT 100
-- "Recent sales" -> SELECT * FROM sales_transactions WHERE sale_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY sale_date DESC LIMIT 100`;
+- "Recent sales" -> SELECT * FROM sales_transactions WHERE sale_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY sale_date DESC LIMIT 100
+- "Most active buyers in 2024" -> SELECT buyer_name, COUNT(*) as purchase_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY purchase_count DESC LIMIT 100
+- "Most active sellers in 2024" -> SELECT seller_name, COUNT(*) as sale_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND seller_name IS NOT NULL GROUP BY seller_name ORDER BY sale_count DESC LIMIT 100
+- "Top buyers by total spent" -> SELECT buyer_name, SUM(sale_price) as total_spent, COUNT(*) as property_count FROM sales_transactions WHERE buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY total_spent DESC LIMIT 100`;
 
     const aiResponse = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",

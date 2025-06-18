@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Market Analysis</title>
+</head>
+<body>
+    <h1>Market Analysis Verification</h1>
+    <p>This page verifies that the Market Analysis tool is using the correct table.</p>
+    
+    <h2>Test Results:</h2>
+    <div id="results"></div>
+    
+    <script>
+        // Test the API directly
+        async function testAPI() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test SQL generation
+                const genResponse = await fetch('https://framework-as6vqlxv3-jacob-durrahs-projects.vercel.app/api/market/generate-sql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: 'What properties did Jacob Durrah buy in Detroit?' })
+                });
+                
+                const genData = await genResponse.json();
+                results.innerHTML += `
+                    <h3>SQL Generation Test:</h3>
+                    <pre>${JSON.stringify(genData, null, 2)}</pre>
+                    <p>✅ Uses sales_transactions: ${genData.sql && genData.sql.includes('sales_transactions') ? 'YES' : 'NO'}</p>
+                    <p>✅ Uses correct name format: ${genData.sql && genData.sql.includes('DURRAH%JACOB') ? 'YES' : 'NO'}</p>
+                `;
+                
+                // Test SQL execution
+                if (genData.sql) {
+                    const execResponse = await fetch('https://framework-as6vqlxv3-jacob-durrahs-projects.vercel.app/api/market/execute-sql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sql: genData.sql })
+                    });
+                    
+                    const execData = await execResponse.json();
+                    results.innerHTML += `
+                        <h3>SQL Execution Test:</h3>
+                        <p>Status: ${execResponse.ok ? 'SUCCESS' : 'FAILED'}</p>
+                        <p>Row Count: ${execData.rowCount || 0}</p>
+                        ${execData.data && execData.data[0] ? `
+                            <p>Found property: ${execData.data[0].property_address} for $${execData.data[0].sale_price}</p>
+                        ` : ''}
+                        ${execData.error ? `<p>Error: ${execData.error}</p>` : ''}
+                    `;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test on load
+        testAPI();
+    </script>
+</body>
+</html>

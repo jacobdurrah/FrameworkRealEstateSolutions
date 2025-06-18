@@ -201,6 +201,17 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Supabase query error:', error);
+      
+      // Check for specific PostgreSQL errors
+      if (error.message && error.message.includes('CASE')) {
+        return res.status(400).json({ 
+          error: 'Query contains unsupported CASE statement in GROUP BY',
+          details: 'PostgreSQL does not support CASE expressions in GROUP BY clauses. Please rephrase your query.',
+          sql: sql,
+          suggestion: 'Try asking for "most active buyers" or "most active sellers" separately instead of "most active participants"'
+        });
+      }
+      
       return res.status(500).json({ 
         error: 'Database query failed',
         details: error.message,
