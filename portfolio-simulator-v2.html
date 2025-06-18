@@ -454,6 +454,25 @@
             font-size: 0.9rem;
         }
 
+        /* Timeline Status Indicators */
+        .timeline-status {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: auto;
+        }
+
+        .timeline-status.active {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .timeline-status.inactive {
+            background: #ffebee;
+            color: #c62828;
+        }
+
         /* Loading and Status */
         .loading {
             display: flex;
@@ -836,7 +855,7 @@
                         <ol>
                             <li><strong>Add Event:</strong> Click "Add Event" to create a new timeline entry</li>
                             <li><strong>Set Month:</strong> Enter the month number (0 = today, 12 = 1 year)</li>
-                            <li><strong>Choose Action:</strong> Select Buy, Sell, Refinance, or Wait</li>
+                            <li><strong>Choose Action:</strong> Select Buy or Sell</li>
                             <li><strong>Enter Details:</strong> Fill in property address, price, and financial details</li>
                             <li><strong>View Summary:</strong> Check the Portfolio Summary for real-time calculations</li>
                         </ol>
@@ -857,8 +876,8 @@
                             </li>
                             <li><strong>Hold Period:</strong>
                                 <ul>
-                                    <li>Add "Wait" events for months 1-5 (typical rehab time)</li>
-                                    <li>Keep expenses active during this period</li>
+                                    <li>Property will incur expenses during months 1-5 (typical rehab time)</li>
+                                    <li>No additional events needed during hold period</li>
                                 </ul>
                             </li>
                             <li><strong>Sale:</strong>
@@ -980,13 +999,24 @@
                             <li>Set expenses = your portion after tenant contributions</li>
                         </ol>
 
-                        <h5>Refinance Existing Property</h5>
-                        <ol>
-                            <li>Add "Refinance" event at current month</li>
-                            <li>Select the property to refinance</li>
-                            <li>Update rate and term to new loan terms</li>
-                            <li>System maintains property and updates payment</li>
-                        </ol>
+                        <h5>💡 How to Simulate a Refinance</h5>
+                        <div class="tip">
+                            <strong>Cash-Out Refinance Workflow:</strong>
+                            <ol style="margin-top: 0.5rem;">
+                                <li><strong>Add a Buy event</strong> at the Total Project Cost (initial purchase)</li>
+                                <li><strong>Add a Sell event</strong> at the new ARV (represents the post-rehab appraisal)</li>
+                                <li><strong>Add a Buy event</strong> at ARV × (1 - cash-out percentage)
+                                    <ul>
+                                        <li>Example: For 70% cash-out refi, use ARV × 0.30 as the new buy amount</li>
+                                        <li>This simulates keeping 30% equity and pulling out 70% cash</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <p style="margin-top: 0.5rem; margin-bottom: 0;">
+                                <strong>Why this works:</strong> The sell/rebuy sequence mimics pulling cash out while maintaining ownership. 
+                                Your "Cash from Sales" will show the refinance proceeds.
+                            </p>
+                        </div>
 
                         <h5>Partnership Deals</h5>
                         <ol>

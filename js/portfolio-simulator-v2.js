@@ -75,9 +75,14 @@ function initializeSimulator() {
  * Add a new timeline row
  */
 function addTimelineRow() {
+    // Find the highest month value to suggest next month
+    const maxMonth = timelineData.length > 0 
+        ? Math.max(...timelineData.map(row => row.month)) 
+        : -1;
+    
     const newRow = {
         id: Date.now(),
-        month: timelineData.length,
+        month: maxMonth + 1,  // Suggest next month, but user can change it
         action: 'buy',
         property: '',
         price: 0,
@@ -107,10 +112,7 @@ function deleteTimelineRow(id) {
     
     timelineData = timelineData.filter(row => row.id !== id);
     
-    // Renumber months
-    timelineData.forEach((row, index) => {
-        row.month = index;
-    });
+    // Do NOT renumber months - keep user-entered values
     
     renderTimelineTable();
     recalculateAll();
@@ -134,8 +136,6 @@ function renderTimelineTable() {
                 <select class="table-select" onchange="updateTimeline(${row.id}, 'action', this.value)">
                     <option value="buy" ${row.action === 'buy' ? 'selected' : ''}>Buy</option>
                     <option value="sell" ${row.action === 'sell' ? 'selected' : ''}>Sell</option>
-                    <option value="refinance" ${row.action === 'refinance' ? 'selected' : ''}>Refinance</option>
-                    <option value="wait" ${row.action === 'wait' ? 'selected' : ''}>Wait</option>
                 </select>
             </td>
             <td>
@@ -291,12 +291,7 @@ function processTimelineEvent(event) {
         case 'sell':
             processSellEvent(event);
             break;
-        case 'refinance':
-            processRefinanceEvent(event);
-            break;
-        case 'wait':
-            // Wait events don't affect portfolio state directly
-            break;
+        // Refinance and wait removed - use buy/sell sequence for refinancing
     }
 }
 
@@ -381,41 +376,8 @@ function processSellEvent(event) {
     }
 }
 
-/**
- * Process a refinance event
- */
-function processRefinanceEvent(event) {
-    // Simplified refinance - would need more complex logic in production
-    if (!event.property) return;
-    
-    const property = Object.values(portfolioState.properties).find(
-        p => p.address === event.property
-    );
-    
-    if (!property) return;
-    
-    const loan = Object.values(portfolioState.loans).find(
-        l => l.propertyId === property.id
-    );
-    
-    if (loan && event.rate && event.term) {
-        // Update loan terms
-        loan.rate = event.rate;
-        loan.term = event.term;
-        
-        // Recalculate payment
-        try {
-            const loanResult = loanCalc.calculate({
-                principal: loan.currentBalance,
-                interestRate: event.rate,
-                termYears: event.term
-            });
-            loan.monthlyPayment = loanResult.monthlyPayment;
-        } catch (error) {
-            console.error('Refinance calculation error:', error);
-        }
-    }
-}
+// Refinance functionality removed - use sell/buy sequence instead
+// See help instructions for how to simulate a cash-out refinance
 
 /**
  * Calculate portfolio-wide metrics
@@ -554,6 +516,39 @@ function updateSummaryDisplay() {
 }
 
 /**
+ * Get property timeline status at a specific month
+ */
+function getPropertyTimelineStatus(propertyAddress, viewMonth) {
+    // Find all events for this property
+    const propertyEvents = timelineData
+        .filter(event => event.property === propertyAddress)
+        .sort((a, b) => a.month - b.month);
+    
+    if (propertyEvents.length === 0) {
+        return { active: false, message: 'Property not found' };
+    }
+    
+    // Find first buy and last sell
+    const firstBuy = propertyEvents.find(e => e.action === 'buy');
+    const lastSell = propertyEvents.filter(e => e.action === 'sell').pop();
+    
+    if (!firstBuy) {
+        return { active: false, message: 'No buy event found' };
+    }
+    
+    // Check timeline status
+    if (viewMonth < firstBuy.month) {
+        return { active: false, message: `Not yet purchased (buys at month ${firstBuy.month})` };
+    }
+    
+    if (lastSell && viewMonth >= lastSell.month) {
+        return { active: false, message: `No longer on timeline as of Month ${viewMonth}` };
+    }
+    
+    return { active: true, message: `On timeline as of Month ${viewMonth}` };
+}
+
+/**
  * Update property list display
  */
 function updatePropertyList() {
@@ -573,6 +568,9 @@ function updatePropertyList() {
         const equity = property.currentValue - (loan ? loan.currentBalance : 0);
         const equityPercent = (equity / property.currentValue) * 100;
         
+        // Check if property is active at current view month
+        const timelineStatus = getPropertyTimelineStatus(property.address, currentViewMonth);
+        
         li.innerHTML = `
             <div>
                 <div class="property-address">${property.address}</div>
@@ -583,6 +581,9 @@ function updatePropertyList() {
             </div>
             <div class="property-metrics">
                 <span>Equity: ${formatCurrency(equity)} (${equityPercent.toFixed(1)}%)</span>
+                <span class="timeline-status ${timelineStatus.active ? 'active' : 'inactive'}">
+                    ${timelineStatus.active ? '✅' : '❌'} ${timelineStatus.message}
+                </span>
             </div>
         `;
         

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timeline Status Test</title>
+</head>
+<body>
+    <h1>Portfolio Simulator V2 - Manual Timeline Status Test</h1>
+    
+    <h2>Test Steps:</h2>
+    <ol>
+        <li>Open <a href="portfolio-simulator-v2.html" target="_blank">Portfolio Simulator V2</a></li>
+        <li>Add a Buy event:
+            <ul>
+                <li>Property: "123 Main St"</li>
+                <li>Price: $200,000</li>
+                <li>Rent: $2,000</li>
+                <li>Month: 0</li>
+            </ul>
+        </li>
+        <li>Click outside the fields to trigger updates</li>
+        <li>Check the Property Breakdown section - should show the property with timeline status</li>
+        <li>Add a Sell event:
+            <ul>
+                <li>Month: 12</li>
+                <li>Property: "123 Main St"</li>
+                <li>Price: $220,000</li>
+            </ul>
+        </li>
+        <li>Set "View at month" to different values:
+            <ul>
+                <li>Month 0: Property should show "✅ On timeline as of Month 0"</li>
+                <li>Month 6: Property should show "✅ On timeline as of Month 6"</li>
+                <li>Month 12: Property should show "❌ No longer on timeline as of Month 12"</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>Expected Results:</h2>
+    <ul>
+        <li>Timeline status indicator appears next to each property in the Property Breakdown</li>
+        <li>Status shows ✅ when property is active at the viewing month</li>
+        <li>Status shows ❌ when property is sold or not yet purchased at the viewing month</li>
+        <li>Status message explains why property is active/inactive</li>
+    </ul>
+</body>
+</html>
