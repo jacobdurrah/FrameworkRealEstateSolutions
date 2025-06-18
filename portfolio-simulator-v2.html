@@ -612,7 +612,7 @@
                         <label style="font-size: 0.9rem;">View at month:</label>
                         <input type="number" id="summaryMonth" value="0" min="0" max="360" 
                                style="width: 80px; padding: 0.25rem;" 
-                               onchange="updateSummaryMonth()" oninput="updateSummaryMonth()">
+                               onchange="updateSummaryMonth()">
                         <span id="summaryYears" style="font-size: 0.85rem; color: var(--text-secondary);">(Today)</span>
                         <button class="btn btn-sm btn-secondary" onclick="refreshSummary()">
                             <i class="fas fa-sync"></i> Refresh
@@ -662,8 +662,16 @@
                         <div class="summary-value negative" id="totalInterestPaid">$0</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Cash on Hand</div>
-                        <div class="summary-value positive" id="cashOnHand">$0</div>
+                        <div class="summary-label">Rental Income</div>
+                        <div class="summary-value positive" id="rentalIncome">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Cash from Sales</div>
+                        <div class="summary-value positive" id="cashFromSales">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total Cash on Hand</div>
+                        <div class="summary-value positive" id="totalCashOnHand">$0</div>
                     </div>
                 </div>
 
