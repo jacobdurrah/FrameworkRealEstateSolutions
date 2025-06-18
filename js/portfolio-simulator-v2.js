@@ -274,7 +274,10 @@ function recalculateAll() {
     // Process timeline events in chronological order
     const sortedEvents = [...timelineData].sort((a, b) => a.month - b.month);
     
-    sortedEvents.forEach(event => {
+    // Filter events to only include those that have occurred by currentViewMonth
+    const activeEvents = sortedEvents.filter(event => event.month <= currentViewMonth);
+    
+    activeEvents.forEach(event => {
         processTimelineEvent(event);
     });
     
@@ -441,7 +444,8 @@ function applyTimeProjections(monthsInFuture) {
     
     // Calculate for each property
     Object.values(portfolioState.properties).forEach(property => {
-        const monthsOwned = Math.min(monthsInFuture - property.purchaseMonth, monthsInFuture);
+        // Only count months after purchase and up to current view month
+        const monthsOwned = monthsInFuture - property.purchaseMonth;
         if (monthsOwned > 0) {
             // Apply appreciation
             const appreciationFactor = Math.pow(1 + monthlyAppreciationRate, monthsOwned);
@@ -456,7 +460,8 @@ function applyTimeProjections(monthsInFuture) {
     
     // Calculate loan balances and interest paid
     Object.values(portfolioState.loans).forEach(loan => {
-        const monthsPaid = Math.min(monthsInFuture - loan.startMonth, monthsInFuture);
+        // Only count months after loan start and up to current view month
+        const monthsPaid = monthsInFuture - loan.startMonth;
         if (monthsPaid > 0 && loan.originalAmount > 0) {
             // Calculate remaining balance using amortization formula
             const r = loan.rate / 100 / 12; // Monthly rate
