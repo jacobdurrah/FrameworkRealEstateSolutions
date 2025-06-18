@@ -10,30 +10,34 @@ class GoalParser {
             // Monthly income patterns
             monthlyIncome: [
                 /\$?([\d,]+)\s*(?:k|K)?\s*(?:\/month|\/mo|monthly|per month|a month)/i,
-                /(?:generate|earn|make|produce|need|want)\s+\$?([\d,]+)\s*(?:k|K)?\s*(?:monthly|per month|\/mo|a month)?/i,
-                /(?:monthly|passive)\s+income\s+(?:of\s+)?\$?([\d,]+)\s*(?:k|K)?/i
+                /(?:generate|earn|make|produce|need|want|target|is)\s+\$?([\d,]+)\s*(?:k|K)?\s*(?:monthly|per month|\/mo|\/month|a month)?/i,
+                /(?:monthly|passive)\s+income\s+(?:of\s+|is\s+)?\$?([\d,]+)\s*(?:k|K)?/i,
+                /(?:target\s+income|income\s+target)\s*(?:is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?\s*(?:\/month|\/mo)?/i
             ],
             
             // Time horizon patterns
             timeHorizon: [
-                /(?:within|in)\s+(\d+)\s+(?:months?)/i,
-                /(?:within|in)\s+(\d+)\s+(?:years?)/i,
+                /(?:within|in|over)\s+(\d+)\s+(?:months?)/i,
+                /(?:within|in|over)\s+(\d+)\s+(?:years?)/i,
                 /(\d+)\s+(?:months?|years?)\s+(?:timeline|timeframe|horizon)/i,
-                /(?:by|before)\s+(\d+)\s+(?:months?|years?)/i
+                /(?:by|before)\s+(\d+)\s+(?:months?|years?)/i,
+                /(?:timeline|timeframe)\s*(?:is\s+|:\s*)?(\d+)\s+(?:months?)/i
             ],
             
             // Starting capital patterns
             startingCapital: [
                 /(?:have|start with|starting with|begin with)\s+\$?([\d,]+)\s*(?:k|K)?/i,
-                /\$?([\d,]+)\s*(?:k|K)?\s+(?:to start|starting capital|initial capital|cash|capital)/i,
-                /(?:initial|starting)\s+(?:capital|cash|funds?)\s+(?:of\s+)?\$?([\d,]+)\s*(?:k|K)?/i
+                /\$?([\d,]+)\s*(?:k|K)?\s+(?:to start|starting capital|initial capital|cash|capital|in cash)/i,
+                /(?:initial|starting)\s+(?:capital|cash|funds?)\s+(?:of\s+|is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?/i,
+                /(?:starting\s+capital|capital)\s*(?:is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?/i
             ],
             
             // Monthly contribution patterns
             monthlyContribution: [
                 /(?:save|add|contribute|invest)\s+\$?([\d,]+)\s*(?:k|K)?\s*(?:\/month|\/mo|monthly|per month|a month)/i,
-                /(?:monthly|additional)\s+(?:savings?|contributions?|investments?)\s+(?:of\s+)?\$?([\d,]+)\s*(?:k|K)?/i,
-                /can\s+(?:save|add|contribute)\s+\$?([\d,]+)\s*(?:k|K)?\s*(?:monthly|\/mo|per month)?/i
+                /(?:monthly|additional)\s+(?:savings?|contributions?|investments?)\s+(?:of\s+|is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?/i,
+                /can\s+(?:save|add|contribute)\s+\$?([\d,]+)\s*(?:k|K)?\s*(?:monthly|\/mo|\/month|per month|a month)?/i,
+                /(?:monthly\s+savings|savings)\s*(?:is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?\s*(?:\/month|\/mo)?/i
             ],
             
             // Strategy preference patterns
@@ -86,10 +90,11 @@ class GoalParser {
             const match = input.match(pattern);
             if (match) {
                 let amount = this.parseAmount(match[1]);
-                // Check if 'k' or 'K' is mentioned
-                if (match[0].toLowerCase().includes('k')) {
+                // Check if 'k' or 'K' is mentioned after the number
+                if (match[0].toLowerCase().includes('k') && amount < 1000) {
                     amount *= 1000;
                 }
+                console.log('Extracted monthly income:', amount, 'from match:', match[0]);
                 return amount;
             }
         }
@@ -108,6 +113,7 @@ class GoalParser {
                 if (match[0].toLowerCase().includes('year')) {
                     months *= 12;
                 }
+                console.log('Extracted time horizon:', months, 'months from match:', match[0]);
                 return months;
             }
         }
@@ -122,10 +128,11 @@ class GoalParser {
             const match = input.match(pattern);
             if (match) {
                 let amount = this.parseAmount(match[1]);
-                // Check if 'k' or 'K' is mentioned
-                if (match[0].toLowerCase().includes('k')) {
+                // Check if 'k' or 'K' is mentioned after the number
+                if (match[0].toLowerCase().includes('k') && amount < 1000) {
                     amount *= 1000;
                 }
+                console.log('Extracted starting capital:', amount, 'from match:', match[0]);
                 return amount;
             }
         }
@@ -140,10 +147,11 @@ class GoalParser {
             const match = input.match(pattern);
             if (match) {
                 let amount = this.parseAmount(match[1]);
-                // Check if 'k' or 'K' is mentioned
-                if (match[0].toLowerCase().includes('k')) {
+                // Check if 'k' or 'K' is mentioned after the number
+                if (match[0].toLowerCase().includes('k') && amount < 1000) {
                     amount *= 1000;
                 }
+                console.log('Extracted monthly contribution:', amount, 'from match:', match[0]);
                 return amount;
             }
         }

@@ -104,13 +104,55 @@ function useExample(example) {
 }
 
 /**
+ * Toggle between natural language and structured input
+ */
+function toggleInputMode() {
+    const toggle = document.getElementById('inputModeToggle');
+    const naturalInput = document.getElementById('naturalLanguageInput');
+    const structuredInput = document.getElementById('structuredInput');
+    
+    if (toggle.checked) {
+        naturalInput.style.display = 'none';
+        structuredInput.style.display = 'block';
+    } else {
+        naturalInput.style.display = 'block';
+        structuredInput.style.display = 'none';
+    }
+}
+
+/**
  * Generate strategy from goal input
  */
 async function generateStrategy() {
-    const goalText = document.getElementById('goalInput').value.trim();
-    if (!goalText) {
-        showV3Error('Please describe your investment goal');
-        return;
+    let goalText;
+    const isStructured = document.getElementById('inputModeToggle').checked;
+    
+    if (isStructured) {
+        // Build goal text from structured inputs
+        const targetIncome = document.getElementById('targetIncome').value;
+        const timeline = document.getElementById('timeline').value;
+        const startingCapital = document.getElementById('startingCapital').value;
+        const monthlySavings = document.getElementById('monthlySavings').value;
+        const strategy = document.getElementById('strategyPreference').value;
+        const minRent = document.getElementById('minRent').value;
+        const maxRent = document.getElementById('maxRent').value;
+        
+        goalText = `Target income: $${targetIncome}/month. Timeline: ${timeline} months. Starting capital: $${startingCapital}. Monthly savings: $${monthlySavings}/month. `;
+        goalText += `Prefer ${strategy} strategy. Target rent range: $${minRent}-$${maxRent}/month.`;
+        
+        // Add advanced options
+        if (!document.getElementById('allowBRRR').checked) goalText += ' No BRRR.';
+        if (!document.getElementById('allowFlips').checked) goalText += ' No flips.';
+        if (document.getElementById('conservativeLeverage').checked) goalText += ' Conservative leverage (25% down).';
+        
+        // Update the natural language input for reference
+        document.getElementById('goalInput').value = goalText;
+    } else {
+        goalText = document.getElementById('goalInput').value.trim();
+        if (!goalText) {
+            showV3Error('Please describe your investment goal');
+            return;
+        }
     }
 
     // Show loading state
@@ -123,6 +165,14 @@ async function generateStrategy() {
         const parser = new GoalParser();
         v3State.parsedGoal = parser.parse(goalText);
         console.log('Parsed goal:', v3State.parsedGoal);
+        
+        // Log individual parsed values for debugging
+        console.log('Parsed values:', {
+            targetMonthlyIncome: v3State.parsedGoal.targetMonthlyIncome,
+            timeHorizon: v3State.parsedGoal.timeHorizon,
+            startingCapital: v3State.parsedGoal.startingCapital,
+            monthlyContributions: v3State.parsedGoal.monthlyContributions
+        });
         
         // Display parsed goal
         displayParsedGoal(v3State.parsedGoal);
@@ -440,18 +490,46 @@ function renderTimelineTableFallback() {
  * Apply real listings to timeline
  */
 async function applyRealListings() {
-    if (!v3State.selectedStrategy || !v3State.useRealListings) return;
+    // Update checkbox state
+    const checkbox = document.getElementById('useRealListings');
+    v3State.useRealListings = checkbox ? checkbox.checked : true;
     
-    showV3Loading(true, 'Matching real properties...');
+    if (!v3State.selectedStrategy) {
+        showV3Error('Please generate a strategy first before finding listings');
+        return;
+    }
+    
+    if (!window.timelineData || window.timelineData.length === 0) {
+        showV3Error('No timeline events to match with listings');
+        return;
+    }
+    
+    showV3Loading(true, 'Searching for real Detroit properties...');
     
     try {
-        // Match timeline to real listings
+        // Check if property API is available
+        if (typeof searchPropertiesZillow !== 'function') {
+            throw new Error('Property search API not loaded. Please refresh the page.');
+        }
+        
+        // Get rent preferences from structured input if available
+        let minRent = 1000;
+        let maxRent = 1500;
+        
+        if (document.getElementById('inputModeToggle').checked) {
+            minRent = parseInt(document.getElementById('minRent').value) || 1000;
+            maxRent = parseInt(document.getElementById('maxRent').value) || 1500;
+        }
+        
+        // Match timeline to real listings with user preferences
         const matchedTimeline = await v3State.listingsMatcher.matchTimelineToListings(
             window.timelineData,
             {
-                minRent: 1200,
-                maxRent: 1600,
-                targetPrice: 65000
+                minRent: minRent,
+                maxRent: maxRent,
+                targetPrice: 65000,
+                minPrice: 40000,
+                maxPrice: 90000
             }
         );
         
@@ -459,16 +537,30 @@ async function applyRealListings() {
         window.timelineData = matchedTimeline;
         
         // Refresh display
-        renderTimelineTable();
-        recalculateAll();
+        if (typeof renderTimelineTable === 'function') {
+            renderTimelineTable();
+        } else {
+            renderTimelineTableFallback();
+        }
+        
+        if (typeof recalculateAll === 'function') {
+            recalculateAll();
+        }
         
         // Show matching summary
         const summary = v3State.listingsMatcher.getMatchingSummary(matchedTimeline);
         showListingsSummary(summary);
         
+        // Show success message if matches found
+        if (summary.matched > 0) {
+            showV3Success(`Found ${summary.matched} real listings matching your criteria!`);
+        } else {
+            showV3Warning('No real listings found matching your criteria. Try adjusting your strategy or criteria.');
+        }
+        
     } catch (error) {
         console.error('Listings matching error:', error);
-        showV3Error('Failed to match real listings: ' + error.message);
+        showV3Error('Failed to find real listings: ' + error.message);
     } finally {
         showV3Loading(false);
     }
@@ -600,8 +692,29 @@ function showV3Warning(message) {
     }
 }
 
+/**
+ * Show success message
+ */
+function showV3Success(message) {
+    const errorEl = document.getElementById('v3ErrorMessage');
+    if (errorEl) {
+        errorEl.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        errorEl.style.display = 'block';
+        errorEl.style.background = '#d4edda';
+        errorEl.style.color = '#155724';
+        errorEl.style.border = '1px solid #c3e6cb';
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (errorEl.innerHTML.includes(message)) {
+                errorEl.style.display = 'none';
+            }
+        }, 5000);
+    }
+}
+
 // Make V3 functions available globally
 window.generateStrategy = generateStrategy;
 window.useExample = useExample;
 window.selectStrategy = selectStrategy;
 window.applyRealListings = applyRealListings;
+window.toggleInputMode = toggleInputMode;
