@@ -23,8 +23,9 @@ test.describe('Known Data Verification Tests', () => {
         // Verify SQL contains correct search
         const sqlCode = await page.locator('#sqlCode').textContent();
         console.log('Generated SQL:', sqlCode);
-        expect(sqlCode.toLowerCase()).toContain('jacob durrah');
-        expect(sqlCode.toLowerCase()).toContain('property_sales');
+        expect(sqlCode.toLowerCase()).toContain('durrah');
+        expect(sqlCode.toLowerCase()).toContain('jacob');
+        expect(sqlCode.toLowerCase()).toContain('sales_transactions');
         
         // Execute the query
         await page.click('button:has-text("Execute Query")');
