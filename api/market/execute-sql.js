@@ -2,6 +2,9 @@ import { configureCORS } from '../cors.js';
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
+  // Always set CORS headers first
+  res.setHeader('Content-Type', 'application/json');
+  
   // Handle CORS
   if (configureCORS(req, res)) return;
 

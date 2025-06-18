@@ -4,12 +4,16 @@ export function configureCORS(req, res) {
   const origin = req.headers.origin;
   const allowedOrigins = [
     'https://frameworkrealestatesolutions.com',
+    'https://www.frameworkrealestatesolutions.com',
     'http://localhost:8080',
     'http://localhost:3000',
     'http://127.0.0.1:8080'
   ];
   
   if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (origin && origin.includes('vercel.app')) {
+    // Allow all Vercel preview deployments
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
     // Default to production domain
