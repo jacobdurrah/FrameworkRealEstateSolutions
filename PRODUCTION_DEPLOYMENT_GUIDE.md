@@ -6,7 +6,7 @@
 Upload these files to maintain the same directory structure:
 
 - `js/ai-query-processor.js` - **NEW FILE** (handles AI queries)
-  - Current API URL: `https://framework-20wbysc7e-jacob-durrahs-projects.vercel.app/api`
+  - Current API URL: `https://framework-real-estate-solutions.vercel.app/api`
   
 - `js/market-query-builder.js` - **UPDATED** (enhanced patterns)
 
@@ -48,7 +48,7 @@ After uploading the files:
 
 ## Current API Endpoints
 
-✅ **Working Deployment**: https://framework-20wbysc7e-jacob-durrahs-projects.vercel.app
+✅ **Working Deployment**: https://framework-real-estate-solutions.vercel.app
 - `/api/market/generate-sql` - Converts natural language to SQL
 - `/api/market/execute-sql` - Executes SQL queries
 
