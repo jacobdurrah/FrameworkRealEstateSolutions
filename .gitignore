@@ -116,3 +116,4 @@ Desktop.ini
 # Large data files
 parcel_file_current_*.csv
 *.csv
+.env*.local
