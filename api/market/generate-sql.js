@@ -55,6 +55,20 @@ Fields:
 - sale_terms: Type of sale (Cash, Conventional, FHA, etc.)
 - property_use: Property use (Residential, Investment, etc.)
 
+IMPORTANT: All queries automatically include enriched data from the parcels table via LEFT JOIN.
+Additional fields available from parcels (accessed as parcels.field_name):
+- parcels.address: Detailed property address
+- parcels.zip_code: Property ZIP code
+- parcels.owner_name1, parcels.owner_name2, parcels.owner_full_name: Current owner info
+- parcels.owner_mailing_address, parcels.owner_mailing_city, parcels.owner_mailing_state, parcels.owner_mailing_zip: Owner mailing info
+- parcels.property_class, parcels.property_class_description: Property classification
+- parcels.year_built: Year built (from parcels data)
+- parcels.building_style, parcels.building_count, parcels.total_floor_area: Building details
+- parcels.assessed_value, parcels.taxable_value: Tax assessment values
+- parcels.neighborhood, parcels.ward, parcels.council_district: Location details
+- parcels.total_square_footage, parcels.total_acreage, parcels.frontage, parcels.depth: Lot dimensions
+- parcels.legal_description: Legal property description
+
 IMPORTANT RULES:
 1. ALWAYS query sales_transactions table, NOT recent_sales
 2. Names are stored as "LASTNAME, FIRSTNAME" (e.g., "DURRAH, JACOB" not "Jacob Durrah")
@@ -72,9 +86,11 @@ IMPORTANT RULES:
     - Default to buyers unless specifically asked about sellers
     - DO NOT use UNION queries or subqueries
 13. Keep queries simple - avoid UNION, subqueries, or complex JOINs
+14. The parcels table is automatically joined - DO NOT add manual JOIN statements
+15. To access parcels data, use parcels.field_name (e.g., parcels.owner_full_name, parcels.assessed_value)
 
-If you need to join with a parcels table for additional data:
-- Use: LEFT JOIN parcels ON sales_transactions.parcel_id = parcels.parcel_id
+NOTE: The parcels table is AUTOMATICALLY joined to all queries. You don't need to add JOIN statements.
+To access parcels data in your queries, simply reference it as parcels.field_name.
 
 Examples:
 - "What did Jacob Durrah buy?" -> SELECT * FROM sales_transactions WHERE buyer_name ILIKE '%durrah%jacob%' ORDER BY sale_date DESC LIMIT 100
@@ -83,6 +99,9 @@ Examples:
 - "Cash sales over 100k" -> SELECT * FROM sales_transactions WHERE sale_terms ILIKE '%cash%' AND sale_price > 100000 ORDER BY sale_date DESC LIMIT 100
 - "Properties in 48214" -> SELECT * FROM sales_transactions WHERE property_zip = '48214' ORDER BY sale_date DESC LIMIT 100
 - "Recent sales" -> SELECT * FROM sales_transactions WHERE sale_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY sale_date DESC LIMIT 100
+- "Properties owned by John Smith" -> SELECT *, parcels.owner_full_name, parcels.assessed_value FROM sales_transactions WHERE parcels.owner_full_name ILIKE '%smith%john%' ORDER BY sale_date DESC LIMIT 100
+- "High value properties by assessed value" -> SELECT *, parcels.assessed_value FROM sales_transactions WHERE parcels.assessed_value > 500000 ORDER BY parcels.assessed_value DESC LIMIT 100
+- "Sales in specific neighborhood" -> SELECT *, parcels.neighborhood FROM sales_transactions WHERE parcels.neighborhood ILIKE '%corktown%' ORDER BY sale_date DESC LIMIT 100
 - "Most active buyers in 2024" -> SELECT buyer_name, COUNT(*) as purchase_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY purchase_count DESC LIMIT 100
 - "Most active sellers in 2024" -> SELECT seller_name, COUNT(*) as sale_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND seller_name IS NOT NULL GROUP BY seller_name ORDER BY sale_count DESC LIMIT 100
 - "Who made the most transactions in 2024?" -> SELECT buyer_name, COUNT(*) as transaction_count FROM sales_transactions WHERE EXTRACT(YEAR FROM sale_date) = 2024 AND buyer_name IS NOT NULL GROUP BY buyer_name ORDER BY transaction_count DESC LIMIT 100

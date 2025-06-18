@@ -100,8 +100,48 @@ export default async function handler(req, res) {
       });
     }
 
-    // Start building Supabase query
-    let query = supabase.from('sales_transactions').select('*');
+    // Start building Supabase query with automatic parcels join
+    // Join parcels table to enrich sales data with property metadata
+    let query = supabase.from('sales_transactions').select(`
+      *,
+      parcels!left (
+        address as parcel_address,
+        zip_code as parcel_zip_code,
+        owner_name1,
+        owner_name2,
+        owner_full_name,
+        owner_mailing_address,
+        owner_mailing_city,
+        owner_mailing_state,
+        owner_mailing_zip,
+        owner_full_mailing_address,
+        property_class,
+        property_class_description,
+        year_built as parcel_year_built,
+        building_style,
+        building_count,
+        total_floor_area,
+        tax_status,
+        tax_status_description,
+        assessed_value,
+        previous_assessed_value,
+        taxable_value,
+        previous_taxable_value,
+        neighborhood,
+        ward,
+        council_district,
+        total_square_footage,
+        total_acreage,
+        frontage,
+        depth,
+        sale_date as parcel_sale_date,
+        sale_price as parcel_sale_price,
+        legal_description,
+        street_number,
+        street_prefix,
+        street_name
+      )
+    `);
 
     // Extract WHERE conditions (simplified parsing)
     const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
