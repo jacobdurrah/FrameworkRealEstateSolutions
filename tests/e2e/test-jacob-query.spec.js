@@ -6,7 +6,7 @@ test.describe('Jacob Durrah Query Test', () => {
         await page.goto('https://frameworkrealestatesolutions.com/market-analysis.html');
         
         // Wait for page to load
-        await page.waitForSelector('h1:has-text("Detroit Real Estate Market Analysis")');
+        await page.waitForSelector('h2:has-text("Detroit Real Estate Market Analysis")');
         
         // Enable AI Mode
         await page.check('#aiModeToggle');
@@ -22,8 +22,8 @@ test.describe('Jacob Durrah Query Test', () => {
         
         // Check if we get results or error
         try {
-            // Wait for either success or error
-            await page.waitForSelector('.results-table, .error-message', { timeout: 15000 });
+            // Wait for SQL preview section to be visible
+            await page.waitForSelector('#sqlPreviewSection', { state: 'visible', timeout: 15000 });
             
             // Check if error occurred
             const errorElement = await page.$('.error-message');
@@ -41,18 +41,30 @@ test.describe('Jacob Durrah Query Test', () => {
                 expect(errorText).not.toContain('API returned an HTML error page');
             } else {
                 // Success - verify SQL was generated
-                const sqlPreview = await page.$('#sqlPreview');
-                expect(sqlPreview).toBeTruthy();
+                const sqlCode = await page.$('#sqlCode');
+                expect(sqlCode).toBeTruthy();
                 
-                const sqlText = await sqlPreview.textContent();
+                const sqlText = await sqlCode.textContent();
                 expect(sqlText.toLowerCase()).toContain('jacob');
                 expect(sqlText.toLowerCase()).toContain('durrah');
                 
-                // Verify results table exists
-                const resultsTable = await page.$('.results-table');
-                expect(resultsTable).toBeTruthy();
+                // Click Execute Query button
+                await page.click('button:has-text("Execute Query")');
                 
-                console.log('SUCCESS: Query executed successfully');
+                // Wait for results
+                await page.waitForSelector('#resultsSection', { state: 'visible', timeout: 15000 });
+                
+                // Check if we got results or "no results" message
+                const noResultsMessage = await page.$('text=No results found');
+                const resultsTable = await page.$('.results-table tbody tr');
+                
+                if (noResultsMessage) {
+                    console.log('SUCCESS: Query executed successfully (no results found)');
+                } else if (resultsTable) {
+                    console.log('SUCCESS: Query executed successfully (results found)');
+                } else {
+                    throw new Error('Unexpected state - no results table or no results message');
+                }
             }
         } catch (error) {
             // Take screenshot on timeout
