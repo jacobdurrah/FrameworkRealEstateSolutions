@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test AI Market Analysis Locally</title>
+</head>
+<body>
+    <h1>Test AI Market Analysis</h1>
+    <script src="js/ai-query-processor.js"></script>
+    <script>
+        // Test the AI functionality
+        async function testAI() {
+            const processor = new AIQueryProcessor();
+            console.log('API Base URL:', processor.apiBaseUrl);
+            
+            try {
+                const result = await processor.processAndExecute("What properties did Jacob Durrah buy in Detroit?");
+                console.log('Success:', result);
+                document.body.innerHTML += '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                console.error('Error:', error);
+                document.body.innerHTML += '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        // Run test
+        testAI();
+    </script>
+</body>
+</html>
