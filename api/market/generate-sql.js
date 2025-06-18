@@ -1,17 +1,21 @@
 import { configureCORS } from '../cors.js';
+import { withErrorHandler, validateMethod, validateBody } from '../utils/error-handler.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Handle CORS
   if (configureCORS(req, res)) return;
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  // Validate method
+  if (!validateMethod(req, res, 'POST')) return;
+
+  // Validate body
+  if (!validateBody(req, res, ['prompt'])) return;
 
   const { prompt } = req.body;
 
-  if (!prompt || prompt.trim().length < 3) {
-    return res.status(400).json({ error: 'Please provide a valid query' });
+  // Additional validation for prompt
+  if (typeof prompt !== 'string' || prompt.trim().length < 3) {
+    return res.status(400).json({ error: 'Please provide a valid query (minimum 3 characters)' });
   }
 
   // Check for Anthropic API key
@@ -121,9 +125,10 @@ Examples:
       return res.status(429).json({ error: 'Rate limit exceeded. Please try again later.' });
     }
     
-    res.status(500).json({ 
-      error: 'Failed to generate SQL query',
-      details: error.message 
-    });
+    // Re-throw to be handled by the wrapper
+    throw error;
   }
 }
+
+// Export with error handler wrapper
+export default withErrorHandler(handler);

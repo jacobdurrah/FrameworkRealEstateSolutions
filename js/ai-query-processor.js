@@ -5,9 +5,16 @@
 
 class AIQueryProcessor {
     constructor() {
-        this.apiBaseUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000/api'
-            : '/api';
+        // Use Vercel deployment URL for API
+        if (window.location.hostname === 'localhost') {
+            this.apiBaseUrl = 'http://localhost:3000/api';
+        } else if (window.location.hostname === 'frameworkrealestatesolutions.com') {
+            // Production site needs to use Vercel API URL
+            this.apiBaseUrl = 'https://framework-5llb3u4jz-jacob-durrahs-projects.vercel.app/api';
+        } else {
+            // For Vercel preview/staging URLs
+            this.apiBaseUrl = '/api';
+        }
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
     }
@@ -47,40 +54,80 @@ class AIQueryProcessor {
      * Generate SQL from natural language
      */
     async generateSQL(prompt) {
-        const response = await fetch(`${this.apiBaseUrl}/market/generate-sql`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt })
-        });
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/market/generate-sql`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt })
+            });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to generate SQL');
+            // Check if response is HTML (error page)
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('API returned non-JSON response:', contentType);
+                
+                // Try to get the response text for debugging
+                const text = await response.text();
+                console.error('Response body:', text.substring(0, 500)); // Log first 500 chars
+                
+                throw new Error('API returned an HTML error page instead of JSON. This usually means the endpoint is not found or there is a server error.');
+            }
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || `API error: ${response.status} ${response.statusText}`);
+            }
+
+            return response.json();
+        } catch (error) {
+            console.error('generateSQL error:', error);
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Unable to connect to the API. Please check your internet connection and try again.');
+            }
+            throw error;
         }
-
-        return response.json();
     }
 
     /**
      * Execute SQL query
      */
     async executeSQL(sql) {
-        const response = await fetch(`${this.apiBaseUrl}/market/execute-sql`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ sql })
-        });
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/market/execute-sql`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ sql })
+            });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to execute SQL');
+            // Check if response is HTML (error page)
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('API returned non-JSON response:', contentType);
+                
+                // Try to get the response text for debugging
+                const text = await response.text();
+                console.error('Response body:', text.substring(0, 500)); // Log first 500 chars
+                
+                throw new Error('API returned an HTML error page instead of JSON. This usually means the endpoint is not found or there is a server error.');
+            }
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || `API error: ${response.status} ${response.statusText}`);
+            }
+
+            return response.json();
+        } catch (error) {
+            console.error('executeSQL error:', error);
+            if (error.message.includes('Failed to fetch')) {
+                throw new Error('Unable to connect to the API. Please check your internet connection and try again.');
+            }
+            throw error;
         }
-
-        return response.json();
     }
 
     /**

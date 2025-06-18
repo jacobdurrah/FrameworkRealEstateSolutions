@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Generate SQL API Endpoint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .test-area {
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Generate SQL API Endpoint</h1>
+        
+        <div class="info">
+            <strong>Purpose:</strong> This page tests the /api/market/generate-sql endpoint to diagnose why it might be returning HTML instead of JSON.<br><br>
+            <strong>Current Environment:</strong> <span id="environment"></span><br>
+            <strong>API URL:</strong> <span id="apiUrl"></span>
+        </div>
+
+        <div class="test-area">
+            <h2>Manual Test</h2>
+            <textarea id="prompt" rows="3" placeholder="Enter your natural language query (e.g., 'Show me all properties sold by John Smith')">Show me all properties sold by John Smith</textarea>
+            <br>
+            <button id="testButton" onclick="runManualTest()">Test API</button>
+            <button id="runAllTests" onclick="runAllTests()">Run All Tests</button>
+            <button id="healthCheck" onclick="runHealthCheck()">Health Check</button>
+        </div>
+
+        <div id="results" class="results" style="display:none;"></div>
+    </div>
+
+    <script src="tests/api/generate-sql.test.js"></script>
+    <script src="tests/api/api-health-check.js"></script>
+    <script>
+        // Set environment info
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        document.getElementById('environment').textContent = isLocalhost ? 'Local Development' : 'Production';
+        
+        const apiUrl = isLocalhost 
+            ? 'http://localhost:3000/api/market/generate-sql'
+            : '/api/market/generate-sql';
+        document.getElementById('apiUrl').textContent = apiUrl;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let prefix = `[${timestamp}] `;
+            
+            if (type === 'error') {
+                prefix += '❌ ';
+            } else if (type === 'success') {
+                prefix += '✅ ';
+            } else if (type === 'warning') {
+                prefix += '⚠️ ';
+            }
+            
+            results.textContent += prefix + message + '\n';
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function runManualTest() {
+            const button = document.getElementById('testButton');
+            const prompt = document.getElementById('prompt').value;
+            
+            button.disabled = true;
+            document.getElementById('results').textContent = '';
+            
+            log('Starting manual test...');
+            log(`Prompt: "${prompt}"`);
+            log(`API URL: ${apiUrl}`);
+            
+            try {
+                log('Sending request...');
+                const startTime = Date.now();
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt })
+                });
+                
+                const duration = Date.now() - startTime;
+                log(`Response received in ${duration}ms`);
+                log(`Status: ${response.status} ${response.statusText}`);
+                
+                // Log all headers
+                log('\nResponse Headers:');
+                for (const [key, value] of response.headers.entries()) {
+                    log(`  ${key}: ${value}`);
+                }
+                
+                // Check content type
+                const contentType = response.headers.get('content-type');
+                const isJson = contentType && contentType.includes('application/json');
+                
+                if (!isJson) {
+                    log(`\nERROR: Expected JSON but got ${contentType}`, 'error');
+                }
+                
+                // Get response body
+                if (isJson) {
+                    const data = await response.json();
+                    log('\nResponse Body (JSON):', 'success');
+                    log(JSON.stringify(data, null, 2));
+                    
+                    if (response.ok && data.sql) {
+                        log('\nGenerated SQL:', 'success');
+                        log(data.sql);
+                        
+                        if (data.explanation) {
+                            log('\nExplanation:', 'success');
+                            log(data.explanation);
+                        }
+                    }
+                } else {
+                    const text = await response.text();
+                    log('\nResponse Body (Text):', 'warning');
+                    
+                    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                        log('⚠️ API returned HTML error page!', 'error');
+                        log('\nPossible causes:', 'error');
+                        log('1. API endpoint not found (404)', 'error');
+                        log('2. Serverless function not deployed', 'error');
+                        log('3. Server error returning HTML error page', 'error');
+                        log('4. CORS or routing misconfiguration', 'error');
+                        
+                        // Show first part of HTML
+                        log('\nHTML Preview (first 1000 chars):');
+                        log(text.substring(0, 1000));
+                    } else {
+                        log(text);
+                    }
+                }
+                
+            } catch (error) {
+                log(`\nError: ${error.message}`, 'error');
+                log(`Error Type: ${error.name}`, 'error');
+                
+                if (error.message.includes('Failed to fetch')) {
+                    log('\nConnection Error Details:', 'error');
+                    log('- Check if the API server is running', 'error');
+                    log('- Verify CORS settings', 'error');
+                    log('- Check network/firewall settings', 'error');
+                }
+                
+                console.error('Full error:', error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function runAllTests() {
+            const button = document.getElementById('runAllTests');
+            button.disabled = true;
+            document.getElementById('results').textContent = '';
+            
+            log('Running all tests...\n');
+            
+            // Capture console output
+            const originalLog = console.log;
+            const originalError = console.error;
+            
+            console.log = (...args) => {
+                log(args.join(' '));
+                originalLog(...args);
+            };
+            
+            console.error = (...args) => {
+                log(args.join(' '), 'error');
+                originalError(...args);
+            };
+            
+            try {
+                await testGenerateSQLAPI();
+            } catch (error) {
+                log(`Test suite error: ${error.message}`, 'error');
+            } finally {
+                // Restore console
+                console.log = originalLog;
+                console.error = originalError;
+                button.disabled = false;
+            }
+        }
+
+        async function runHealthCheck() {
+            const button = document.getElementById('healthCheck');
+            button.disabled = true;
+            document.getElementById('results').textContent = '';
+            
+            log('Starting API Health Check...\n');
+            
+            try {
+                // First check the debug health endpoint
+                log('Checking debug health endpoint...');
+                const healthUrl = isLocalhost 
+                    ? 'http://localhost:3000/api/debug/health'
+                    : '/api/debug/health';
+                
+                const healthResponse = await fetch(healthUrl);
+                const healthContentType = healthResponse.headers.get('content-type');
+                
+                if (healthContentType && healthContentType.includes('application/json')) {
+                    const healthData = await healthResponse.json();
+                    log('Debug health check:', 'success');
+                    log(JSON.stringify(healthData, null, 2));
+                } else {
+                    log('Debug health endpoint returned non-JSON', 'error');
+                }
+                
+                log('\n' + '='.repeat(50) + '\n');
+                
+                // Run full health check
+                await runAPIHealthCheck();
+            } catch (error) {
+                log(`Health check error: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
