@@ -286,11 +286,14 @@ function selectStrategy(strategyOrIndex) {
  */
 function applyStrategyToTimeline(strategy) {
     // Clear existing timeline
-    window.timelineData = [];
+    window.timelineData = []; // This will trigger the setter in V2
     
     // Log for debugging
     console.log('Applying strategy to timeline:', strategy);
     console.log('Strategy timeline events:', strategy.timeline);
+    
+    // Build new timeline array
+    const newTimelineData = [];
     
     // Convert strategy events to V2 timeline format
     strategy.timeline.forEach((event, index) => {
@@ -299,7 +302,7 @@ function applyStrategyToTimeline(strategy) {
             month: event.month,
             action: event.action,
             property: event.property || `Property ${index + 1}`,
-            price: event.price,
+            price: event.price || 0,
             downPercent: event.downPercent || 20,
             downAmount: event.price * (event.downPercent || 20) / 100,
             loanAmount: event.price * (1 - (event.downPercent || 20) / 100),
@@ -311,12 +314,16 @@ function applyStrategyToTimeline(strategy) {
             salePrice: event.salePrice || 0
         };
         
-        // Add to timeline
-        window.timelineData.push(timelineEvent);
+        // Add to new array
+        newTimelineData.push(timelineEvent);
         console.log(`Added timeline event ${index + 1}:`, timelineEvent);
     });
     
+    // Set the timeline data (will trigger setter)
+    window.timelineData = newTimelineData;
+    
     console.log('Total timeline events:', window.timelineData.length);
+    console.log('V2 timelineData length:', typeof timelineData !== 'undefined' ? timelineData.length : 'undefined');
     
     // Show V2 components section
     const v2Components = document.getElementById('v2Components');
@@ -324,22 +331,109 @@ function applyStrategyToTimeline(strategy) {
         v2Components.style.display = 'block';
     }
     
-    // Refresh V2 display
-    if (typeof renderTimelineTable === 'function') {
-        console.log('Calling renderTimelineTable...');
-        renderTimelineTable();
-        recalculateAll();
+    // Force update the timeline table
+    const tbody = document.getElementById('timelineBody');
+    if (tbody && window.timelineData.length > 0) {
+        console.log('Directly updating timeline table...');
+        // Call renderTimelineTable if available
+        if (typeof renderTimelineTable === 'function') {
+            renderTimelineTable();
+        } else {
+            // Fallback: directly render if function not available
+            console.warn('renderTimelineTable not found, using fallback rendering');
+            renderTimelineTableFallback();
+        }
+        
+        // Also recalculate
+        if (typeof recalculateAll === 'function') {
+            recalculateAll();
+        }
         
         // Scroll to timeline section for visibility
         const timelineSection = document.querySelector('.table-section');
-        if (timelineSection && window.timelineData.length > 0) {
+        if (timelineSection) {
             setTimeout(() => {
                 timelineSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 500);
         }
     } else {
-        console.error('renderTimelineTable function not found!');
+        console.error('Timeline body not found or no events to display');
     }
+}
+
+/**
+ * Fallback rendering function for timeline table
+ */
+function renderTimelineTableFallback() {
+    const tbody = document.getElementById('timelineBody');
+    if (!tbody) {
+        console.error('Timeline body element not found');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    window.timelineData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <input type="number" class="editable number" value="${row.month}" 
+                       onchange="updateTimeline(${row.id}, 'month', this.value)" min="0">
+            </td>
+            <td>
+                <select class="table-select" onchange="updateTimeline(${row.id}, 'action', this.value)">
+                    <option value="buy" ${row.action === 'buy' ? 'selected' : ''}>Buy</option>
+                    <option value="sell" ${row.action === 'sell' ? 'selected' : ''}>Sell</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" class="editable" value="${row.property}" 
+                       onchange="updateTimeline(${row.id}, 'property', this.value)"
+                       placeholder="Property address">
+            </td>
+            <td>
+                <input type="number" class="editable number currency" value="${row.price}" 
+                       onchange="updateTimeline(${row.id}, 'price', this.value)" min="0">
+            </td>
+            <td>
+                <input type="number" class="editable number percentage" value="${row.downPercent}" 
+                       onchange="updateTimeline(${row.id}, 'downPercent', this.value)" 
+                       min="0" max="100" step="5"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
+            </td>
+            <td class="number currency">${formatCurrency(row.downAmount || 0)}</td>
+            <td class="number currency">${formatCurrency(row.loanAmount || 0)}</td>
+            <td>
+                <input type="number" class="editable number percentage" value="${row.rate}" 
+                       onchange="updateTimeline(${row.id}, 'rate', this.value)" 
+                       min="0" max="20" step="0.25">
+            </td>
+            <td>
+                <input type="number" class="editable number" value="${row.term}" 
+                       onchange="updateTimeline(${row.id}, 'term', this.value)" 
+                       min="1" max="30" step="1">
+            </td>
+            <td class="number currency">${formatCurrency(row.payment || 0)}</td>
+            <td>
+                <input type="number" class="editable number currency" value="${row.rent || 0}" 
+                       onchange="updateTimeline(${row.id}, 'rent', this.value)" min="0"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
+            </td>
+            <td>
+                <input type="number" class="editable number currency" value="${row.monthlyExpenses || 0}" 
+                       onchange="updateTimeline(${row.id}, 'monthlyExpenses', this.value)" min="0"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
+            </td>
+            <td>
+                <button class="delete-btn" onclick="deleteTimelineRow(${row.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    console.log(`Rendered ${window.timelineData.length} timeline rows`);
 }
 
 /**

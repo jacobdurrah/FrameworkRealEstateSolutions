@@ -29,7 +29,14 @@ let portfolioState = {
 let currentViewMonth = 0;
 
 // Make key variables available globally for testing
-window.timelineData = timelineData;
+// Use getter/setter to sync both references
+Object.defineProperty(window, 'timelineData', {
+    get: function() { return timelineData; },
+    set: function(value) { 
+        timelineData = value;
+        console.log('Timeline data updated via window.timelineData');
+    }
+});
 window.portfolioState = portfolioState;
 
 // Calculator instances (initialized after DOM load)
