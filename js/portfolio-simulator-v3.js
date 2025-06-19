@@ -374,20 +374,23 @@ function applyStrategyToTimeline(strategy) {
     
     // Convert strategy events to V2 timeline format
     strategy.timeline.forEach((event, index) => {
+        // For sell events, ensure all loan fields are 0
+        const isSell = event.action === 'sell';
+        
         const timelineEvent = {
             id: Date.now() + Math.random(),
             month: event.month,
             action: event.action,
             property: event.property || `Property ${index + 1}`,
             price: event.price || 0,
-            downPercent: event.downPercent || 20,
-            downAmount: event.price * (event.downPercent || 20) / 100,
-            loanAmount: event.price * (1 - (event.downPercent || 20) / 100),
-            rate: event.rate || 7,
-            term: event.term || 30,
-            payment: event.payment || 0,
-            rent: event.rent || 0,
-            monthlyExpenses: event.monthlyExpenses || 350,
+            downPercent: isSell ? 0 : (event.downPercent || 20),
+            downAmount: isSell ? 0 : (event.price * (event.downPercent || 20) / 100),
+            loanAmount: isSell ? 0 : (event.price * (1 - (event.downPercent || 20) / 100)),
+            rate: isSell ? 0 : (event.rate || 7),
+            term: isSell ? 0 : (event.term || 30),
+            payment: isSell ? 0 : (event.payment || 0),
+            rent: isSell ? 0 : (event.rent || 0),
+            monthlyExpenses: isSell ? 0 : (event.monthlyExpenses || 350),
             salePrice: event.salePrice || 0
         };
         
@@ -473,7 +476,7 @@ function renderTimelineTableFallback() {
                        onchange="updateTimeline(${row.id}, 'price', this.value)" min="0">
             </td>
             <td>
-                <input type="number" class="editable number percentage" value="${row.downPercent}" 
+                <input type="number" class="editable number percentage" value="${row.downPercent || 0}" 
                        onchange="updateTimeline(${row.id}, 'downPercent', this.value)" 
                        min="0" max="100" step="5"
                        ${row.action !== 'buy' ? 'disabled' : ''}>
@@ -481,14 +484,16 @@ function renderTimelineTableFallback() {
             <td class="number currency">${formatCurrency(row.downAmount || 0)}</td>
             <td class="number currency">${formatCurrency(row.loanAmount || 0)}</td>
             <td>
-                <input type="number" class="editable number percentage" value="${row.rate}" 
+                <input type="number" class="editable number percentage" value="${row.rate || 0}" 
                        onchange="updateTimeline(${row.id}, 'rate', this.value)" 
-                       min="0" max="20" step="0.25">
+                       min="0" max="20" step="0.25"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td>
-                <input type="number" class="editable number" value="${row.term}" 
+                <input type="number" class="editable number" value="${row.term || 0}" 
                        onchange="updateTimeline(${row.id}, 'term', this.value)" 
-                       min="1" max="30" step="1">
+                       min="1" max="30" step="1"
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td class="number currency">${formatCurrency(row.payment || 0)}</td>
             <td>
