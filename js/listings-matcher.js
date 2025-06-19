@@ -44,9 +44,10 @@ class ListingsMatcher {
                     // Update the event in the timeline
                     const eventIndex = matchedTimeline.findIndex(e => e.id === event.id || e === event);
                     if (eventIndex !== -1) {
-                        // Format property label with strategy type
-                        const strategyType = this.getStrategyType(event.property);
-                        const propertyLabel = `${strategyType} – ${listing.address || listing.streetAddress || 'Detroit Property'}`;
+                        // Format property label with original name and address
+                        const originalName = event.property; // e.g., "Rental 1", "Flip 2"
+                        const address = listing.address || listing.streetAddress || 'Detroit Property';
+                        const propertyLabel = `${originalName}: ${address}`;
                         
                         matchedTimeline[eventIndex] = {
                             ...matchedTimeline[eventIndex],
@@ -82,9 +83,10 @@ class ListingsMatcher {
         
         // Try multiple search attempts with expanding criteria
         const searchAttempts = [
+            { priceBuffer: 0.15, requireBeds: false }, // ±15%, no bedroom requirement
             { priceBuffer: 0.20, requireBeds: false }, // ±20%, no bedroom requirement
-            { priceBuffer: 0.25, requireBeds: false }, // ±25%, no bedroom requirement
-            { priceBuffer: 0.30, requireBeds: false }  // ±30%, fallback
+            { priceBuffer: 0.25, requireBeds: false }, // ±25%, fallback
+            { priceBuffer: 0.30, requireBeds: false }  // ±30%, last resort
         ];
         
         for (const attempt of searchAttempts) {
@@ -155,10 +157,17 @@ class ListingsMatcher {
     calculateMatchScore(listing, event, assumptions) {
         let score = 100;
 
-        // Price match (40 points max)
+        // Price match (40 points max) - more lenient scoring for ±15% range
         const priceDiff = Math.abs(listing.price - event.price);
         const priceRatio = priceDiff / event.price;
-        score -= Math.min(40, priceRatio * 100);
+        
+        if (priceRatio <= 0.15) {
+            // Within ±15%, minimal penalty
+            score -= priceRatio * 50; // Max 7.5 points off for 15% difference
+        } else {
+            // Outside ±15%, steeper penalty
+            score -= Math.min(40, priceRatio * 100);
+        }
 
         // Expected rent match (30 points max)
         const estimatedRent = this.estimateRent(listing, assumptions);
@@ -255,7 +264,8 @@ class ListingsMatcher {
                 console.warn('Unexpected API response structure:', results);
                 return [];
             } else {
-                console.error('Property API not available - searchPropertiesZillow function not found');
+                console.error('Property API not available in any expected location');
+                console.log('Checked: window.searchPropertiesZillow and window.propertyAPI.searchPropertiesZillow');
                 return [];
             }
         } catch (error) {

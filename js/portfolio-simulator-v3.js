@@ -599,13 +599,24 @@ async function applyRealListings() {
             showV3Success(`Found ${summary.matched} real listings matching your criteria!`);
             console.log('Matched listings:', summary.listings);
         } else {
-            showV3Warning('No exact matches found. The API may be temporarily unavailable or there may be limited inventory in the target price range. Your simulation will continue with placeholder properties.');
-            console.log('Search attempted but no matches found. This could be due to API limits or inventory constraints.');
+            // Show friendly warning instead of error
+            showV3Warning('No properties found in the current market matching your price range. The simulation will continue with estimated values based on Detroit market averages.');
+            console.log('No listings matched. This is normal if inventory is limited or API has no results in the price range.');
         }
         
     } catch (error) {
         console.error('Listings matching error:', error);
-        showV3Error('Failed to find real listings: ' + error.message);
+        
+        // Show user-friendly message based on error type
+        if (error.message.includes('401') || error.message.includes('authentication')) {
+            showV3Warning('The property listings service requires authentication. Using estimated values instead.');
+        } else if (error.message.includes('403') || error.message.includes('rate limit')) {
+            showV3Warning('Property search limit reached. Please try again later. Using estimated values for now.');
+        } else if (error.message.includes('404') || error.message.includes('405')) {
+            showV3Warning('Property listings service is currently unavailable. Using estimated market values.');
+        } else {
+            showV3Warning('Unable to load live listings at this time. The simulation will continue with estimated property values.');
+        }
     } finally {
         showV3Loading(false);
     }
