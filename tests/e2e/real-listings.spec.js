@@ -44,14 +44,14 @@ test.describe('Portfolio V3 - Real Detroit Listings', () => {
     // Click find listings button
     await page.click('button:has-text("Find Actual Listings")');
     
-    // Wait for listings to load
-    await page.waitForSelector('.loading-indicator >> text=Searching for real Detroit properties', { 
-      state: 'attached',
+    // Wait for listings to load (using actual loading element ID)
+    await page.waitForSelector('#v3LoadingState >> text=Searching for real Detroit properties', { 
+      state: 'visible',
       timeout: 5000 
     });
     
-    // Wait for completion (loading indicator disappears)
-    await page.waitForSelector('.loading-indicator', { 
+    // Wait for completion (loading state disappears)
+    await page.waitForSelector('#v3LoadingState', { 
       state: 'hidden',
       timeout: 30000 
     });
@@ -115,7 +115,7 @@ test.describe('Portfolio V3 - Real Detroit Listings', () => {
     await page.click('button:has-text("Find Actual Listings")');
     
     // Wait for completion
-    await page.waitForSelector('.loading-indicator', { 
+    await page.waitForSelector('#v3LoadingState', { 
       state: 'hidden',
       timeout: 30000 
     });
@@ -184,7 +184,7 @@ test.describe('Portfolio V3 - Real Detroit Listings', () => {
     await page.check('#useRealListings');
     
     // Start monitoring for loading indicator
-    const loadingPromise = page.waitForSelector('.loading-indicator:has-text("Searching for real Detroit properties")', {
+    const loadingPromise = page.waitForSelector('#v3LoadingState:has-text("Searching for real Detroit properties")', {
       state: 'visible',
       timeout: 5000
     });
@@ -195,7 +195,7 @@ test.describe('Portfolio V3 - Real Detroit Listings', () => {
     await loadingPromise;
     
     // Wait for it to complete
-    await page.waitForSelector('.loading-indicator', { 
+    await page.waitForSelector('#v3LoadingState', { 
       state: 'hidden',
       timeout: 30000 
     });
@@ -222,7 +222,7 @@ test.describe('Portfolio V3 - Real Detroit Listings', () => {
     // Find real listings
     await page.check('#useRealListings');
     await page.click('button:has-text("Find Actual Listings")');
-    await page.waitForSelector('.loading-indicator', { state: 'hidden', timeout: 30000 });
+    await page.waitForSelector('#v3LoadingState', { state: 'hidden', timeout: 30000 });
     
     // Income should remain similar (within 20% due to price variations)
     const finalIncome = await page.locator('#monthlyIncome').textContent();
