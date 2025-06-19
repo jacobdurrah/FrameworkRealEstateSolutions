@@ -1,0 +1,280 @@
+/**
+ * Timeline Table Mobile Fix
+ * Fixes mobile card layout issues and header duplication
+ */
+
+/* Mobile layout - 767px and below */
+@media (max-width: 767px) {
+    /* Override table wrapper for mobile */
+    .table-wrapper {
+        overflow: visible !important;
+        max-height: none !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    
+    /* Reset table for mobile */
+    #timelineTable {
+        display: block;
+        width: 100% !important;
+        min-width: 100% !important;
+        border: none;
+    }
+    
+    /* Hide thead completely */
+    #timelineTable thead {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Reset tbody */
+    #timelineTable tbody {
+        display: block;
+        width: 100%;
+    }
+    
+    /* Convert rows to cards */
+    #timelineTable tbody tr {
+        display: block !important;
+        width: 100%;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        background: var(--card-bg);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        height: auto !important;
+    }
+    
+    /* Reset all td styles */
+    #timelineTable tbody td {
+        display: block !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        text-align: left !important;
+        padding: 0.5rem 0 !important;
+        border: none !important;
+        position: relative;
+        height: auto !important;
+        white-space: normal !important;
+    }
+    
+    /* Remove all ::before pseudo elements first */
+    #timelineTable tbody td::before {
+        display: none !important;
+    }
+    
+    /* Month field */
+    #timelineTable tbody td:nth-child(1) {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    #timelineTable tbody td:nth-child(1) input {
+        width: 80px !important;
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    /* Action field */
+    #timelineTable tbody td:nth-child(2) {
+        margin-bottom: 0.5rem;
+    }
+    
+    #timelineTable tbody td:nth-child(2)::before {
+        content: "Action: ";
+        display: inline;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-right: 0.5rem;
+    }
+    
+    #timelineTable tbody td:nth-child(2) select {
+        width: auto !important;
+        display: inline-block;
+    }
+    
+    /* Property field - Special styling */
+    #timelineTable tbody td:nth-child(3) {
+        background: rgba(0, 0, 0, 0.02);
+        padding: 0.75rem !important;
+        margin: 0.5rem -1rem;
+        border-radius: 4px;
+    }
+    
+    #timelineTable tbody td:nth-child(3)::before {
+        content: "Property Address";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Financial fields - Grid layout */
+    #timelineTable tbody td:nth-child(4),
+    #timelineTable tbody td:nth-child(5),
+    #timelineTable tbody td:nth-child(6),
+    #timelineTable tbody td:nth-child(7),
+    #timelineTable tbody td:nth-child(10),
+    #timelineTable tbody td:nth-child(11) {
+        display: inline-block !important;
+        width: 50% !important;
+        padding: 0.75rem 0.5rem !important;
+        vertical-align: top;
+    }
+    
+    /* Add labels for financial fields */
+    #timelineTable tbody td:nth-child(4)::before {
+        content: "Price";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #timelineTable tbody td:nth-child(5)::before {
+        content: "Down %";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #timelineTable tbody td:nth-child(6)::before {
+        content: "Down $";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #timelineTable tbody td:nth-child(7)::before {
+        content: "Loan";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #timelineTable tbody td:nth-child(10)::before {
+        content: "Payment";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #timelineTable tbody td:nth-child(11)::before {
+        content: "Rent";
+        display: block !important;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Hide rate, term, and expenses on mobile */
+    #timelineTable tbody td:nth-child(8),  /* Rate */
+    #timelineTable tbody td:nth-child(9),  /* Term */
+    #timelineTable tbody td:nth-child(12) { /* Expenses */
+        display: none !important;
+    }
+    
+    /* Action buttons - full width */
+    #timelineTable tbody td:nth-child(13) {
+        text-align: center !important;
+        padding: 1rem 0 0.5rem 0 !important;
+        border-top: 1px solid var(--border-color);
+        margin-top: 0.5rem;
+    }
+    
+    /* Style inputs for mobile */
+    #timelineTable tbody td input[type="number"],
+    #timelineTable tbody td input[type="text"] {
+        width: 100% !important;
+        padding: 0.5rem !important;
+        font-size: 1rem !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 4px !important;
+        background: white !important;
+    }
+    
+    #timelineTable tbody td select {
+        padding: 0.5rem !important;
+        font-size: 1rem !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 4px !important;
+        background: white !important;
+    }
+    
+    /* Read-only currency displays */
+    #timelineTable tbody td.currency {
+        font-weight: 600;
+        color: var(--success-color);
+        font-size: 1.1rem;
+    }
+    
+    /* Delete button styling */
+    #timelineTable .btn-danger {
+        width: 100%;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Property with link styling */
+    .property-with-link {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .property-with-link input {
+        flex: 1 !important;
+    }
+    
+    .zillow-link {
+        padding: 0.5rem !important;
+        background: rgba(0, 106, 255, 0.1);
+        border-radius: 4px;
+    }
+    
+    /* Add Event button */
+    .add-row-btn {
+        margin-top: 1rem;
+        padding: 1rem !important;
+        font-size: 1rem !important;
+        font-weight: 600;
+    }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 400px) {
+    #timelineTable tbody tr {
+        padding: 0.75rem;
+    }
+    
+    #timelineTable tbody td:nth-child(3) {
+        margin: 0.5rem -0.75rem;
+    }
+    
+    /* Stack all financial fields on very small screens */
+    #timelineTable tbody td:nth-child(4),
+    #timelineTable tbody td:nth-child(5),
+    #timelineTable tbody td:nth-child(6),
+    #timelineTable tbody td:nth-child(7),
+    #timelineTable tbody td:nth-child(10),
+    #timelineTable tbody td:nth-child(11) {
+        display: block !important;
+        width: 100% !important;
+    }
+}
