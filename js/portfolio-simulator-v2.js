@@ -890,6 +890,29 @@ function updateSummaryMonth() {
     recalculateAll();
 }
 
+/**
+ * Step month value up or down
+ */
+function stepMonth(delta) {
+    const monthInput = document.getElementById('summaryMonth');
+    const currentValue = parseInt(monthInput.value) || 0;
+    const newValue = Math.max(0, Math.min(360, currentValue + delta));
+    
+    monthInput.value = newValue;
+    updateSummaryMonth();
+}
+
+// Debounce timer
+let debounceTimer = null;
+
+/**
+ * Debounced version of updateSummaryMonth for oninput events
+ */
+function debouncedUpdateMonth() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(updateSummaryMonth, 500); // 500ms delay
+}
+
 // Make functions available globally
 window.updateTimeline = updateTimeline;
 window.addTimelineRow = addTimelineRow;
@@ -903,3 +926,5 @@ window.toggleEquations = toggleEquations;
 window.toggleInstructions = toggleInstructions;
 window.refreshSummary = refreshSummary;
 window.updateSummaryMonth = updateSummaryMonth;
+window.stepMonth = stepMonth;
+window.debouncedUpdateMonth = debouncedUpdateMonth;
