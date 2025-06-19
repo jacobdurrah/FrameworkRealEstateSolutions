@@ -7,7 +7,7 @@
 // Note: V2 scripts should be loaded before this file
 
 // Global state for V3
-let v3State = {
+window.v3State = {
     parsedGoal: null,
     generatedStrategies: [],
     selectedStrategy: null,
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize components with safety check
     if (typeof ListingsMatcher !== 'undefined') {
-        v3State.listingsMatcher = new ListingsMatcher();
+        window.v3State.listingsMatcher = new ListingsMatcher();
         console.log('ListingsMatcher initialized successfully');
     } else {
         console.error('ListingsMatcher not found - real listings feature will not work');
@@ -64,8 +64,8 @@ function setupV3EventHandlers() {
     const listingsToggle = document.getElementById('useRealListings');
     if (listingsToggle) {
         listingsToggle.addEventListener('change', (e) => {
-            v3State.useRealListings = e.target.checked;
-            if (v3State.selectedStrategy && v3State.useRealListings) {
+            window.v3State.useRealListings = e.target.checked;
+            if (window.v3State.selectedStrategy && window.v3State.useRealListings) {
                 applyRealListings();
             }
         });
@@ -74,7 +74,7 @@ function setupV3EventHandlers() {
     // Strategy approach radio buttons
     document.querySelectorAll('input[name="strategyApproach"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            if (v3State.parsedGoal) {
+            if (window.v3State.parsedGoal) {
                 regenerateWithApproach(e.target.value);
             }
         });
@@ -178,33 +178,33 @@ async function generateStrategy() {
         // Parse the goal
         console.log('Parsing goal:', goalText);
         const parser = new GoalParser();
-        v3State.parsedGoal = parser.parse(goalText);
-        console.log('Parsed goal:', v3State.parsedGoal);
+        window.v3State.parsedGoal = parser.parse(goalText);
+        console.log('Parsed goal:', window.v3State.parsedGoal);
         
         // Log individual parsed values for debugging
         console.log('Parsed values:', {
-            targetMonthlyIncome: v3State.parsedGoal.targetMonthlyIncome,
-            timeHorizon: v3State.parsedGoal.timeHorizon,
-            startingCapital: v3State.parsedGoal.startingCapital,
-            monthlyContributions: v3State.parsedGoal.monthlyContributions
+            targetMonthlyIncome: window.v3State.parsedGoal.targetMonthlyIncome,
+            timeHorizon: window.v3State.parsedGoal.timeHorizon,
+            startingCapital: window.v3State.parsedGoal.startingCapital,
+            monthlyContributions: window.v3State.parsedGoal.monthlyContributions
         });
         
         // Display parsed goal
-        displayParsedGoal(v3State.parsedGoal);
+        displayParsedGoal(window.v3State.parsedGoal);
         
         // Generate strategies with timeout
         console.log('Generating strategies...');
         const generator = new StrategyGenerator();
         
         // Add timeout to prevent hanging
-        const strategyPromise = generator.generateMultipleStrategies(v3State.parsedGoal);
+        const strategyPromise = generator.generateMultipleStrategies(window.v3State.parsedGoal);
         const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Strategy generation timed out after 10 seconds')), 10000)
         );
         
         const strategies = await Promise.race([strategyPromise, timeoutPromise]);
         console.log('Generated strategies:', strategies.length);
-        v3State.generatedStrategies = strategies;
+        window.v3State.generatedStrategies = strategies;
         
         // Check if we have valid strategies
         if (!strategies || strategies.length === 0) {
@@ -215,7 +215,7 @@ async function generateStrategy() {
         const feasibleStrategies = strategies.filter(s => s.feasibility);
         if (feasibleStrategies.length === 0) {
             console.warn('No feasible strategies found, showing best attempts');
-            showV3Warning(`Unable to achieve $${v3State.parsedGoal.targetMonthlyIncome}/month within ${v3State.parsedGoal.timeHorizon} months. Showing closest possible strategies.`);
+            showV3Warning(`Unable to achieve $${window.v3State.parsedGoal.targetMonthlyIncome}/month within ${window.v3State.parsedGoal.timeHorizon} months. Showing closest possible strategies.`);
         }
         
         // Select default strategy (balanced if feasible, otherwise best attempt)
@@ -288,7 +288,7 @@ function displayStrategyOptions(strategies) {
     if (!container) return;
 
     container.innerHTML = strategies.map(strategy => `
-        <div class="strategy-card ${strategy === v3State.selectedStrategy ? 'selected' : ''}" 
+        <div class="strategy-card ${strategy === window.v3State.selectedStrategy ? 'selected' : ''}" 
              onclick="selectStrategy(${strategies.indexOf(strategy)})">
             <h4>${getStrategyTitle(strategy.approach)}</h4>
             <div class="strategy-metrics">
@@ -337,23 +337,23 @@ function displayStrategyOptions(strategies) {
  */
 function selectStrategy(strategyOrIndex) {
     const strategy = typeof strategyOrIndex === 'number' 
-        ? v3State.generatedStrategies[strategyOrIndex]
+        ? window.v3State.generatedStrategies[strategyOrIndex]
         : strategyOrIndex;
     
     if (!strategy) return;
     
-    v3State.selectedStrategy = strategy;
+    window.v3State.selectedStrategy = strategy;
     
     // Update UI
     document.querySelectorAll('.strategy-card').forEach((card, index) => {
-        card.classList.toggle('selected', v3State.generatedStrategies[index] === strategy);
+        card.classList.toggle('selected', window.v3State.generatedStrategies[index] === strategy);
     });
     
     // Apply strategy to V2 timeline
     applyStrategyToTimeline(strategy);
     
     // Apply real listings if enabled
-    if (v3State.useRealListings) {
+    if (window.v3State.useRealListings) {
         applyRealListings();
     }
 }
@@ -519,9 +519,9 @@ function renderTimelineTableFallback() {
 async function applyRealListings() {
     // Update checkbox state
     const checkbox = document.getElementById('useRealListings');
-    v3State.useRealListings = checkbox ? checkbox.checked : true;
+    window.v3State.useRealListings = checkbox ? checkbox.checked : true;
     
-    if (!v3State.selectedStrategy) {
+    if (!window.v3State.selectedStrategy) {
         showV3Error('Please generate a strategy first before finding listings');
         return;
     }
@@ -532,10 +532,10 @@ async function applyRealListings() {
     }
     
     // Check if ListingsMatcher is initialized
-    if (!v3State.listingsMatcher) {
+    if (!window.v3State.listingsMatcher) {
         console.error('ListingsMatcher not initialized, attempting to initialize...');
         if (typeof ListingsMatcher !== 'undefined') {
-            v3State.listingsMatcher = new ListingsMatcher();
+            window.v3State.listingsMatcher = new ListingsMatcher();
         } else {
             showV3Error('Real listings feature not available. Please refresh the page.');
             return;
@@ -546,7 +546,10 @@ async function applyRealListings() {
     
     try {
         // Check if property API is available
-        if (typeof searchPropertiesZillow !== 'function') {
+        const hasAPI = (typeof searchPropertiesZillow === 'function') || 
+                      (window.propertyAPI && typeof window.propertyAPI.searchPropertiesZillow === 'function');
+        
+        if (!hasAPI) {
             throw new Error('Property search API not loaded. Please refresh the page.');
         }
         
@@ -562,7 +565,7 @@ async function applyRealListings() {
         }
         
         // Match timeline to real listings with user preferences
-        const matchedTimeline = await v3State.listingsMatcher.matchTimelineToListings(
+        const matchedTimeline = await window.v3State.listingsMatcher.matchTimelineToListings(
             window.timelineData,
             {
                 minRent: minRent,
@@ -588,7 +591,7 @@ async function applyRealListings() {
         }
         
         // Show matching summary
-        const summary = v3State.listingsMatcher.getMatchingSummary(matchedTimeline);
+        const summary = window.v3State.listingsMatcher.getMatchingSummary(matchedTimeline);
         showListingsSummary(summary);
         
         // Show success message if matches found
@@ -645,18 +648,18 @@ function showListingsSummary(summary) {
  * Regenerate strategy with different approach
  */
 async function regenerateWithApproach(approach) {
-    if (!v3State.parsedGoal) return;
+    if (!window.v3State.parsedGoal) return;
     
     showV3Loading(true);
     
     try {
         const generator = new StrategyGenerator();
-        const strategy = await generator.generateStrategy(v3State.parsedGoal, approach);
+        const strategy = await generator.generateStrategy(window.v3State.parsedGoal, approach);
         
         // Find and update the strategy in our list
-        const index = v3State.generatedStrategies.findIndex(s => s.approach === approach);
+        const index = window.v3State.generatedStrategies.findIndex(s => s.approach === approach);
         if (index !== -1) {
-            v3State.generatedStrategies[index] = strategy;
+            window.v3State.generatedStrategies[index] = strategy;
         }
         
         // Select the new strategy
@@ -803,12 +806,12 @@ function serializeV3State() {
         version: 'v3',
         timestamp: new Date().toISOString(),
         goalInput: goalInput,
-        parsedGoal: v3State.parsedGoal,
-        selectedStrategy: v3State.selectedStrategy,
+        parsedGoal: window.v3State.parsedGoal,
+        selectedStrategy: window.v3State.selectedStrategy,
         timelineData: window.timelineData,
         simulationName: document.getElementById('simulationName').textContent,
         currentViewMonth: window.currentViewMonth || 0,
-        useRealListings: v3State.useRealListings
+        useRealListings: window.v3State.useRealListings
     };
     
     return state;
@@ -977,14 +980,14 @@ function loadStateFromUrl() {
         
         // Restore parsed goal
         if (state.parsedGoal) {
-            v3State.parsedGoal = state.parsedGoal;
+            window.v3State.parsedGoal = state.parsedGoal;
             displayParsedGoal(state.parsedGoal);
         }
         
         // Restore selected strategy
         if (state.selectedStrategy) {
-            v3State.selectedStrategy = state.selectedStrategy;
-            v3State.generatedStrategies = [state.selectedStrategy]; // For now, just restore the selected one
+            window.v3State.selectedStrategy = state.selectedStrategy;
+            window.v3State.generatedStrategies = [state.selectedStrategy]; // For now, just restore the selected one
             
             // Display the strategy
             displayStrategyOptions([state.selectedStrategy]);
@@ -1012,7 +1015,7 @@ function loadStateFromUrl() {
         // Restore real listings preference
         if (state.useRealListings !== undefined) {
             document.getElementById('useRealListings').checked = state.useRealListings;
-            v3State.useRealListings = state.useRealListings;
+            window.v3State.useRealListings = state.useRealListings;
         }
         
         // Show success message

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Test - Real Listings Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .step {
+            background: #f4f4f4;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        code {
+            background: #e8e8e8;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manual Test Instructions - Real Detroit Listings</h1>
+    
+    <h2>Quick Test Steps:</h2>
+    
+    <div class="step">
+        <h3>Step 1: Open Portfolio Simulator V3</h3>
+        <p>Go to: <a href="https://frameworkrealestatesolutions.com/portfolio-simulator-v3.html" target="_blank">https://frameworkrealestatesolutions.com/portfolio-simulator-v3.html</a></p>
+        <p>Open browser console (F12 → Console tab)</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Check Console for Initialization</h3>
+        <p>Look for: <code class="success">ListingsMatcher initialized successfully</code></p>
+        <p>If you see: <code class="error">ListingsMatcher not found - real listings feature will not work</code>, refresh the page</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: Generate a Simple Strategy</h3>
+        <p>Enter in goal input: <code>Generate $3K/month in 24 months with $50K</code></p>
+        <p>Click "Generate Strategy"</p>
+        <p>Click on the first strategy card (Conservative)</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 4: Test Real Listings</h3>
+        <p>Check the box: "🔄 Replace simulated properties with real Detroit listings"</p>
+        <p>Click "Find Actual Listings" button</p>
+        <p>Watch console for: <code>Starting real listings search for timeline events...</code></p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 5: Expected Results</h3>
+        <p><strong>Success:</strong></p>
+        <ul>
+            <li>Loading message appears: "Searching for real Detroit properties..."</li>
+            <li>Timeline updates with real addresses like "Rental – 123 Main St, Detroit, MI"</li>
+            <li>Success message: "Found X real listings matching your criteria!"</li>
+        </ul>
+        <p><strong>Acceptable Alternative:</strong></p>
+        <ul>
+            <li>Warning: "No exact matches found. The API may be temporarily unavailable..."</li>
+            <li>This is OK - it means the feature is working but API has no results</li>
+        </ul>
+    </div>
+    
+    <h2>What Fixed:</h2>
+    <ul>
+        <li>✅ Expanded search range from ±20% to ±25% (with ±30% fallback)</li>
+        <li>✅ Removed bedroom requirements</li>
+        <li>✅ Added retry logic with expanding criteria</li>
+        <li>✅ Fixed ListingsMatcher initialization</li>
+        <li>✅ Improved error messages</li>
+        <li>✅ Better property labels: [Strategy] – [Address]</li>
+    </ul>
+    
+    <h2>Console Commands for Debugging:</h2>
+    <pre>
+// Check if ListingsMatcher exists
+console.log('ListingsMatcher available:', typeof ListingsMatcher);
+
+// Check if it's initialized
+console.log('v3State.listingsMatcher:', v3State.listingsMatcher);
+
+// Check timeline data
+console.log('Timeline events:', window.timelineData);
+
+// Manually test API
+searchPropertiesZillow({
+    location: 'Detroit, MI',
+    status_type: 'ForSale',
+    home_type: 'Houses',
+    minPrice: 40000,
+    maxPrice: 80000
+}).then(console.log).catch(console.error);
+    </pre>
+</body>
+</html>

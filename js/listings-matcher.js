@@ -224,10 +224,21 @@ class ListingsMatcher {
      */
     async fetchListings(criteria) {
         try {
-            // Use the existing property API
+            // Check for property API in different locations
+            let searchFunction = null;
+            
+            // First check if it's directly available
             if (typeof searchPropertiesZillow === 'function') {
+                searchFunction = searchPropertiesZillow;
+            }
+            // Then check if it's in window.propertyAPI
+            else if (window.propertyAPI && typeof window.propertyAPI.searchPropertiesZillow === 'function') {
+                searchFunction = window.propertyAPI.searchPropertiesZillow;
+            }
+            
+            if (searchFunction) {
                 console.log('Calling searchPropertiesZillow with:', criteria);
-                const results = await searchPropertiesZillow(criteria);
+                const results = await searchFunction(criteria);
                 
                 // Handle the response structure from the API
                 if (results) {
@@ -244,7 +255,7 @@ class ListingsMatcher {
                 console.warn('Unexpected API response structure:', results);
                 return [];
             } else {
-                console.error('Property API not available');
+                console.error('Property API not available - searchPropertiesZillow function not found');
                 return [];
             }
         } catch (error) {
@@ -325,7 +336,6 @@ class ListingsMatcher {
                 }))
         };
     }
-}
 
     /**
      * Extract strategy type from property name
@@ -344,6 +354,7 @@ class ListingsMatcher {
         
         return 'Property';
     }
+}
 
 // Make available globally
 window.ListingsMatcher = ListingsMatcher;
