@@ -37,6 +37,9 @@ class ListingsMatcher {
         const matchedTimeline = [...timeline];
         let matchedCount = 0;
         
+        // Track property name changes for updating sell events
+        const propertyNameMap = new Map();
+        
         for (const event of buyEvents) {
             try {
                 const listing = await this.findBestMatch(event, assumptions);
@@ -48,6 +51,9 @@ class ListingsMatcher {
                         const originalName = event.property; // e.g., "Rental 1", "Flip 2"
                         const address = listing.address || listing.streetAddress || 'Detroit Property';
                         const propertyLabel = `${originalName}: ${address}`;
+                        
+                        // Track the name change
+                        propertyNameMap.set(originalName, propertyLabel);
                         
                         matchedTimeline[eventIndex] = {
                             ...matchedTimeline[eventIndex],
@@ -70,6 +76,18 @@ class ListingsMatcher {
                 // Continue with other events even if one fails
             }
         }
+        
+        // Update corresponding sell events with new property names
+        console.log('Updating sell events with new property names...');
+        matchedTimeline.forEach((event, index) => {
+            if (event.action === 'sell' && propertyNameMap.has(event.property)) {
+                matchedTimeline[index] = {
+                    ...event,
+                    property: propertyNameMap.get(event.property)
+                };
+                console.log(`Updated sell event property name: ${event.property} -> ${propertyNameMap.get(event.property)}`);
+            }
+        });
         
         console.log(`Successfully matched ${matchedCount} of ${buyEvents.length} properties`);
         return matchedTimeline;
