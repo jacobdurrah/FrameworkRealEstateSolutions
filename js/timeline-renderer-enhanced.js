@@ -52,7 +52,6 @@ function enhancedRenderTimelineTable() {
                     <div class="property-with-link">
                         <input type="text" class="editable property-input" 
                                value="${row.property}" 
-                               title="${row.property}"
                                onchange="updateTimeline(${row.id}, 'property', this.value)"
                                placeholder="Property address"
                                style="width: calc(100% - 30px); display: inline-block;">
@@ -70,7 +69,6 @@ function enhancedRenderTimelineTable() {
                 // No link available, just show the input
                 propertyCell = `
                     <input type="text" class="editable" value="${row.property}" 
-                           title="${row.property}"
                            onchange="updateTimeline(${row.id}, 'property', this.value)"
                            placeholder="Property address">
                 `;
@@ -79,7 +77,6 @@ function enhancedRenderTimelineTable() {
             // Standard property input without link
             propertyCell = `
                 <input type="text" class="editable" value="${row.property}" 
-                       title="${row.property}"
                        onchange="updateTimeline(${row.id}, 'property', this.value)"
                        placeholder="Property address">
             `;

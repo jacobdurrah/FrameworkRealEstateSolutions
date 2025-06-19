@@ -1,0 +1,266 @@
+/**
+ * Enhanced Timeline Table Styles
+ * Fixes table navigation, adds sticky headers, and improves readability
+ */
+
+/* Import base responsive styles */
+@import url('timeline-table-responsive.css');
+
+/* Table wrapper improvements */
+.table-wrapper {
+    position: relative;
+    overflow: auto;
+    max-height: 600px; /* Fixed height for better navigation */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+    margin-top: 1rem;
+}
+
+/* Sticky table header */
+#timelineTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--table-header-bg, #2c3e50);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#timelineTable thead th {
+    background: var(--table-header-bg, #2c3e50);
+    color: var(--table-header-text, #ffffff);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* Fix column alignment */
+#timelineTable {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+#timelineTable tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+}
+
+#timelineTable tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+#timelineTable td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+/* Column width fixes for proper alignment */
+#timelineTable th:nth-child(1), /* Month */
+#timelineTable td:nth-child(1) {
+    width: 70px;
+    text-align: center;
+}
+
+#timelineTable th:nth-child(2), /* Action */
+#timelineTable td:nth-child(2) {
+    width: 100px;
+}
+
+#timelineTable th:nth-child(3), /* Property */
+#timelineTable td:nth-child(3) {
+    width: 30%;
+    min-width: 250px;
+}
+
+#timelineTable th:nth-child(4), /* Price */
+#timelineTable td:nth-child(4),
+#timelineTable th:nth-child(5), /* Down % */
+#timelineTable td:nth-child(5),
+#timelineTable th:nth-child(6), /* Down $ */
+#timelineTable td:nth-child(6),
+#timelineTable th:nth-child(7), /* Loan */
+#timelineTable td:nth-child(7),
+#timelineTable th:nth-child(8), /* Rate % */
+#timelineTable td:nth-child(8),
+#timelineTable th:nth-child(9), /* Term */
+#timelineTable td:nth-child(9),
+#timelineTable th:nth-child(10), /* Payment */
+#timelineTable td:nth-child(10),
+#timelineTable th:nth-child(11), /* Rent */
+#timelineTable td:nth-child(11),
+#timelineTable th:nth-child(12) /* Expenses */ {
+    width: 85px;
+    text-align: right;
+}
+
+#timelineTable th:nth-child(13), /* Actions */
+#timelineTable td:nth-child(13) {
+    width: 70px;
+    text-align: center;
+}
+
+/* Number alignment for headers */
+#timelineTable th.number {
+    text-align: right;
+}
+
+/* Input field improvements */
+#timelineTable input[type="text"],
+#timelineTable input[type="number"],
+#timelineTable select {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background: var(--input-bg);
+    font-size: inherit;
+    font-family: inherit;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#timelineTable input[type="text"]:focus,
+#timelineTable input[type="number"]:focus,
+#timelineTable select:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Number inputs right-aligned */
+#timelineTable input[type="number"] {
+    text-align: right;
+}
+
+/* Property input special handling */
+.property-cell input {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.property-with-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.property-with-link input {
+    flex: 1;
+}
+
+/* Disabled input styling */
+#timelineTable input:disabled,
+#timelineTable select:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Action buttons */
+.btn-danger {
+    padding: 0.375rem 0.75rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Scroll indicators */
+.table-wrapper::before,
+.table-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.table-wrapper::before {
+    left: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+}
+
+.table-wrapper::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
+}
+
+.table-wrapper.has-scroll-left::before,
+.table-wrapper.has-scroll-right::after {
+    opacity: 1;
+}
+
+/* Responsive improvements */
+@media (max-width: 1024px) {
+    .table-wrapper {
+        max-height: 500px;
+    }
+    
+    #timelineTable {
+        font-size: 0.85rem;
+    }
+    
+    #timelineTable th,
+    #timelineTable td {
+        padding: 0.4rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .table-wrapper {
+        max-height: none;
+        overflow: visible;
+        border: none;
+    }
+    
+    /* Mobile card layout from responsive CSS */
+    #timelineTable thead {
+        position: static;
+    }
+}
+
+/* Add row button enhancement */
+.add-row-btn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.add-row-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading state for table updates */
+#timelineTable.updating {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+#timelineTable.updating::after {
+    content: 'Updating...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
