@@ -534,6 +534,8 @@ async function applyRealListings() {
             throw new Error('Property search API not loaded. Please refresh the page.');
         }
         
+        console.log('Starting real listings search for timeline events...');
+        
         // Get rent preferences from structured input if available
         let minRent = 1000;
         let maxRent = 1500;
@@ -576,8 +578,10 @@ async function applyRealListings() {
         // Show success message if matches found
         if (summary.matched > 0) {
             showV3Success(`Found ${summary.matched} real listings matching your criteria!`);
+            console.log('Matched listings:', summary.listings);
         } else {
-            showV3Warning('No real listings found matching your criteria. Try adjusting your strategy or criteria.');
+            showV3Warning('No exact matches found. The API may be temporarily unavailable or there may be limited inventory in the target price range. Your simulation will continue with placeholder properties.');
+            console.log('Search attempted but no matches found. This could be due to API limits or inventory constraints.');
         }
         
     } catch (error) {
@@ -593,7 +597,17 @@ async function applyRealListings() {
  */
 function showListingsSummary(summary) {
     const display = document.getElementById('listingsSummary');
-    if (!display) return;
+    if (!display) {
+        // Create summary display if it doesn't exist
+        const strategyContainer = document.querySelector('.strategy-options');
+        if (strategyContainer) {
+            const summaryDiv = document.createElement('div');
+            summaryDiv.id = 'listingsSummary';
+            summaryDiv.className = 'mt-3';
+            strategyContainer.appendChild(summaryDiv);
+        }
+        return;
+    }
     
     display.innerHTML = `
         <div class="listings-summary">

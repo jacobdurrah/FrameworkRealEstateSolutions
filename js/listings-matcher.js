@@ -19,6 +19,9 @@ class ListingsMatcher {
     async matchTimelineToListings(timeline, assumptions) {
         console.log('Matching timeline to real listings...', { timeline, assumptions });
         
+        // Clear previous matches for fresh search
+        this.clearMatchedListings();
+        
         // Filter only buy events that need matching
         const buyEvents = timeline.filter(event => 
             event.action === 'buy' && !event.realListing
@@ -28,8 +31,11 @@ class ListingsMatcher {
             return timeline; // No events to match
         }
 
+        console.log(`Processing ${buyEvents.length} buy events...`);
+
         // Process each buy event
         const matchedTimeline = [...timeline];
+        let matchedCount = 0;
         
         for (const event of buyEvents) {
             try {
@@ -38,10 +44,14 @@ class ListingsMatcher {
                     // Update the event in the timeline
                     const eventIndex = matchedTimeline.findIndex(e => e.id === event.id || e === event);
                     if (eventIndex !== -1) {
+                        // Format property label with strategy type
+                        const strategyType = this.getStrategyType(event.property);
+                        const propertyLabel = `${strategyType} – ${listing.address || listing.streetAddress || 'Detroit Property'}`;
+                        
                         matchedTimeline[eventIndex] = {
                             ...matchedTimeline[eventIndex],
                             realListing: listing,
-                            property: listing.address || listing.streetAddress,
+                            property: propertyLabel,
                             price: listing.price,
                             // Update rent based on actual property if available
                             rent: this.estimateRent(listing, assumptions),
@@ -51,6 +61,7 @@ class ListingsMatcher {
                             baths: listing.bathrooms,
                             sqft: listing.livingArea
                         };
+                        matchedCount++;
                     }
                 }
             } catch (error) {
@@ -58,7 +69,8 @@ class ListingsMatcher {
                 // Continue with other events even if one fails
             }
         }
-
+        
+        console.log(`Successfully matched ${matchedCount} of ${buyEvents.length} properties`);
         return matchedTimeline;
     }
 
@@ -66,57 +78,75 @@ class ListingsMatcher {
      * Find the best matching listing for a timeline event
      */
     async findBestMatch(event, assumptions) {
-        // Define search criteria based on event and assumptions
-        const criteria = {
-            minPrice: Math.max(30000, event.price * 0.8), // 20% below target
-            maxPrice: Math.min(150000, event.price * 1.2), // 20% above target
-            location: 'Detroit, MI',
-            status_type: 'ForSale',
-            home_type: 'Houses',
-            beds_min: 2, // Minimum for rental viability
-            sort: 'Price_Low_High'
-        };
-
-        // Check cache first
-        const cacheKey = JSON.stringify(criteria);
-        const cachedListings = this.getFromCache(cacheKey);
+        console.log(`Finding best match for event:`, event);
         
-        let listings;
-        if (cachedListings) {
-            listings = cachedListings;
-        } else {
-            // Fetch from API
-            listings = await this.fetchListings(criteria);
+        // Try multiple search attempts with expanding criteria
+        const searchAttempts = [
+            { priceBuffer: 0.20, requireBeds: false }, // ±20%, no bedroom requirement
+            { priceBuffer: 0.25, requireBeds: false }, // ±25%, no bedroom requirement
+            { priceBuffer: 0.30, requireBeds: false }  // ±30%, fallback
+        ];
+        
+        for (const attempt of searchAttempts) {
+            // Define search criteria based on event and assumptions
+            const criteria = {
+                minPrice: Math.max(20000, Math.floor(event.price * (1 - attempt.priceBuffer))),
+                maxPrice: Math.min(200000, Math.ceil(event.price * (1 + attempt.priceBuffer))),
+                location: 'Detroit, MI', // Broad search across all Detroit
+                status_type: 'ForSale',
+                home_type: 'Houses',
+                sort: 'Price_Low_High'
+            };
+            
+            // Only add bedroom requirement if specified
+            if (attempt.requireBeds) {
+                criteria.beds_min = 2;
+            }
+            
+            console.log(`Search attempt with criteria:`, criteria);
+
+            // Check cache first
+            const cacheKey = JSON.stringify(criteria);
+            const cachedListings = this.getFromCache(cacheKey);
+            
+            let listings;
+            if (cachedListings) {
+                listings = cachedListings;
+                console.log(`Using cached listings: ${listings.length} results`);
+            } else {
+                // Fetch from API
+                listings = await this.fetchListings(criteria);
+                console.log(`API returned ${listings ? listings.length : 0} listings`);
+                if (listings && listings.length > 0) {
+                    this.storeInCache(cacheKey, listings);
+                }
+            }
+
             if (listings && listings.length > 0) {
-                this.storeInCache(cacheKey, listings);
+                // Score and rank listings
+                const scoredListings = listings
+                    .filter(listing => !this.matchedListings.has(listing.zpid || listing.id))
+                    .map(listing => ({
+                        listing,
+                        score: this.calculateMatchScore(listing, event, assumptions)
+                    }))
+                    .sort((a, b) => b.score - a.score);
+
+                if (scoredListings.length > 0) {
+                    // Select best match
+                    const bestMatch = scoredListings[0].listing;
+                    console.log(`Found match: ${bestMatch.address || 'Property'} at $${bestMatch.price}`);
+                    
+                    // Mark as used
+                    this.matchedListings.set(bestMatch.zpid || bestMatch.id, true);
+                    
+                    return this.formatListing(bestMatch);
+                }
             }
         }
-
-        if (!listings || listings.length === 0) {
-            console.warn('No listings found for criteria:', criteria);
-            return null;
-        }
-
-        // Score and rank listings
-        const scoredListings = listings
-            .filter(listing => !this.matchedListings.has(listing.zpid || listing.id))
-            .map(listing => ({
-                listing,
-                score: this.calculateMatchScore(listing, event, assumptions)
-            }))
-            .sort((a, b) => b.score - a.score);
-
-        if (scoredListings.length === 0) {
-            return null;
-        }
-
-        // Select best match
-        const bestMatch = scoredListings[0].listing;
         
-        // Mark as used
-        this.matchedListings.set(bestMatch.zpid || bestMatch.id, true);
-        
-        return this.formatListing(bestMatch);
+        console.warn('No listings found after all attempts for event:', event);
+        return null;
     }
 
     /**
@@ -196,8 +226,23 @@ class ListingsMatcher {
         try {
             // Use the existing property API
             if (typeof searchPropertiesZillow === 'function') {
+                console.log('Calling searchPropertiesZillow with:', criteria);
                 const results = await searchPropertiesZillow(criteria);
-                return results;
+                
+                // Handle the response structure from the API
+                if (results) {
+                    // Check if results is an array or has a props property
+                    if (Array.isArray(results)) {
+                        return results;
+                    } else if (results.props && Array.isArray(results.props)) {
+                        return results.props;
+                    } else if (results.results && Array.isArray(results.results)) {
+                        return results.results;
+                    }
+                }
+                
+                console.warn('Unexpected API response structure:', results);
+                return [];
             } else {
                 console.error('Property API not available');
                 return [];
@@ -281,6 +326,24 @@ class ListingsMatcher {
         };
     }
 }
+
+    /**
+     * Extract strategy type from property name
+     */
+    getStrategyType(propertyName) {
+        if (!propertyName) return 'Property';
+        
+        const name = propertyName.toLowerCase();
+        if (name.includes('flip')) return 'Flip';
+        if (name.includes('brrr')) return 'BRRR';
+        if (name.includes('rental')) return 'Rental';
+        
+        // Extract type from pattern like "Flip 1", "BRRR 2", etc.
+        const match = propertyName.match(/^(\w+)\s+\d+/);
+        if (match) return match[1];
+        
+        return 'Property';
+    }
 
 // Make available globally
 window.ListingsMatcher = ListingsMatcher;

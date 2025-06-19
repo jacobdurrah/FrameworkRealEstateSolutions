@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Listings Feature Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 30px;
+        }
+        .test-case {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .expected {
+            background: #d4edda;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            color: #155724;
+        }
+        .actual {
+            background: #fff3cd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            color: #856404;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .test-result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real Detroit Listings Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>Feature Overview</h2>
+        <p>Testing the "Replace simulated properties with real Detroit listings" feature to ensure it correctly finds and integrates real for-sale properties.</p>
+        
+        <h3>Fix Implementation Summary:</h3>
+        <ul>
+            <li>✅ Expanded price search range from ±20% to ±25% (with ±30% fallback)</li>
+            <li>✅ Removed zip code restrictions - searches all of Detroit, MI</li>
+            <li>✅ Removed minimum bedroom requirement</li>
+            <li>✅ Added retry logic with expanding criteria</li>
+            <li>✅ Improved property labels: [Strategy] – [Address]</li>
+            <li>✅ Enhanced logging for debugging</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Scenarios</h2>
+        
+        <div class="test-case">
+            <h3>Test 1: Conservative Strategy (Rental-Focused)</h3>
+            <p><strong>Setup:</strong></p>
+            <ul>
+                <li>Target Income: $5,000/month</li>
+                <li>Timeline: 36 months</li>
+                <li>Starting Capital: $80,000</li>
+                <li>Strategy: Conservative</li>
+            </ul>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Multiple rental properties in timeline</li>
+                    <li>Properties labeled as "Rental – [Address]"</li>
+                    <li>Prices in $50K-$120K range</li>
+                    <li>No "No listings found" error</li>
+                </ul>
+            </div>
+            
+            <div class="actual">
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Go to Portfolio Simulator V3</li>
+                    <li>Enter the test parameters</li>
+                    <li>Generate strategy</li>
+                    <li>Click "Find Actual Listings"</li>
+                    <li>Verify properties are replaced with real addresses</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test 2: Balanced Strategy (Mixed)</h3>
+            <p><strong>Setup:</strong></p>
+            <ul>
+                <li>Target Income: $4,000/month</li>
+                <li>Target Cash from Sales: $50,000</li>
+                <li>Timeline: 24 months</li>
+                <li>Starting Capital: $60,000</li>
+                <li>Strategy: Balanced</li>
+            </ul>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Mix of rentals and flips</li>
+                    <li>Properties labeled as "Rental – [Address]" or "Flip – [Address]"</li>
+                    <li>Successful matches for most properties</li>
+                    <li>Console logs show search attempts</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test 3: Aggressive Strategy (Flip-Heavy)</h3>
+            <p><strong>Setup:</strong></p>
+            <ul>
+                <li>Target Income: $2,000/month</li>
+                <li>Target Cash from Sales: $100,000</li>
+                <li>Timeline: 18 months</li>
+                <li>Starting Capital: $50,000</li>
+                <li>Strategy: Aggressive</li>
+            </ul>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Multiple flip properties</li>
+                    <li>Properties labeled as "Flip – [Address]"</li>
+                    <li>Lower-priced properties for flips</li>
+                    <li>At least some successful matches</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>API Call Verification</h2>
+        <p>Open browser console and look for:</p>
+        <pre>
+Starting real listings search for timeline events...
+Processing X buy events...
+Search attempt with criteria: {minPrice: X, maxPrice: Y, location: "Detroit, MI", ...}
+API returned X listings
+Found match: [Address] at $[Price]
+Successfully matched X of Y properties
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Common Issues & Solutions</h2>
+        <table>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+            <tr>
+                <td>Still shows "No listings found"</td>
+                <td>API rate limit or authentication issue</td>
+                <td>Check console for API errors, wait and retry</td>
+            </tr>
+            <tr>
+                <td>Generic property names remain</td>
+                <td>No matches found in price range</td>
+                <td>The fallback search should find closest matches</td>
+            </tr>
+            <tr>
+                <td>Slow response</td>
+                <td>Multiple API calls with retries</td>
+                <td>Normal behavior - shows loading indicator</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Success Criteria</h2>
+        <div class="test-result test-pass">
+            <h3>✅ Feature is Working If:</h3>
+            <ul>
+                <li>Timeline shows real Detroit addresses (e.g., "BRRR – 7520 Puritan St, Detroit, MI")</li>
+                <li>No "No listings found" error when properties exist in range</li>
+                <li>Console shows successful API calls and matches</li>
+                <li>Results appear within 3-5 seconds</li>
+                <li>At least 50% of properties get matched to real listings</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual Test Results</h2>
+        <p>Record your test results here:</p>
+        <table>
+            <tr>
+                <th>Test Scenario</th>
+                <th>Pass/Fail</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td>Conservative Strategy</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Balanced Strategy</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Aggressive Strategy</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Property Labels Format</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>API Response Time</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
