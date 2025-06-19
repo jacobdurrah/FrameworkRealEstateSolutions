@@ -1,0 +1,328 @@
+/**
+ * Timeline Table Responsive Layout
+ * Optimizes column widths and provides responsive behavior across all devices
+ */
+
+/* Base table styles with optimal column widths */
+#timelineTable {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+/* Column width optimization for desktop (1440px+) */
+@media (min-width: 1440px) {
+    #timelineTable th:nth-child(1), /* Month */
+    #timelineTable td:nth-child(1) {
+        width: 60px;
+        min-width: 60px;
+    }
+    
+    #timelineTable th:nth-child(2), /* Action */
+    #timelineTable td:nth-child(2) {
+        width: 110px;
+        min-width: 110px;
+    }
+    
+    #timelineTable th:nth-child(3), /* Property */
+    #timelineTable td:nth-child(3) {
+        width: 35%;
+        min-width: 300px;
+    }
+    
+    #timelineTable th:nth-child(4), /* Price */
+    #timelineTable td:nth-child(4) {
+        width: 100px;
+        min-width: 100px;
+    }
+    
+    #timelineTable th:nth-child(5), /* Down % */
+    #timelineTable td:nth-child(5) {
+        width: 80px;
+        min-width: 80px;
+    }
+    
+    #timelineTable th:nth-child(6), /* Down $ */
+    #timelineTable td:nth-child(6) {
+        width: 90px;
+        min-width: 90px;
+    }
+    
+    #timelineTable th:nth-child(7), /* Loan */
+    #timelineTable td:nth-child(7) {
+        width: 90px;
+        min-width: 90px;
+    }
+    
+    #timelineTable th:nth-child(8), /* Rate % */
+    #timelineTable td:nth-child(8) {
+        width: 70px;
+        min-width: 70px;
+    }
+    
+    #timelineTable th:nth-child(9), /* Term */
+    #timelineTable td:nth-child(9) {
+        width: 60px;
+        min-width: 60px;
+    }
+    
+    #timelineTable th:nth-child(10), /* Payment */
+    #timelineTable td:nth-child(10) {
+        width: 90px;
+        min-width: 90px;
+    }
+    
+    #timelineTable th:nth-child(11), /* Rent */
+    #timelineTable td:nth-child(11) {
+        width: 80px;
+        min-width: 80px;
+    }
+    
+    #timelineTable th:nth-child(12), /* Expenses */
+    #timelineTable td:nth-child(12) {
+        width: 90px;
+        min-width: 90px;
+    }
+    
+    #timelineTable th:nth-child(13), /* Actions */
+    #timelineTable td:nth-child(13) {
+        width: 60px;
+        min-width: 60px;
+    }
+}
+
+/* Tablet landscape (1024px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+    #timelineTable {
+        font-size: 0.9rem;
+    }
+    
+    #timelineTable th:nth-child(1),
+    #timelineTable td:nth-child(1) {
+        width: 50px;
+    }
+    
+    #timelineTable th:nth-child(2),
+    #timelineTable td:nth-child(2) {
+        width: 100px;
+    }
+    
+    #timelineTable th:nth-child(3),
+    #timelineTable td:nth-child(3) {
+        width: 30%;
+        min-width: 250px;
+    }
+    
+    /* Hide less critical columns on tablet */
+    #timelineTable th:nth-child(9), /* Term */
+    #timelineTable td:nth-child(9),
+    #timelineTable th:nth-child(12), /* Expenses */
+    #timelineTable td:nth-child(12) {
+        display: none;
+    }
+}
+
+/* Tablet portrait (768px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #timelineTable {
+        min-width: 900px;
+        font-size: 0.85rem;
+    }
+    
+    #timelineTable th,
+    #timelineTable td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    /* Adjusted widths for tablet portrait */
+    #timelineTable th:nth-child(3),
+    #timelineTable td:nth-child(3) {
+        width: 250px;
+        min-width: 250px;
+    }
+}
+
+/* Mobile (375px and below) - Card-based layout */
+@media (max-width: 767px) {
+    /* Hide table headers on mobile */
+    #timelineTable thead {
+        display: none;
+    }
+    
+    /* Convert table rows to cards */
+    #timelineTable tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+        background: var(--card-bg);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    #timelineTable tbody td {
+        display: block;
+        width: 100% !important;
+        text-align: left;
+        padding: 0.5rem 0;
+        border: none;
+        position: relative;
+        padding-left: 35%;
+    }
+    
+    /* Add labels before each value */
+    #timelineTable tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 30%;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+    
+    /* Special handling for property cell */
+    #timelineTable tbody td:nth-child(3) {
+        padding-left: 0;
+        padding-top: 0.75rem;
+    }
+    
+    #timelineTable tbody td:nth-child(3)::before {
+        position: static;
+        display: block;
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Property input full width on mobile */
+    #timelineTable tbody td:nth-child(3) input,
+    #timelineTable tbody td:nth-child(3) .property-with-link {
+        width: 100% !important;
+    }
+    
+    /* Group financial data */
+    #timelineTable tbody td:nth-child(4),
+    #timelineTable tbody td:nth-child(5),
+    #timelineTable tbody td:nth-child(6),
+    #timelineTable tbody td:nth-child(7) {
+        display: inline-block;
+        width: 50% !important;
+        padding-left: 0;
+    }
+    
+    /* Stack action buttons */
+    #timelineTable tbody td:nth-child(13) {
+        text-align: center;
+        padding-left: 0;
+    }
+    
+    #timelineTable tbody td:nth-child(13)::before {
+        display: none;
+    }
+    
+    /* Hide less critical fields on mobile */
+    #timelineTable tbody td:nth-child(8), /* Rate */
+    #timelineTable tbody td:nth-child(9), /* Term */
+    #timelineTable tbody td:nth-child(12) /* Expenses */ {
+        display: none;
+    }
+    
+    /* Make inputs full width on mobile */
+    #timelineTable input[type="number"],
+    #timelineTable input[type="text"],
+    #timelineTable select {
+        width: 100% !important;
+        max-width: none !important;
+    }
+}
+
+/* Enhanced property cell styles */
+.property-cell {
+    position: relative;
+}
+
+.property-cell input {
+    width: calc(100% - 40px);
+    min-width: 200px;
+    padding-right: 35px;
+}
+
+.property-with-link input {
+    width: calc(100% - 35px);
+}
+
+/* Tooltip for truncated content */
+.property-cell input[title] {
+    cursor: help;
+}
+
+/* Dropdown optimization */
+.table-select {
+    width: 100%;
+    min-width: 90px;
+    padding: 0.25rem 0.5rem;
+    font-size: inherit;
+}
+
+/* Number input optimization */
+input.editable.number {
+    text-align: right;
+    width: 100%;
+    min-width: 60px;
+}
+
+/* Ensure readability */
+#timelineTable input,
+#timelineTable select {
+    font-size: inherit;
+    line-height: 1.4;
+}
+
+/* Focus states for better accessibility */
+#timelineTable input:focus,
+#timelineTable select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    background-color: var(--hover-bg);
+}
+
+/* Print styles */
+@media print {
+    #timelineTable {
+        font-size: 10pt;
+    }
+    
+    #timelineTable th:nth-child(3),
+    #timelineTable td:nth-child(3) {
+        width: 30%;
+    }
+    
+    .table-wrapper {
+        overflow: visible !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #timelineTable tbody tr {
+        border: 2px solid currentColor;
+    }
+    
+    #timelineTable input,
+    #timelineTable select {
+        border: 1px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    #timelineTable * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
