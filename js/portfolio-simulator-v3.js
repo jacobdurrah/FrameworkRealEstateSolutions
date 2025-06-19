@@ -836,7 +836,7 @@ function serializeV3State() {
 /**
  * Generate shareable link
  */
-function shareSimulation() {
+async function shareSimulation() {
     try {
         // Serialize state
         const state = serializeV3State();
@@ -847,19 +847,39 @@ function shareSimulation() {
             return;
         }
         
-        // Convert to JSON and compress
-        const stateJson = JSON.stringify(state);
-        const compressed = LZString.compressToEncodedURIComponent(stateJson);
-        
-        // Generate URL
-        const baseUrl = window.location.origin + window.location.pathname;
-        const shareUrl = `${baseUrl}?state=${compressed}`;
-        
-        // Check URL length
-        if (shareUrl.length > 8000) {
-            showV3Warning('The simulation data is too large to share via URL. Try simplifying your strategy.');
-            return;
+        // Initialize ShareManager if not already done
+        if (!window.shareManager) {
+            window.shareManager = new ShareManager();
         }
+        
+        showV3Loading(true, 'Generating share link...');
+        
+        let shareUrl;
+        let shareMethod = 'url';
+        let shareId = null;
+        
+        try {
+            // Try using ShareManager (which will attempt database first, then URL fallback)
+            const result = await window.shareManager.shareSimulation(state);
+            shareUrl = result.url;
+            shareMethod = result.method;
+            shareId = result.id;
+        } catch (error) {
+            console.warn('ShareManager failed, using direct URL method:', error);
+            // Direct fallback to URL-based sharing
+            const stateJson = JSON.stringify(state);
+            const compressed = LZString.compressToEncodedURIComponent(stateJson);
+            const baseUrl = window.location.origin + window.location.pathname;
+            shareUrl = `${baseUrl}?state=${compressed}`;
+            
+            if (shareUrl.length > 8000) {
+                showV3Warning('The simulation data is too large to share via URL. Try simplifying your strategy.');
+                showV3Loading(false);
+                return;
+            }
+        }
+        
+        showV3Loading(false);
         
         // Copy to clipboard
         navigator.clipboard.writeText(shareUrl).then(() => {
@@ -872,7 +892,12 @@ function shareSimulation() {
                     <input type="text" value="${shareUrl}" 
                            style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px;"
                            onclick="this.select()" readonly>
-                    <p style="font-size: 0.9rem; color: #666;">The link has been copied to your clipboard.</p>
+                    <p style="font-size: 0.9rem; color: #666;">
+                        ${shareMethod === 'database' 
+                            ? '✅ Simulation saved to cloud. This link will work for 90 days.' 
+                            : '⚠️ Using URL-based sharing. The entire simulation is encoded in the URL.'}
+                    </p>
+                    ${shareId ? `<p style="font-size: 0.8rem; color: #999;">ID: ${shareId}</p>` : ''}
                 </div>
             `;
             
@@ -934,22 +959,41 @@ function shareSimulation() {
 /**
  * Load state from URL on page load
  */
-function loadStateFromUrl() {
+async function loadStateFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
+    const simulationId = urlParams.get('id');
     const compressedState = urlParams.get('state');
     
-    if (!compressedState) {
+    if (!simulationId && !compressedState) {
         return false;
     }
     
+    let state = null;
+    
     try {
-        // Decompress and parse state
-        const stateJson = LZString.decompressFromEncodedURIComponent(compressedState);
-        if (!stateJson) {
-            throw new Error('Invalid or corrupted share link');
-        }
+        // Show loading message
+        showV3Loading(true, 'Loading shared simulation...');
         
-        const state = JSON.parse(stateJson);
+        if (simulationId) {
+            // Try to load from database
+            if (!window.shareManager) {
+                window.shareManager = new ShareManager();
+            }
+            
+            state = await window.shareManager.loadFromDatabase(simulationId);
+            
+            if (!state) {
+                throw new Error('Simulation not found or expired');
+            }
+        } else if (compressedState) {
+            // Load from compressed URL
+            const stateJson = LZString.decompressFromEncodedURIComponent(compressedState);
+            if (!stateJson) {
+                throw new Error('Invalid or corrupted share link');
+            }
+            
+            state = JSON.parse(stateJson);
+        }
         
         // Validate state version
         if (state.version !== 'v3') {
