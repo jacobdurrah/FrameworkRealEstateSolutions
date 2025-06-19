@@ -48,6 +48,15 @@ class GoalParser {
                 /focus\s+on\s+(flips?|rentals?|brr+)/i
             ],
             
+            // Target cash from sales patterns
+            targetCashFromSales: [
+                /\$?([\d,]+)\s*(?:k|K)?\s+(?:cash\s+)?from\s+(?:sales?|flips?|property\s+sales?)/i,
+                /(?:target|aim\s+for|want|need|generate)\s+\$?([\d,]+)\s*(?:k|K)?\s+(?:in\s+)?cash(?:\s+from\s+sales?)?/i,
+                /\$?([\d,]+)\s*(?:k|K)?\s+(?:target\s+)?cash\s+(?:from\s+sales?|goal)/i,
+                /(?:cash\s+goal|cash\s+target)\s*(?:is\s+|:\s*)?\$?([\d,]+)\s*(?:k|K)?/i,
+                /(?:make|earn|generate)\s+\$?([\d,]+)\s*(?:k|K)?\s+(?:from\s+)?(?:selling|sales?|flips?)/i
+            ],
+            
             // Rent patterns
             rent: [
                 /rent\s+(?:is|are|of)\s*\$?([\d,]+)\s*(?:\/month|\/mo|per\s+month|monthly)?\s*(?:per\s+unit)?/i,
@@ -76,7 +85,8 @@ class GoalParser {
             preferredStrategies: [],
             riskTolerance: 'balanced',
             rentPerUnit: 1200,  // Default rent
-            monthlyExpensesPerUnit: 350  // Default expenses
+            monthlyExpensesPerUnit: 350,  // Default expenses
+            targetCashFromSales: 0  // Default to no cash target
         };
     }
 
@@ -97,6 +107,7 @@ class GoalParser {
             riskTolerance: this.extractRiskTolerance(input),
             rentPerUnit: this.extractRent(input),
             monthlyExpensesPerUnit: this.extractExpenses(input),
+            targetCashFromSales: this.extractTargetCashFromSales(input),
             raw: input
         };
 
@@ -261,6 +272,25 @@ class GoalParser {
     }
 
     /**
+     * Extract target cash from sales
+     */
+    extractTargetCashFromSales(input) {
+        for (const pattern of this.patterns.targetCashFromSales) {
+            const match = input.match(pattern);
+            if (match) {
+                let amount = this.parseAmount(match[1]);
+                // Check if 'k' or 'K' is mentioned after the number
+                if (match[0].toLowerCase().includes('k') && amount < 1000) {
+                    amount *= 1000;
+                }
+                console.log('Extracted target cash from sales:', amount, 'from match:', match[0]);
+                return amount;
+            }
+        }
+        return 0; // Default to 0 if not specified
+    }
+
+    /**
      * Parse amount from string
      */
     parseAmount(amountStr) {
@@ -295,6 +325,7 @@ class GoalParser {
         result.timeHorizon = Math.max(6, Math.min(120, result.timeHorizon));
         result.startingCapital = Math.max(10000, Math.min(1000000, result.startingCapital));
         result.monthlyContributions = Math.max(0, Math.min(50000, result.monthlyContributions));
+        result.targetCashFromSales = Math.max(0, Math.min(10000000, result.targetCashFromSales));
         
         // Add computed fields
         result.totalCapitalAvailable = result.startingCapital + (result.monthlyContributions * result.timeHorizon);
@@ -340,6 +371,10 @@ class GoalParser {
             fields++;
         }
         if (parsed.monthlyExpensesPerUnit !== this.defaults.monthlyExpensesPerUnit) {
+            confidence += 10;
+            fields++;
+        }
+        if (parsed.targetCashFromSales > 0) {
             confidence += 10;
             fields++;
         }

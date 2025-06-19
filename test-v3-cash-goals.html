@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio V3 - Target Cash from Sales Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 30px;
+        }
+        .test-case {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .expected {
+            background: #d4edda;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            color: #155724;
+        }
+        .goal-example {
+            background: #e8f4f8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Target Cash from Sales - Feature Test Guide</h1>
+    
+    <div class="test-section">
+        <h2>Feature Overview</h2>
+        <p>The <strong>Target Cash from Sales</strong> feature allows users to set a cash goal in addition to the monthly income target. The simulator will attempt to generate strategies that meet either or both goals through:</p>
+        <ul>
+            <li>Fix & Flip profits</li>
+            <li>BRRR strategy with exit sales</li>
+            <li>Property sales after appreciation</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 1: Cash-Only Goal</h2>
+        <div class="test-case">
+            <h3>Natural Language Input:</h3>
+            <div class="goal-example">
+                Generate $0 monthly income in 24 months with $50K, aim for $100K cash from sales
+            </div>
+            
+            <h3>Or Structured Input:</h3>
+            <ul>
+                <li>Target Monthly Income: $0</li>
+                <li>Target Cash from Sales: $100,000</li>
+                <li>Timeline: 24 months</li>
+                <li>Starting Capital: $50,000</li>
+            </ul>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Strategy focuses heavily on flips</li>
+                    <li>Minimal or no rental properties</li>
+                    <li>Cash from Sales metric shows in strategy cards</li>
+                    <li>Success message if $100K achieved</li>
+                    <li>Warning message if falls short</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Combined Goals (Income + Cash)</h2>
+        <div class="test-case">
+            <h3>Natural Language Input:</h3>
+            <div class="goal-example">
+                I want $3K/month and $50K in cash from sales in 36 months with $80K starting capital
+            </div>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Balanced strategy with rentals and flips</li>
+                    <li>Both metrics displayed in strategy cards</li>
+                    <li>Status messages for both goals</li>
+                    <li>Timeline includes mix of buy/hold and flip events</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: High Cash Target with Limited Capital</h2>
+        <div class="test-case">
+            <h3>Natural Language Input:</h3>
+            <div class="goal-example">
+                Make $4K/month and generate $150K cash from sales with $30K starting and $2K/month saved
+            </div>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Aggressive strategy with multiple flips</li>
+                    <li>Possible BRRR with exit sales</li>
+                    <li class="warning">May show warning if cash goal not achievable</li>
+                    <li>Shows percentage achieved (e.g., "82% of target")</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: No Flips Allowed</h2>
+        <div class="test-case">
+            <h3>Structured Input:</h3>
+            <ul>
+                <li>Target Monthly Income: $5,000</li>
+                <li>Target Cash from Sales: $75,000</li>
+                <li>Timeline: 48 months</li>
+                <li>Starting Capital: $100,000</li>
+                <li><strong>Advanced Options: Uncheck "Include Fix & Flips"</strong></li>
+            </ul>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Strategy uses BRRR with exit sales only</li>
+                    <li>No flip events in timeline</li>
+                    <li>May take longer to achieve cash goal</li>
+                    <li>Success/failure message reflects constraints</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 5: Backward Compatibility</h2>
+        <div class="test-case">
+            <h3>Natural Language Input (No Cash Goal):</h3>
+            <div class="goal-example">
+                Build portfolio for $8K/month in 36 months with $60K capital
+            </div>
+            
+            <div class="expected">
+                <strong>Expected Result:</strong>
+                <ul>
+                    <li>Works exactly as before</li>
+                    <li>No cash from sales metrics shown</li>
+                    <li>Only income goal status displayed</li>
+                    <li>Target Cash from Sales shows as $0 in structured input</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>UI Verification Checklist</h2>
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Expected Behavior</th>
+                <th>Pass/Fail</th>
+            </tr>
+            <tr>
+                <td>Structured Input Field</td>
+                <td>"Target Cash from Sales (Optional)" appears below Monthly Savings</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Goal Parser</td>
+                <td>Correctly extracts cash targets from natural language</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Parsed Goal Display</td>
+                <td>Shows "Target Cash from Sales" when > 0</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Strategy Cards</td>
+                <td>Display "Cash from Sales" metric when applicable</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Success Messages</td>
+                <td>Green checkmark when cash goal achieved</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Failure Messages</td>
+                <td>Red warning with amount/percentage when goal not met</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Timeline Events</td>
+                <td>Flip sales contribute to cash from sales total</td>
+                <td>[ ]</td>
+            </tr>
+            <tr>
+                <td>Portfolio Summary</td>
+                <td>"Cash from Sales" value updates correctly</td>
+                <td>[ ]</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Natural Language Examples to Test</h2>
+        <ul>
+            <li>"Generate $100K cash from flips"</li>
+            <li>"I need $75K from property sales"</li>
+            <li>"Target $50,000 cash goal"</li>
+            <li>"Make $150K from selling properties"</li>
+            <li>"Earn $200K cash from sales and $5K/month"</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Performance Test</h2>
+        <p>Verify that strategy generation with cash goals:</p>
+        <ul>
+            <li>Completes within 3 seconds</li>
+            <li>Doesn't cause infinite loops</li>
+            <li>Handles edge cases gracefully</li>
+        </ul>
+    </div>
+</body>
+</html>

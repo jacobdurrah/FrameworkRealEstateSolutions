@@ -81,7 +81,9 @@ class StrategyGenerator {
             propertyCount: 0,
             totalInvestment: 0,
             finalMonthlyIncome: 0,
+            finalCashFromSales: 0,  // Track final cash from sales
             feasibility: true,
+            feasibilityCash: true,  // Track cash goal feasibility separately
             description: '',
             metrics: {},
             assumptions: {
@@ -99,7 +101,9 @@ class StrategyGenerator {
             monthlyContributions: parsedGoal.monthlyContributions,
             properties: [],
             activeFlips: [],
-            totalInvested: 0
+            totalInvested: 0,
+            cashFromSales: 0,  // Track cumulative cash from property sales
+            targetCashFromSales: parsedGoal.targetCashFromSales || 0
         };
 
         // Generate strategy based on approach
@@ -129,7 +133,9 @@ class StrategyGenerator {
         let iterations = 0;
         const MAX_ITERATIONS = 100; // Prevent infinite loops
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+        // Continue generating if either goal is not met
+        while ((state.monthlyIncome < goal.targetMonthlyIncome || 
+                (state.targetCashFromSales > 0 && state.cashFromSales < state.targetCashFromSales)) && 
                state.currentMonth < goal.timeHorizon && 
                iterations < MAX_ITERATIONS) {
             iterations++;
@@ -171,7 +177,9 @@ class StrategyGenerator {
         const MAX_ITERATIONS = 100; // Prevent infinite loops
         let lastMonth = state.currentMonth;
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+        // Continue generating if either goal is not met
+        while ((state.monthlyIncome < goal.targetMonthlyIncome || 
+                (state.targetCashFromSales > 0 && state.cashFromSales < state.targetCashFromSales)) && 
                state.currentMonth < goal.timeHorizon && 
                iterations < MAX_ITERATIONS) {
             iterations++;
@@ -180,13 +188,24 @@ class StrategyGenerator {
             this.processScheduledEvents(state, state.currentMonth);
             
             const incomeGap = goal.targetMonthlyIncome - state.monthlyIncome;
+            const cashGap = state.targetCashFromSales > 0 ? state.targetCashFromSales - state.cashFromSales : 0;
             const timeRemaining = goal.timeHorizon - state.currentMonth;
             
             // More robust decision logic
             let actionTaken = false;
             
-            // First priority: If we have very little cash and time, need to generate capital
-            if (state.cashAvailable < 20000 && timeRemaining > 6 && flipCount < 3) {
+            // Check if we should prioritize cash generation
+            const needsCash = cashGap > 0 && (cashGap > incomeGap * 12 || incomeGap <= 0);
+            
+            // Priority 1: If cash goal is priority, focus on flips
+            if (needsCash && timeRemaining > 6 && this.canDoFlip(state)) {
+                this.addFlipProject(strategy, state, state.currentMonth);
+                flipCount++;
+                actionTaken = true;
+            }
+            
+            // Priority 2: If we have very little cash and time, need to generate capital
+            if (!actionTaken && state.cashAvailable < 20000 && timeRemaining > 6 && flipCount < 3) {
                 if (this.canDoFlip(state)) {
                     this.addFlipProject(strategy, state, state.currentMonth);
                     flipCount++;
@@ -261,7 +280,9 @@ class StrategyGenerator {
         let iterations = 0;
         const MAX_ITERATIONS = 100; // Prevent infinite loops
         
-        while (state.monthlyIncome < goal.targetMonthlyIncome && 
+        // Continue generating if either goal is not met
+        while ((state.monthlyIncome < goal.targetMonthlyIncome || 
+                (state.targetCashFromSales > 0 && state.cashFromSales < state.targetCashFromSales)) && 
                state.currentMonth < goal.timeHorizon && 
                iterations < MAX_ITERATIONS) {
             iterations++;
@@ -395,6 +416,7 @@ class StrategyGenerator {
             month: flipEndMonth,
             type: 'flip_complete',
             cashInflow: this.assumptions.avgFlipProfit + loanAmount, // Profit + loan payoff
+            profit: this.assumptions.avgFlipProfit, // Track profit separately for cash from sales
             monthlyIncomeAdjustment: monthlyInterest // Remove holding cost
         });
         
@@ -473,6 +495,40 @@ class StrategyGenerator {
     }
 
     /**
+     * Add BRRR project with planned exit sale
+     */
+    addBRRRWithExit(strategy, state, month, holdPeriod = 12) {
+        // Use regular BRRR first
+        this.addBRRRProject(strategy, state, month);
+        
+        // Schedule a sale after hold period
+        const property = state.properties[state.properties.length - 1];
+        const saleMonth = month + this.assumptions.brrrDuration + holdPeriod;
+        const salePrice = property.price * Math.pow(1.03, holdPeriod / 12); // 3% annual appreciation
+        
+        // Add sale event
+        strategy.timeline.push({
+            month: saleMonth,
+            action: 'sell',
+            property: `BRRR ${state.properties.length}`,
+            price: salePrice
+        });
+        
+        // Schedule the cash from sale
+        const loanBalance = property.price * this.assumptions.brrrCashOutPercent * 0.95; // Approximate loan balance
+        const profit = salePrice - loanBalance;
+        
+        state.scheduledEvents = state.scheduledEvents || [];
+        state.scheduledEvents.push({
+            month: saleMonth,
+            type: 'brrr_sale_complete',
+            cashInflow: profit,
+            profit: profit,
+            monthlyIncomeAdjustment: -property.netIncome // Remove rental income
+        });
+    }
+
+    /**
      * Check if flip is feasible
      */
     canDoFlip(state) {
@@ -506,16 +562,29 @@ class StrategyGenerator {
         strategy.monthsToGoal = state.currentMonth;
         strategy.totalInvestment = state.totalInvested;
         strategy.finalMonthlyIncome = state.monthlyIncome;
+        strategy.finalCashFromSales = state.cashFromSales;
         strategy.feasibility = state.monthlyIncome >= goal.targetMonthlyIncome;
+        strategy.feasibilityCash = !state.targetCashFromSales || state.cashFromSales >= state.targetCashFromSales;
         strategy.propertyCount = state.properties.length;
         
         // If goal not achieved, add warning to description
         if (!strategy.feasibility && state.monthlyIncome > 0) {
             const achievedPercent = Math.round((state.monthlyIncome / goal.targetMonthlyIncome) * 100);
             const shortfall = goal.targetMonthlyIncome - state.monthlyIncome;
-            strategy.description += ` ⚠️ Goal not achieved — best result is $${Math.round(state.monthlyIncome)}/month using ${state.properties.length} properties in ${state.currentMonth} months (${achievedPercent}% of target, $${Math.round(shortfall)}/month short).`;
+            strategy.description += ` ⚠️ Income goal not achieved — best result is $${Math.round(state.monthlyIncome)}/month using ${state.properties.length} properties in ${state.currentMonth} months (${achievedPercent}% of target, $${Math.round(shortfall)}/month short).`;
         } else if (!strategy.feasibility && state.monthlyIncome === 0) {
             strategy.description += ` ⚠️ Unable to generate any income with given constraints. Consider increasing capital, timeline, or adjusting rent/expense expectations.`;
+        }
+        
+        // Add cash goal status if applicable
+        if (state.targetCashFromSales > 0) {
+            if (!strategy.feasibilityCash) {
+                const cashAchievedPercent = Math.round((state.cashFromSales / state.targetCashFromSales) * 100);
+                const cashShortfall = state.targetCashFromSales - state.cashFromSales;
+                strategy.description += ` ⚠️ Cash goal not achieved — generated $${Math.round(state.cashFromSales)} from sales (${cashAchievedPercent}% of $${state.targetCashFromSales} target, $${Math.round(cashShortfall)} short).`;
+            } else {
+                strategy.description += ` ✅ Cash goal achieved — generated $${Math.round(state.cashFromSales)} from sales!`;
+            }
         }
         
         // Additional metrics
@@ -591,8 +660,14 @@ class StrategyGenerator {
         eventsToProcess.forEach(event => {
             if (event.type === 'flip_complete') {
                 state.cashAvailable += event.cashInflow;
+                state.cashFromSales += event.profit || 0;  // Track profit as cash from sales
                 state.monthlyIncome += event.monthlyIncomeAdjustment;
-                console.log(`Flip completed at month ${currentMonth}: +$${event.cashInflow} cash`);
+                console.log(`Flip completed at month ${currentMonth}: +$${event.cashInflow} cash, +$${event.profit || 0} to cash from sales`);
+            } else if (event.type === 'brrr_sale_complete') {
+                state.cashAvailable += event.cashInflow;
+                state.cashFromSales += event.profit || 0;  // Track profit as cash from sales
+                state.monthlyIncome += event.monthlyIncomeAdjustment || 0;
+                console.log(`BRRR sale completed at month ${currentMonth}: +$${event.cashInflow} cash, +$${event.profit || 0} to cash from sales`);
             }
         });
         
@@ -611,7 +686,9 @@ class StrategyGenerator {
             propertyCount: Math.ceil(goal.targetMonthlyIncome / 400),
             totalInvestment: goal.startingCapital,
             finalMonthlyIncome: 0,
+            finalCashFromSales: 0,
             feasibility: false,
+            feasibilityCash: false,
             description: 'Unable to generate optimal strategy. Consider adjusting your goals or increasing capital.',
             metrics: {},
             failureReason: 'Could not find a viable investment path within the given constraints'

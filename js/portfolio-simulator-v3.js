@@ -133,6 +133,7 @@ async function generateStrategy() {
         const timeline = document.getElementById('timeline').value;
         const startingCapital = document.getElementById('startingCapital').value;
         const monthlySavings = document.getElementById('monthlySavings').value;
+        const targetCashFromSales = document.getElementById('targetCashFromSales').value;
         const strategy = document.getElementById('strategyPreference').value;
         const minRent = document.getElementById('minRent').value;
         const maxRent = document.getElementById('maxRent').value;
@@ -141,6 +142,12 @@ async function generateStrategy() {
         const avgRent = Math.round((parseInt(minRent) + parseInt(maxRent)) / 2);
         
         goalText = `Target income: $${targetIncome}/month. Timeline: ${timeline} months. Starting capital: $${startingCapital}. Monthly savings: $${monthlySavings}/month. `;
+        
+        // Add cash target if specified
+        if (targetCashFromSales && parseInt(targetCashFromSales) > 0) {
+            goalText += `Target $${targetCashFromSales} cash from sales. `;
+        }
+        
         goalText += `Prefer ${strategy} strategy. Rent is $${avgRent}/month per unit.`;
         
         // Add advanced options
@@ -249,6 +256,8 @@ function displayParsedGoal(goal) {
                 <h4>Understanding Your Goal:</h4>
                 <ul>
                     <li><strong>Target Income:</strong> ${formatCurrency(goal.targetMonthlyIncome)}/month</li>
+                    ${goal.targetCashFromSales > 0 ? 
+                        `<li><strong>Target Cash from Sales:</strong> ${formatCurrency(goal.targetCashFromSales)}</li>` : ''}
                     <li><strong>Timeline:</strong> ${goal.timeHorizon} months</li>
                     <li><strong>Starting Capital:</strong> ${formatCurrency(goal.startingCapital)}</li>
                     <li><strong>Monthly Savings:</strong> ${formatCurrency(goal.monthlyContributions)}</li>
@@ -294,16 +303,23 @@ function displayStrategyOptions(strategies) {
                     <span class="metric-label">Monthly Income:</span>
                     <span class="metric-value">${formatCurrency(strategy.finalMonthlyIncome)}/mo</span>
                 </div>
+                ${strategy.finalCashFromSales > 0 ? `
+                <div class="metric">
+                    <span class="metric-label">Cash from Sales:</span>
+                    <span class="metric-value">${formatCurrency(strategy.finalCashFromSales)}</span>
+                </div>
+                ` : ''}
             </div>
-            ${!strategy.feasibility ? `
+            ${(!strategy.feasibility || !strategy.feasibilityCash) ? `
                 <div style="background: #fee; padding: 8px; border-radius: 4px; margin: 10px 0;">
                     <i class="fas fa-exclamation-circle" style="color: #e74c3c;"></i>
-                    Goal not achieved: Only reaches ${formatCurrency(strategy.finalMonthlyIncome)}/mo
+                    ${!strategy.feasibility ? `Income goal not achieved: Only ${formatCurrency(strategy.finalMonthlyIncome)}/mo<br>` : ''}
+                    ${strategy.feasibilityCash === false ? `Cash goal not achieved: Only ${formatCurrency(strategy.finalCashFromSales || 0)} from sales` : ''}
                 </div>
             ` : `
                 <div style="background: #d4edda; padding: 8px; border-radius: 4px; margin: 10px 0;">
                     <i class="fas fa-check-circle" style="color: #27ae60;"></i>
-                    Goal achieved!
+                    All goals achieved!
                 </div>
             `}
             <p class="strategy-description">${strategy.description}</p>

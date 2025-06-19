@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Worth Feature Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .step {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        code {
+            background: #e8e8e8;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Net Worth Feature - Live Site Verification</h1>
+    
+    <h2>Quick Manual Test Steps:</h2>
+    
+    <div class="step">
+        <h3>Step 1: Open Portfolio Simulator V3</h3>
+        <p>Go to: <a href="https://frameworkrealestatesolutions.com/portfolio-simulator-v3.html" target="_blank">https://frameworkrealestatesolutions.com/portfolio-simulator-v3.html</a></p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Generate a Simple Strategy</h3>
+        <p>Enter this goal: <code>Generate $5K/month in 24 months with $30K capital</code></p>
+        <p>Click "Generate Strategy"</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: Verify Net Worth Card</h3>
+        <p>In the Portfolio Summary panel, look for:</p>
+        <ul>
+            <li>A card labeled <strong>"Net Worth (Equity + Cash)"</strong></li>
+            <li>It should be below "Total Cash on Hand"</li>
+            <li>The value should be in <span class="success">green</span> text</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <h3>Step 4: Verify Calculation</h3>
+        <p>Check that: <code>Net Worth = Total Equity + Total Cash on Hand</code></p>
+        <p>Example:</p>
+        <ul>
+            <li>If Total Equity = $20,000</li>
+            <li>And Total Cash on Hand = $5,000</li>
+            <li>Then Net Worth should = $25,000</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <h3>Step 5: Test Time Progression</h3>
+        <p>Change "View at month" to 12 and click Refresh</p>
+        <p>Verify that Net Worth updates and still equals Equity + Cash</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 6: Test Share Feature</h3>
+        <p>Click the "Share" button in the control panel</p>
+        <p>Verify:</p>
+        <ul>
+            <li>A modal appears with a shareable link</li>
+            <li>The link is copied to clipboard</li>
+            <li>Success message appears</li>
+        </ul>
+    </div>
+    
+    <h2>Expected Results:</h2>
+    <ul>
+        <li class="success">✓ Net Worth card is visible</li>
+        <li class="success">✓ Net Worth = Total Equity + Total Cash on Hand</li>
+        <li class="success">✓ Values update when view month changes</li>
+        <li class="success">✓ Share button generates a link</li>
+        <li class="success">✓ Shared link can be loaded in new browser</li>
+    </ul>
+    
+    <h2>Quick Console Check:</h2>
+    <p>Open browser console (F12) and run:</p>
+    <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+// Check if Net Worth element exists
+document.getElementById('totalNetWorth')
+
+// Check portfolio state
+portfolioState.totals.totalNetWorth
+
+// Verify calculation
+let equity = portfolioState.totals.totalEquity;
+let cash = portfolioState.totals.cashOnHand;
+let netWorth = portfolioState.totals.totalNetWorth;
+console.log(`Equity: ${equity}, Cash: ${cash}, Net Worth: ${netWorth}`);
+console.log(`Calculation correct: ${netWorth === equity + cash}`);
+</pre>
+</body>
+</html>
