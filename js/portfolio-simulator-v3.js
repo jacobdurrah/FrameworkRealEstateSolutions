@@ -724,3 +724,275 @@ window.useExample = useExample;
 window.selectStrategy = selectStrategy;
 window.applyRealListings = applyRealListings;
 window.toggleInputMode = toggleInputMode;
+
+/**
+ * Serialize V3 state to shareable format
+ */
+function serializeV3State() {
+    // Get goal input (from textarea or structured inputs)
+    const isStructured = document.getElementById('inputModeToggle').checked;
+    let goalInput = '';
+    
+    if (isStructured) {
+        // Serialize structured inputs
+        goalInput = {
+            structured: true,
+            targetIncome: document.getElementById('targetIncome').value,
+            timeline: document.getElementById('timeline').value,
+            startingCapital: document.getElementById('startingCapital').value,
+            monthlySavings: document.getElementById('monthlySavings').value,
+            strategyPreference: document.getElementById('strategyPreference').value,
+            minRent: document.getElementById('minRent').value,
+            maxRent: document.getElementById('maxRent').value,
+            allowBRRR: document.getElementById('allowBRRR').checked,
+            allowFlips: document.getElementById('allowFlips').checked,
+            conservativeLeverage: document.getElementById('conservativeLeverage').checked
+        };
+    } else {
+        goalInput = document.getElementById('goalInput').value;
+    }
+    
+    // Create state object
+    const state = {
+        version: 'v3',
+        timestamp: new Date().toISOString(),
+        goalInput: goalInput,
+        parsedGoal: v3State.parsedGoal,
+        selectedStrategy: v3State.selectedStrategy,
+        timelineData: window.timelineData,
+        simulationName: document.getElementById('simulationName').textContent,
+        currentViewMonth: window.currentViewMonth || 0,
+        useRealListings: v3State.useRealListings
+    };
+    
+    return state;
+}
+
+/**
+ * Generate shareable link
+ */
+function shareSimulation() {
+    try {
+        // Serialize state
+        const state = serializeV3State();
+        
+        // Check if we have meaningful data to share
+        if (!state.parsedGoal && (!state.timelineData || state.timelineData.length === 0)) {
+            showV3Error('Please generate a strategy first before sharing');
+            return;
+        }
+        
+        // Convert to JSON and compress
+        const stateJson = JSON.stringify(state);
+        const compressed = LZString.compressToEncodedURIComponent(stateJson);
+        
+        // Generate URL
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareUrl = `${baseUrl}?state=${compressed}`;
+        
+        // Check URL length
+        if (shareUrl.length > 8000) {
+            showV3Warning('The simulation data is too large to share via URL. Try simplifying your strategy.');
+            return;
+        }
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showV3Success('Shareable link copied to clipboard!');
+            
+            // Also show the link in a dialog for manual copying
+            const message = `
+                <div style="padding: 1rem;">
+                    <p style="margin-bottom: 1rem;">Share this link to let others view your simulation:</p>
+                    <input type="text" value="${shareUrl}" 
+                           style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px;"
+                           onclick="this.select()" readonly>
+                    <p style="font-size: 0.9rem; color: #666;">The link has been copied to your clipboard.</p>
+                </div>
+            `;
+            
+            // Create a simple modal to show the link
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                z-index: 1000;
+                max-width: 600px;
+                width: 90%;
+            `;
+            modal.innerHTML = `
+                <h3 style="margin-bottom: 1rem;">Share Your Simulation</h3>
+                ${message}
+                <button onclick="this.parentElement.remove(); document.getElementById('modalOverlay').remove();" 
+                        style="background: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                    Close
+                </button>
+            `;
+            
+            // Add overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'modalOverlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            `;
+            overlay.onclick = () => {
+                modal.remove();
+                overlay.remove();
+            };
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+            
+        }).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+            showV3Error('Failed to copy link to clipboard. Please copy it manually.');
+        });
+        
+    } catch (error) {
+        console.error('Error generating shareable link:', error);
+        showV3Error('Failed to generate shareable link: ' + error.message);
+    }
+}
+
+/**
+ * Load state from URL on page load
+ */
+function loadStateFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const compressedState = urlParams.get('state');
+    
+    if (!compressedState) {
+        return false;
+    }
+    
+    try {
+        // Decompress and parse state
+        const stateJson = LZString.decompressFromEncodedURIComponent(compressedState);
+        if (!stateJson) {
+            throw new Error('Invalid or corrupted share link');
+        }
+        
+        const state = JSON.parse(stateJson);
+        
+        // Validate state version
+        if (state.version !== 'v3') {
+            throw new Error('This link is for a different version of the simulator');
+        }
+        
+        // Show loading message
+        showV3Loading(true, 'Loading shared simulation...');
+        
+        // Restore simulation name
+        if (state.simulationName) {
+            document.getElementById('simulationName').textContent = state.simulationName + ' (Shared)';
+        }
+        
+        // Restore view month if present
+        if (state.currentViewMonth !== undefined) {
+            window.currentViewMonth = state.currentViewMonth;
+            document.getElementById('summaryMonth').value = state.currentViewMonth;
+            updateSummaryMonth();
+        }
+        
+        // Restore goal input
+        if (state.goalInput) {
+            if (typeof state.goalInput === 'object' && state.goalInput.structured) {
+                // Restore structured inputs
+                document.getElementById('inputModeToggle').checked = true;
+                toggleInputMode();
+                
+                document.getElementById('targetIncome').value = state.goalInput.targetIncome;
+                document.getElementById('timeline').value = state.goalInput.timeline;
+                document.getElementById('startingCapital').value = state.goalInput.startingCapital;
+                document.getElementById('monthlySavings').value = state.goalInput.monthlySavings;
+                document.getElementById('strategyPreference').value = state.goalInput.strategyPreference;
+                document.getElementById('minRent').value = state.goalInput.minRent;
+                document.getElementById('maxRent').value = state.goalInput.maxRent;
+                document.getElementById('allowBRRR').checked = state.goalInput.allowBRRR;
+                document.getElementById('allowFlips').checked = state.goalInput.allowFlips;
+                document.getElementById('conservativeLeverage').checked = state.goalInput.conservativeLeverage;
+            } else {
+                // Restore natural language input
+                document.getElementById('goalInput').value = state.goalInput;
+            }
+        }
+        
+        // Restore parsed goal
+        if (state.parsedGoal) {
+            v3State.parsedGoal = state.parsedGoal;
+            displayParsedGoal(state.parsedGoal);
+        }
+        
+        // Restore selected strategy
+        if (state.selectedStrategy) {
+            v3State.selectedStrategy = state.selectedStrategy;
+            v3State.generatedStrategies = [state.selectedStrategy]; // For now, just restore the selected one
+            
+            // Display the strategy
+            displayStrategyOptions([state.selectedStrategy]);
+            document.getElementById('strategyOptionsSection').style.display = 'block';
+        }
+        
+        // Restore timeline data
+        if (state.timelineData && state.timelineData.length > 0) {
+            window.timelineData = state.timelineData;
+            
+            // Show V2 components
+            document.getElementById('v2Components').style.display = 'block';
+            
+            // Render timeline
+            if (typeof renderTimelineTable === 'function') {
+                renderTimelineTable();
+            }
+            
+            // Recalculate
+            if (typeof recalculateAll === 'function') {
+                recalculateAll();
+            }
+        }
+        
+        // Restore real listings preference
+        if (state.useRealListings !== undefined) {
+            document.getElementById('useRealListings').checked = state.useRealListings;
+            v3State.useRealListings = state.useRealListings;
+        }
+        
+        // Show success message
+        showV3Success('Simulation loaded from shared link!');
+        
+        // Clear the URL parameter to avoid confusion on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        return true;
+        
+    } catch (error) {
+        console.error('Error loading state from URL:', error);
+        showV3Error('Failed to load shared simulation: ' + error.message);
+        return false;
+    } finally {
+        showV3Loading(false);
+    }
+}
+
+// Add shareSimulation to global scope
+window.shareSimulation = shareSimulation;
+
+// Check for shared state on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for other components to initialize
+    setTimeout(() => {
+        loadStateFromUrl();
+    }, 500);
+});

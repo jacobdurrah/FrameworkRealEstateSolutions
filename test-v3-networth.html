@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Worth Metric Test - Portfolio V3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-case {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .formula {
+            background: #e8f4f8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .expected {
+            background: #d4edda;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            color: #155724;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        .metric {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .positive {
+            color: #27ae60;
+        }
+        .negative {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Net Worth (Equity + Cash) Metric Test</h1>
+    
+    <div class="test-section">
+        <h2>Overview</h2>
+        <p>The <strong>Net Worth (Equity + Cash)</strong> metric provides a comprehensive view of total capital position by combining:</p>
+        <div class="formula">
+            Net Worth = Total Equity + Total Cash on Hand
+        </div>
+        <p>Where:</p>
+        <ul>
+            <li><strong>Total Equity</strong> = Portfolio Value - Total Debt</li>
+            <li><strong>Total Cash on Hand</strong> = Rental Income + Cash from Sales</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Case 1: Basic Property Purchase</h2>
+        <div class="test-case">
+            <h3>Setup:</h3>
+            <ul>
+                <li>Month 0: Buy property for $100,000</li>
+                <li>20% down ($20,000)</li>
+                <li>Loan: $80,000</li>
+                <li>Rent: $1,200/month</li>
+                <li>Expenses: $400/month</li>
+            </ul>
+            
+            <h3>At Month 0:</h3>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Calculation</th>
+                </tr>
+                <tr>
+                    <td>Portfolio Value</td>
+                    <td class="positive">$100,000</td>
+                    <td>Property value</td>
+                </tr>
+                <tr>
+                    <td>Total Debt</td>
+                    <td class="negative">$80,000</td>
+                    <td>Loan amount</td>
+                </tr>
+                <tr>
+                    <td>Total Equity</td>
+                    <td class="positive">$20,000</td>
+                    <td>$100,000 - $80,000</td>
+                </tr>
+                <tr>
+                    <td>Total Cash on Hand</td>
+                    <td>$0</td>
+                    <td>No income collected yet</td>
+                </tr>
+                <tr>
+                    <td class="metric">Net Worth</td>
+                    <td class="positive metric">$20,000</td>
+                    <td>$20,000 + $0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Case 2: After 12 Months</h2>
+        <div class="test-case">
+            <h3>Assumptions:</h3>
+            <ul>
+                <li>3% annual appreciation</li>
+                <li>Net rent: $800/month ($1,200 - $400)</li>
+                <li>Mortgage payment: ~$430/month</li>
+                <li>Net cash flow: ~$370/month</li>
+            </ul>
+            
+            <h3>At Month 12:</h3>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Calculation</th>
+                </tr>
+                <tr>
+                    <td>Portfolio Value</td>
+                    <td class="positive">~$103,000</td>
+                    <td>With 3% appreciation</td>
+                </tr>
+                <tr>
+                    <td>Total Debt</td>
+                    <td class="negative">~$78,500</td>
+                    <td>After principal payments</td>
+                </tr>
+                <tr>
+                    <td>Total Equity</td>
+                    <td class="positive">~$24,500</td>
+                    <td>$103,000 - $78,500</td>
+                </tr>
+                <tr>
+                    <td>Total Cash on Hand</td>
+                    <td class="positive">~$4,440</td>
+                    <td>12 months × $370 net cash flow</td>
+                </tr>
+                <tr>
+                    <td class="metric">Net Worth</td>
+                    <td class="positive metric">~$28,940</td>
+                    <td>$24,500 + $4,440</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Case 3: Multiple Properties with Sale</h2>
+        <div class="test-case">
+            <h3>Timeline:</h3>
+            <ul>
+                <li>Month 0: Buy Property A - $80,000 (20% down)</li>
+                <li>Month 6: Buy Property B - $100,000 (20% down)</li>
+                <li>Month 12: Sell Property A for $85,000</li>
+            </ul>
+            
+            <h3>At Month 12 (after sale):</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Property B Value</td>
+                    <td class="positive">~$101,500</td>
+                </tr>
+                <tr>
+                    <td>Property B Debt</td>
+                    <td class="negative">~$79,000</td>
+                </tr>
+                <tr>
+                    <td>Total Equity</td>
+                    <td class="positive">~$22,500</td>
+                </tr>
+                <tr>
+                    <td>Cash from Sale</td>
+                    <td class="positive">~$22,000</td>
+                </tr>
+                <tr>
+                    <td>Rental Income</td>
+                    <td class="positive">~$5,000</td>
+                </tr>
+                <tr>
+                    <td>Total Cash on Hand</td>
+                    <td class="positive">~$27,000</td>
+                </tr>
+                <tr>
+                    <td class="metric">Net Worth</td>
+                    <td class="positive metric">~$49,500</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Testing Instructions</h2>
+        <ol>
+            <li><strong>Open Portfolio Simulator V3</strong>
+                <ul>
+                    <li>Navigate to <a href="portfolio-simulator-v3.html" target="_blank">portfolio-simulator-v3.html</a></li>
+                </ul>
+            </li>
+            
+            <li><strong>Generate a Strategy</strong>
+                <ul>
+                    <li>Enter: "Build $10K/month portfolio in 36 months with $50K capital"</li>
+                    <li>Click "Generate Strategy"</li>
+                    <li>Wait for strategy generation</li>
+                </ul>
+            </li>
+            
+            <li><strong>Verify Initial Net Worth</strong>
+                <ul>
+                    <li>Check Portfolio Summary panel</li>
+                    <li>Find "Net Worth (Equity + Cash)" card</li>
+                    <li>Verify it equals: Total Equity + Total Cash on Hand</li>
+                </ul>
+            </li>
+            
+            <li><strong>Test Time Progression</strong>
+                <ul>
+                    <li>Change "View at month" to 12</li>
+                    <li>Click Refresh</li>
+                    <li>Verify Net Worth updates correctly</li>
+                    <li>Check: Net Worth = Updated Equity + Updated Cash</li>
+                </ul>
+            </li>
+            
+            <li><strong>Test with Property Sale</strong>
+                <ul>
+                    <li>Add a sell event in timeline</li>
+                    <li>Verify Cash from Sales increases</li>
+                    <li>Verify Net Worth includes sale proceeds</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Behaviors</h2>
+        <div class="expected">
+            <h3>✅ Net Worth should:</h3>
+            <ul>
+                <li>Always equal Total Equity + Total Cash on Hand</li>
+                <li>Increase over time with appreciation and cash flow</li>
+                <li>Jump significantly after property sales</li>
+                <li>Update immediately when timeline changes</li>
+                <li>Display in green when positive (normal case)</li>
+                <li>Display in red if negative (edge case)</li>
+            </ul>
+        </div>
+        
+        <div class="test-case" style="border-color: #e74c3c;">
+            <h3>⚠️ Edge Cases:</h3>
+            <ul>
+                <li><strong>Negative Net Worth:</strong> Possible if over-leveraged with declining values</li>
+                <li><strong>Zero Net Worth:</strong> At start with 100% financing and no cash</li>
+                <li><strong>Rapid Changes:</strong> Large sales or refinances should update immediately</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Verification Checklist</h2>
+        <table>
+            <tr>
+                <th>Test</th>
+                <th>Pass/Fail</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td>Net Worth card displays in Portfolio Summary</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Initial calculation correct (Equity + Cash)</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Updates when View Month changes</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Includes cash from property sales</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Color coding (green/red) works correctly</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Refreshes on timeline edits</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Matches manual calculation</td>
+                <td>[ ]</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

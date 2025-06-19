@@ -21,7 +21,8 @@ let portfolioState = {
         totalInterestPaid: 0,
         cashOnHand: 0,
         rentalIncome: 0,
-        cashFromSales: 0
+        cashFromSales: 0,
+        totalNetWorth: 0
     }
 };
 
@@ -267,7 +268,8 @@ function recalculateAll() {
             totalInterestPaid: 0,
             cashOnHand: 0,
             rentalIncome: 0,
-            cashFromSales: 0
+            cashFromSales: 0,
+            totalNetWorth: 0
         }
     };
     
@@ -420,6 +422,9 @@ function calculatePortfolioMetrics() {
     // Calculate total equity
     totals.totalEquity = totals.portfolioValue - totals.totalDebt;
     
+    // Calculate total net worth (equity + cash)
+    totals.totalNetWorth = totals.totalEquity + totals.cashOnHand;
+    
     // Calculate cash-on-cash return
     if (totals.totalCashInvested > 0) {
         const annualCashFlow = totals.netCashFlow * 12;
@@ -525,6 +530,11 @@ function updateSummaryDisplay() {
     document.getElementById('rentalIncome').textContent = formatCurrency(totals.rentalIncome);
     document.getElementById('cashFromSales').textContent = formatCurrency(totals.cashFromSales);
     document.getElementById('totalCashOnHand').textContent = formatCurrency(totals.cashOnHand);
+    
+    // Update Net Worth display
+    const netWorthElement = document.getElementById('totalNetWorth');
+    netWorthElement.textContent = formatCurrency(totals.totalNetWorth);
+    netWorthElement.className = totals.totalNetWorth >= 0 ? 'summary-value positive' : 'summary-value negative';
 }
 
 /**
@@ -697,7 +707,8 @@ function newSimulation() {
                 totalInterestPaid: 0,
                 cashOnHand: 0,
                 rentalIncome: 0,
-                cashFromSales: 0
+                cashFromSales: 0,
+                totalNetWorth: 0
             }
         };
         
