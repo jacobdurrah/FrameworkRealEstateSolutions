@@ -10,7 +10,7 @@ class ShareManager {
             this.apiBaseUrl = 'http://localhost:3000';
         } else if (window.location.hostname === 'frameworkrealestatesolutions.com') {
             // Production: GitHub Pages site using Vercel API
-            this.apiBaseUrl = 'https://framework-4x7nskemt-jacob-durrahs-projects.vercel.app';
+            this.apiBaseUrl = 'https://framework-8jsah7ozp-jacob-durrahs-projects.vercel.app';
         } else {
             // For other environments (Vercel preview, etc)
             this.apiBaseUrl = '';
