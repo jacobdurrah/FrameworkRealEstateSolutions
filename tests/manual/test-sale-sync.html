@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sale Event Sync</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sale Event Sync Test</h1>
+    
+    <div class="test-section">
+        <h2>Manual Test Steps</h2>
+        <ol>
+            <li>Create a simple timeline with a flip (buy and sell)</li>
+            <li>Apply real listings</li>
+            <li>Check if sale event property name is updated</li>
+        </ol>
+        
+        <button onclick="runTest()">Run Test</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function runTest() {
+            clearResults();
+            log('Starting sale event sync test...');
+            
+            try {
+                // Step 1: Create test timeline data
+                log('Step 1: Creating test timeline with flip...');
+                window.timelineData = [
+                    {
+                        id: 1,
+                        month: 0,
+                        action: 'buy',
+                        property: 'Flip 1',
+                        price: 60000,
+                        downPercent: 20,
+                        rate: 7,
+                        term: 30,
+                        rent: 0,
+                        monthlyExpenses: 0
+                    },
+                    {
+                        id: 2,
+                        month: 6,
+                        action: 'sell',
+                        property: 'Flip 1',
+                        price: 80000
+                    }
+                ];
+                
+                log(`Created timeline with ${window.timelineData.length} events`);
+                log(`Buy event: ${JSON.stringify(window.timelineData[0])}`);
+                log(`Sell event: ${JSON.stringify(window.timelineData[1])}`);
+                
+                // Step 2: Simulate listings matcher
+                log('Step 2: Simulating listings matcher...');
+                
+                // Create a mock listing
+                const mockListing = {
+                    id: 12345,
+                    address: '123 Main St, Detroit, MI',
+                    price: 65000,
+                    bedrooms: 3,
+                    bathrooms: 2
+                };
+                
+                // Simulate what ListingsMatcher does
+                const propertyNameMap = new Map();
+                const originalName = window.timelineData[0].property;
+                const newName = `${originalName}: ${mockListing.address}`;
+                propertyNameMap.set(originalName, newName);
+                
+                // Update buy event
+                window.timelineData[0].property = newName;
+                window.timelineData[0].realListing = mockListing;
+                
+                log(`Updated buy event property name: "${originalName}" -> "${newName}"`);
+                
+                // Step 3: Check if sell event needs update
+                log('Step 3: Checking sell event...');
+                const sellEvent = window.timelineData[1];
+                
+                if (propertyNameMap.has(sellEvent.property)) {
+                    const oldSellName = sellEvent.property;
+                    sellEvent.property = propertyNameMap.get(sellEvent.property);
+                    log(`Updated sell event property name: "${oldSellName}" -> "${sellEvent.property}"`, 'success');
+                } else {
+                    log(`Sell event property "${sellEvent.property}" not found in name map!`, 'error');
+                }
+                
+                // Step 4: Verify final state
+                log('Step 4: Final timeline state:');
+                log(`<pre>${JSON.stringify(window.timelineData, null, 2)}</pre>`);
+                
+                // Check if names match
+                const buyName = window.timelineData[0].property;
+                const sellName = window.timelineData[1].property;
+                
+                if (buyName === sellName) {
+                    log(`✓ Property names match: "${buyName}"`, 'success');
+                } else {
+                    log(`✗ Property names don't match: Buy="${buyName}", Sell="${sellName}"`, 'error');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // Load the listings matcher if available
+        if (window.location.pathname.includes('portfolio-simulator')) {
+            log('Running in portfolio simulator context');
+        }
+    </script>
+</body>
+</html>

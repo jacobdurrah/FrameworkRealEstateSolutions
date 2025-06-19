@@ -168,13 +168,13 @@ function renderTimelineTable() {
                 <input type="number" class="editable number percentage" value="${row.rate}" 
                        onchange="updateTimeline(${row.id}, 'rate', this.value)" 
                        min="0" max="20" step="0.25"
-                       ${row.action === 'wait' ? 'disabled' : ''}>
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td>
                 <input type="number" class="editable number" value="${row.term}" 
                        onchange="updateTimeline(${row.id}, 'term', this.value)" 
                        min="1" max="30" step="1"
-                       ${row.action === 'wait' ? 'disabled' : ''}>
+                       ${row.action !== 'buy' ? 'disabled' : ''}>
             </td>
             <td class="number currency">${formatCurrency(row.payment)}</td>
             <td>
@@ -211,34 +211,49 @@ function updateTimeline(id, field, value) {
     
     row[field] = value;
     
-    // Recalculate dependent fields
-    if (field === 'price' || field === 'downPercent') {
-        row.downAmount = row.price * (row.downPercent / 100);
-        row.loanAmount = row.price - row.downAmount;
+    // Handle action change to sell - reset all loan-related fields
+    if (field === 'action' && value === 'sell') {
+        row.downPercent = 0;
+        row.downAmount = 0;
+        row.loanAmount = 0;
+        row.rate = 0;
+        row.term = 0;
+        row.payment = 0;
+        row.rent = 0;
+        row.monthlyExpenses = 0;
     }
     
-    // Recalculate payment if loan parameters change
-    if (['price', 'downPercent', 'rate', 'term'].includes(field)) {
-        if (row.loanAmount > 0) {
-            try {
-                if (loanCalc && typeof loanCalc.calculate === 'function') {
-                    const loanResult = loanCalc.calculate({
-                        principal: row.loanAmount,
-                        interestRate: row.rate,
-                        termYears: row.term
-                    });
-                    row.payment = loanResult.monthlyPayment;
-                } else {
-                    console.warn('Loan calculator not available');
+    // Only calculate loan fields for buy actions
+    if (row.action === 'buy') {
+        // Recalculate dependent fields
+        if (field === 'price' || field === 'downPercent') {
+            row.downAmount = row.price * (row.downPercent / 100);
+            row.loanAmount = row.price - row.downAmount;
+        }
+        
+        // Recalculate payment if loan parameters change
+        if (['price', 'downPercent', 'rate', 'term'].includes(field)) {
+            if (row.loanAmount > 0) {
+                try {
+                    if (loanCalc && typeof loanCalc.calculate === 'function') {
+                        const loanResult = loanCalc.calculate({
+                            principal: row.loanAmount,
+                            interestRate: row.rate,
+                            termYears: row.term
+                        });
+                        row.payment = loanResult.monthlyPayment;
+                    } else {
+                        console.warn('Loan calculator not available');
+                        row.payment = 0;
+                    }
+                } catch (error) {
+                    console.error('Loan calculation error:', error);
                     row.payment = 0;
                 }
-            } catch (error) {
-                console.error('Loan calculation error:', error);
+            } else {
+                // No loan if 100% down payment
                 row.payment = 0;
             }
-        } else {
-            // No loan if 100% down payment
-            row.payment = 0;
         }
     }
     
