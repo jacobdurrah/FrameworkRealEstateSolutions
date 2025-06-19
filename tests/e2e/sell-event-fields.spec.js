@@ -11,7 +11,7 @@ test.describe('Sell Event Field Behavior', () => {
 
   test('should reset and disable loan fields when changing to Sell action', async ({ page }) => {
     // Add a Buy event first
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     await page.waitForTimeout(500);
     
     // Fill in Buy event details
@@ -65,7 +65,7 @@ test.describe('Sell Event Field Behavior', () => {
 
   test('should restore editable fields when changing back to Buy', async ({ page }) => {
     // Add a row and set to Sell
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const firstRow = page.locator('#timelineTable tbody tr').first();
     
     await firstRow.locator('select').selectOption('sell');
@@ -88,7 +88,7 @@ test.describe('Sell Event Field Behavior', () => {
 
   test('should properly calculate Cash from Sales for sell events', async ({ page }) => {
     // Add a Buy event
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const buyRow = page.locator('#timelineTable tbody tr').first();
     
     await buyRow.locator('input[placeholder="Property address"]').fill('456 Sale Property');
@@ -96,7 +96,7 @@ test.describe('Sell Event Field Behavior', () => {
     await buyRow.locator('input').nth(3).fill('25'); // 25% down
     
     // Add a Sell event for the same property
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const sellRow = page.locator('#timelineTable tbody tr').nth(1);
     
     await sellRow.locator('select').selectOption('sell');
@@ -160,13 +160,13 @@ test.describe('Sell Event Field Behavior', () => {
 
   test('should handle multiple buy/sell pairs correctly', async ({ page }) => {
     // Add first buy
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const buy1 = page.locator('#timelineTable tbody tr').nth(0);
     await buy1.locator('input[placeholder="Property address"]').fill('Property 1');
     await buy1.locator('input').nth(2).fill('100000');
     
     // Add first sell
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const sell1 = page.locator('#timelineTable tbody tr').nth(1);
     await sell1.locator('select').selectOption('sell');
     await sell1.locator('input').nth(0).fill('6');
@@ -174,7 +174,7 @@ test.describe('Sell Event Field Behavior', () => {
     await sell1.locator('input').nth(2).fill('120000');
     
     // Add second buy
-    await page.click('button:has-text("Add Row")');
+    await page.click('button:has-text("Add Event")');
     const buy2 = page.locator('#timelineTable tbody tr').nth(2);
     await buy2.locator('input').nth(0).fill('7');
     await buy2.locator('input[placeholder="Property address"]').fill('Property 2');

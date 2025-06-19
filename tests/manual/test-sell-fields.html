@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Test - Sell Event Fields</title>
+</head>
+<body>
+    <h1>Manual Test for Sell Event Field Behavior</h1>
+    
+    <h2>Test Steps:</h2>
+    <ol>
+        <li>Open <a href="https://frameworkrealestatesolutions.com/portfolio-simulator-v2.html" target="_blank">Portfolio Simulator V2</a></li>
+        <li>Click "Add Event" to add a new row</li>
+        <li>Fill in as a Buy event:
+            <ul>
+                <li>Property: 123 Test St</li>
+                <li>Price: $100,000</li>
+                <li>Down %: 20%</li>
+                <li>Rate: 7%</li>
+                <li>Term: 30 years</li>
+            </ul>
+        </li>
+        <li>Verify loan fields are calculated (Down $20,000, Loan $80,000, Payment ~$532)</li>
+        <li>Change Action to "Sell"</li>
+        <li>✅ Verify all loan fields reset to 0:
+            <ul>
+                <li>Down %: 0</li>
+                <li>Down $: $0</li>
+                <li>Loan: $0</li>
+                <li>Rate %: 0</li>
+                <li>Term: 0</li>
+                <li>Payment: $0</li>
+            </ul>
+        </li>
+        <li>✅ Verify these fields are disabled (grayed out) for Sell events</li>
+        <li>Change back to "Buy" and verify fields are editable again</li>
+    </ol>
+    
+    <h2>Test Cash from Sales:</h2>
+    <ol>
+        <li>Add a Buy event for a property at month 0</li>
+        <li>Add a Sell event for the same property at month 6</li>
+        <li>Change Summary Month to 7</li>
+        <li>Click Refresh</li>
+        <li>✅ Verify "Cash from Sales" shows the proceeds</li>
+        <li>✅ Verify "Total Cash on Hand" includes the sale proceeds</li>
+    </ol>
+    
+    <h2>Test with V3:</h2>
+    <ol>
+        <li>Open <a href="https://frameworkrealestatesolutions.com/portfolio-simulator-v3.html" target="_blank">Portfolio Simulator V3</a></li>
+        <li>Generate a strategy with flips</li>
+        <li>✅ Verify all Sell events have loan fields at 0 and disabled</li>
+    </ol>
+</body>
+</html>
