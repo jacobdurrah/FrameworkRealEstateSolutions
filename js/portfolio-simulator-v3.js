@@ -22,8 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.timelineData = [];
     }
     
-    // Initialize components
-    v3State.listingsMatcher = new ListingsMatcher();
+    // Initialize components with safety check
+    if (typeof ListingsMatcher !== 'undefined') {
+        v3State.listingsMatcher = new ListingsMatcher();
+        console.log('ListingsMatcher initialized successfully');
+    } else {
+        console.error('ListingsMatcher not found - real listings feature will not work');
+    }
     
     // Set up event handlers
     setupV3EventHandlers();
@@ -524,6 +529,17 @@ async function applyRealListings() {
     if (!window.timelineData || window.timelineData.length === 0) {
         showV3Error('No timeline events to match with listings');
         return;
+    }
+    
+    // Check if ListingsMatcher is initialized
+    if (!v3State.listingsMatcher) {
+        console.error('ListingsMatcher not initialized, attempting to initialize...');
+        if (typeof ListingsMatcher !== 'undefined') {
+            v3State.listingsMatcher = new ListingsMatcher();
+        } else {
+            showV3Error('Real listings feature not available. Please refresh the page.');
+            return;
+        }
     }
     
     showV3Loading(true, 'Searching for real Detroit properties...');
