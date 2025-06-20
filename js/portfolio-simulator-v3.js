@@ -381,7 +381,7 @@ function applyStrategyToTimeline(strategy) {
             id: Date.now() + Math.random(),
             month: event.month,
             action: event.action,
-            property: event.property || `Property ${index + 1}`,
+            property: event.property || '', // Keep empty if no property name
             price: event.price || 0,
             downPercent: isSell ? 0 : (event.downPercent || 20),
             downAmount: isSell ? 0 : (event.price * (event.downPercent || 20) / 100),

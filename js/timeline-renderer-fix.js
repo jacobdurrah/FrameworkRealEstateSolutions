@@ -41,6 +41,15 @@
             
             // Create property cell content with Zillow link if available
             let propertyCell = '';
+            
+            // Ensure we have the property value to display
+            const propertyValue = row.property || '';
+            
+            // Debug logging for property values
+            if (row.id <= 5) { // Log first 5 rows for debugging
+                console.log(`Row ${row.id} property value:`, propertyValue, 'hasRealListing:', hasRealListing);
+            }
+            
             if (hasRealListing || hasAddress) {
                 // Determine the URL to use
                 let zillowUrl = '';
@@ -49,26 +58,26 @@
                     zillowUrl = row.listingUrl;
                 } else if (hasAddress) {
                     // Extract address and create search URL
-                    const propertyParts = row.property.split(':');
-                    const address = propertyParts[1] ? propertyParts[1].trim() : row.property;
+                    const propertyParts = propertyValue.split(':');
+                    const address = propertyParts[1] ? propertyParts[1].trim() : propertyValue;
                     const encodedAddress = encodeURIComponent(address);
                     zillowUrl = `https://www.zillow.com/homes/${encodedAddress}_rb/`;
                 }
                 
                 if (zillowUrl) {
                     propertyCell = `
-                        <div class="property-with-link">
+                        <div class="property-with-link" style="display: flex; align-items: center;">
                             <input type="text" class="editable property-input" 
-                                   value="${row.property || ''}" 
+                                   value="${propertyValue.replace(/"/g, '&quot;')}" 
                                    onchange="updateTimeline(${row.id}, 'property', this.value)"
                                    placeholder="Property address"
-                                   style="width: calc(100% - 30px); display: inline-block;">
+                                   style="flex: 1; margin-right: 5px;">
                             <a href="${zillowUrl}" 
                                target="_blank" 
                                rel="noopener noreferrer"
                                class="zillow-link"
                                title="View on Zillow"
-                               style="display: inline-block; margin-left: 5px; vertical-align: middle;">
+                               style="display: inline-block;">
                                 <i class="fas fa-external-link-alt" style="color: #006AFF;"></i>
                             </a>
                         </div>
@@ -76,7 +85,8 @@
                 } else {
                     // No link available, just show the input
                     propertyCell = `
-                        <input type="text" class="editable" value="${row.property || ''}" 
+                        <input type="text" class="editable property-input" 
+                               value="${propertyValue.replace(/"/g, '&quot;')}" 
                                onchange="updateTimeline(${row.id}, 'property', this.value)"
                                placeholder="Property address">
                     `;
@@ -84,7 +94,8 @@
             } else {
                 // Standard property input without link
                 propertyCell = `
-                    <input type="text" class="editable" value="${row.property || ''}" 
+                    <input type="text" class="editable property-input" 
+                           value="${propertyValue.replace(/"/g, '&quot;')}" 
                            onchange="updateTimeline(${row.id}, 'property', this.value)"
                            placeholder="Property address">
                 `;

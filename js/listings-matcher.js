@@ -32,6 +32,13 @@ class ListingsMatcher {
         }
 
         console.log(`Processing ${buyEvents.length} buy events...`);
+        
+        // Ensure buy events have property names
+        buyEvents.forEach((event, index) => {
+            if (!event.property) {
+                console.log(`Warning: Buy event at index ${index} has no property name`);
+            }
+        });
 
         // Process each buy event
         const matchedTimeline = [...timeline];
@@ -40,15 +47,27 @@ class ListingsMatcher {
         // Track property name changes for updating sell events
         const propertyNameMap = new Map();
         
-        for (const event of buyEvents) {
+        for (let i = 0; i < buyEvents.length; i++) {
+            const event = buyEvents[i];
             try {
                 const listing = await this.findBestMatch(event, assumptions);
                 if (listing) {
                     // Update the event in the timeline
                     const eventIndex = matchedTimeline.findIndex(e => e.id === event.id || e === event);
                     if (eventIndex !== -1) {
-                        // Format property label with original name and address
-                        const originalName = event.property; // e.g., "Rental 1", "Flip 2"
+                        // Generate property type based on existing property name or default to "Rental"
+                        let propertyType = 'Rental';
+                        if (event.property) {
+                            // Extract type from existing property name (e.g., "Flip 1" -> "Flip")
+                            const match = event.property.match(/^(\w+)\s+\d+/);
+                            if (match) {
+                                propertyType = match[1];
+                            }
+                        }
+                        
+                        // Format property label with type and address
+                        const propertyNumber = i + 1;
+                        const originalName = event.property || `${propertyType} ${propertyNumber}`;
                         const address = listing.address || listing.streetAddress || 'Detroit Property';
                         const propertyLabel = `${originalName}: ${address}`;
                         

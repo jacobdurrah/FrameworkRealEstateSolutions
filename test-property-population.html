@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Property Population Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .fail { color: red; }
+        table { border-collapse: collapse; margin: 10px 0; }
+        td, th { border: 1px solid #ddd; padding: 8px; }
+        input { width: 200px; padding: 4px; }
+        .property-with-link { display: flex; align-items: center; }
+        .property-with-link input { flex: 1; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Testing Property Address Population</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Initial Timeline with Property Names</h2>
+        <table id="test1-table">
+            <thead>
+                <tr><th>Month</th><th>Action</th><th>Property</th><th>Price</th></tr>
+            </thead>
+            <tbody id="test1-body"></tbody>
+        </table>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: After Listings Match</h2>
+        <table id="test2-table">
+            <thead>
+                <tr><th>Month</th><th>Action</th><th>Property</th><th>Price</th></tr>
+            </thead>
+            <tbody id="test2-body"></tbody>
+        </table>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Test data
+        const initialTimeline = [
+            { id: 1, month: 0, action: 'buy', property: 'Rental 1', price: 70463 },
+            { id: 2, month: 2, action: 'buy', property: 'Rental 2', price: 57216 },
+            { id: 3, month: 7, action: 'buy', property: 'Rental 3', price: 74064 },
+            { id: 4, month: 13, action: 'buy', property: 'Rental 4', price: 57404 }
+        ];
+        
+        const matchedTimeline = [
+            { 
+                id: 1, month: 0, action: 'buy', 
+                property: 'Rental 1: 20264 Waltham St, Detroit, MI 48205', 
+                price: 56850,
+                realListing: true,
+                listingUrl: 'https://www.zillow.com/homedetails/123456'
+            },
+            { 
+                id: 2, month: 2, action: 'buy', 
+                property: 'Rental 2: 4226 18th St, Detroit, MI 48208', 
+                price: 42937,
+                realListing: true,
+                listingUrl: 'https://www.zillow.com/homedetails/123457'
+            },
+            { 
+                id: 3, month: 7, action: 'buy', 
+                property: 'Rental 3: 11116 Rosemary St, Detroit, MI 48213', 
+                price: 38777,
+                realListing: true,
+                listingUrl: 'https://www.zillow.com/homedetails/123458'
+            },
+            { 
+                id: 4, month: 13, action: 'buy', 
+                property: 'Rental 4: 15841 Forrer St, Detroit, MI 48227', 
+                price: 65000,
+                realListing: true,
+                listingUrl: 'https://www.zillow.com/homedetails/123459'
+            }
+        ];
+        
+        // Function to render property cell (mimics timeline-renderer-fix.js)
+        function renderPropertyCell(row) {
+            const hasRealListing = row.realListing && row.listingUrl;
+            const propertyValue = row.property || '';
+            
+            if (hasRealListing) {
+                return `
+                    <div class="property-with-link">
+                        <input type="text" value="${propertyValue}" readonly>
+                        <a href="${row.listingUrl}" target="_blank" style="color: #006AFF;">🔗</a>
+                    </div>
+                `;
+            } else {
+                return `<input type="text" value="${propertyValue}" readonly>`;
+            }
+        }
+        
+        // Test 1: Render initial timeline
+        const test1Body = document.getElementById('test1-body');
+        initialTimeline.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.month}</td>
+                <td>${row.action}</td>
+                <td>${renderPropertyCell(row)}</td>
+                <td>$${row.price.toLocaleString()}</td>
+            `;
+            test1Body.appendChild(tr);
+        });
+        
+        // Test 2: Render matched timeline
+        const test2Body = document.getElementById('test2-body');
+        matchedTimeline.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.month}</td>
+                <td>${row.action}</td>
+                <td>${renderPropertyCell(row)}</td>
+                <td>$${row.price.toLocaleString()}</td>
+            `;
+            test2Body.appendChild(tr);
+        });
+        
+        // Results
+        const results = document.getElementById('results');
+        const test1Pass = initialTimeline.every(row => row.property && row.property.match(/^Rental \d+$/));
+        const test2Pass = matchedTimeline.every(row => 
+            row.property && row.property.match(/^Rental \d+: .+$/) && row.listingUrl
+        );
+        
+        results.innerHTML = `
+            <h2>Test Results:</h2>
+            <p class="${test1Pass ? 'success' : 'fail'}">
+                Test 1 (Initial Properties): ${test1Pass ? 'PASSED ✓' : 'FAILED ✗'}
+            </p>
+            <p class="${test2Pass ? 'success' : 'fail'}">
+                Test 2 (Matched Properties): ${test2Pass ? 'PASSED ✓' : 'FAILED ✗'}
+            </p>
+        `;
+    </script>
+</body>
+</html>
