@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Integration Test - Portfolio Simulator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #666; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+        .status { 
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-weight: 500;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        textarea, input {
+            width: 100%;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 AI Integration Test Suite</h1>
+    
+    <!-- Configuration Status -->
+    <div class="test-section">
+        <h2>1. Configuration Status</h2>
+        <div id="configStatus">Checking configuration...</div>
+        <button onclick="checkConfiguration()">Refresh Status</button>
+        <button onclick="toggleAI(true)">Enable AI</button>
+        <button onclick="toggleAI(false)">Disable AI</button>
+        <div id="configDetails" class="test-result"></div>
+    </div>
+
+    <!-- Health Check -->
+    <div class="test-section">
+        <h2>2. API Health Check</h2>
+        <div id="healthStatus">Not checked yet</div>
+        <button onclick="checkHealth()">Check Health</button>
+        <div id="healthDetails" class="test-result"></div>
+    </div>
+
+    <!-- Goal Parser Test -->
+    <div class="test-section">
+        <h2>3. AI Goal Parser Test</h2>
+        <textarea id="goalInput" rows="3" placeholder="Enter a complex goal, e.g., I want to buy 3 houses in 3 months, then flip for 6 months, then buy more rentals">I want to build a $10,000/month rental portfolio in 3 years. I have $50k to start and get a $30k bonus in 6 months. First buy 3 rentals, then flip 2 properties, then use profits to buy 5 more rentals.</textarea>
+        <button onclick="testGoalParser()">Parse with AI</button>
+        <button onclick="testGoalParserRuleBased()">Parse with Rules</button>
+        <div id="parserResult" class="test-result"></div>
+    </div>
+
+    <!-- Strategy Generation Test -->
+    <div class="test-section">
+        <h2>4. AI Strategy Generation Test</h2>
+        <textarea id="strategyGoalInput" rows="3" placeholder="Enter investment goal">Build $5000/month passive income in 2 years with $30k starting capital. I can save $2k/month. Prefer BRRR strategy in Detroit.</textarea>
+        <button onclick="testStrategyGeneration()">Generate AI Strategy</button>
+        <div id="strategyResult" class="test-result"></div>
+    </div>
+
+    <!-- Performance Test -->
+    <div class="test-section">
+        <h2>5. Performance Comparison</h2>
+        <button onclick="runPerformanceTest()">Run Performance Test</button>
+        <div id="performanceResult" class="test-result"></div>
+    </div>
+
+    <!-- API Key Setup -->
+    <div class="test-section">
+        <h2>6. API Key Configuration (Development Only)</h2>
+        <input type="password" id="apiKeyInput" placeholder="Enter Anthropic API Key">
+        <button onclick="saveApiKey()">Save API Key (Local Storage)</button>
+        <button onclick="clearApiKey()">Clear API Key</button>
+        <div id="apiKeyStatus" class="status info">API key not configured</div>
+    </div>
+
+    <!-- Load AI Scripts -->
+    <script src="js/ai-config.js"></script>
+    <script src="js/services/ai-service.js"></script>
+    <script src="js/ai-goal-parser.js"></script>
+    <script src="js/goal-parser.js"></script>
+    <script src="js/strategy-generator.js"></script>
+
+    <script>
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConfiguration();
+            checkApiKeyStatus();
+        });
+
+        // Check configuration
+        function checkConfiguration() {
+            const config = window.AIConfig;
+            const features = config.features;
+            
+            let html = '<h3>Feature Flags:</h3><ul>';
+            for (const [feature, enabled] of Object.entries(features)) {
+                const status = enabled ? '✅' : '❌';
+                html += `<li>${status} ${feature}: ${enabled}</li>`;
+            }
+            html += '</ul>';
+            
+            html += '<h3>User Info:</h3><ul>';
+            html += `<li>User ID: ${config.getUserId()}</li>`;
+            html += `<li>Should Enable AI: ${config.shouldEnableAI()}</li>`;
+            html += `<li>Rollout Percentage: ${config.rollout.percentage}%</li>`;
+            html += '</ul>';
+            
+            document.getElementById('configDetails').innerHTML = html;
+            document.getElementById('configDetails').style.display = 'block';
+            
+            const mainStatus = config.shouldEnableAI() ? 
+                '<div class="status success">AI Features Enabled</div>' : 
+                '<div class="status warning">AI Features Disabled (Using Rule-Based)</div>';
+            document.getElementById('configStatus').innerHTML = mainStatus;
+        }
+
+        // Toggle AI
+        function toggleAI(enabled) {
+            window.AIConfig.toggleAI(enabled);
+        }
+
+        // Check health
+        async function checkHealth() {
+            const statusEl = document.getElementById('healthStatus');
+            const detailsEl = document.getElementById('healthDetails');
+            
+            statusEl.innerHTML = '<div class="loading">Checking...</div>';
+            
+            try {
+                const response = await fetch('/api/ai/health');
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    statusEl.innerHTML = '<div class="status success">API Health: OK</div>';
+                } else if (data.status === 'degraded') {
+                    statusEl.innerHTML = '<div class="status warning">API Health: Degraded - ' + data.message + '</div>';
+                } else {
+                    statusEl.innerHTML = '<div class="status error">API Health: Error</div>';
+                }
+                
+                detailsEl.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                detailsEl.style.display = 'block';
+            } catch (error) {
+                statusEl.innerHTML = '<div class="status error">Health Check Failed: ' + error.message + '</div>';
+                detailsEl.innerHTML = '<pre>Error: ' + error.stack + '</pre>';
+                detailsEl.style.display = 'block';
+            }
+        }
+
+        // Test goal parser
+        async function testGoalParser() {
+            const goal = document.getElementById('goalInput').value;
+            const resultEl = document.getElementById('parserResult');
+            
+            resultEl.innerHTML = '<div class="loading">Parsing with AI...</div>';
+            resultEl.style.display = 'block';
+            
+            try {
+                const parser = new AIGoalParser();
+                const startTime = Date.now();
+                const result = await parser.parse(goal);
+                const elapsed = Date.now() - startTime;
+                
+                resultEl.innerHTML = `
+                    <h4>AI Parse Result (${elapsed}ms):</h4>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                    <h4>Formatted Display:</h4>
+                    <pre>${parser.formatForDisplay(result)}</pre>
+                `;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="status error">Parse Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test rule-based parser
+        function testGoalParserRuleBased() {
+            const goal = document.getElementById('goalInput').value;
+            const resultEl = document.getElementById('parserResult');
+            
+            resultEl.style.display = 'block';
+            
+            try {
+                const parser = new GoalParser();
+                const startTime = Date.now();
+                const result = parser.parse(goal);
+                const elapsed = Date.now() - startTime;
+                
+                resultEl.innerHTML = `
+                    <h4>Rule-Based Parse Result (${elapsed}ms):</h4>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="status error">Parse Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test strategy generation
+        async function testStrategyGeneration() {
+            const goal = document.getElementById('strategyGoalInput').value;
+            const resultEl = document.getElementById('strategyResult');
+            
+            resultEl.innerHTML = '<div class="loading">Generating AI strategy... (this may take 30-60 seconds)</div>';
+            resultEl.style.display = 'block';
+            
+            try {
+                const startTime = Date.now();
+                const result = await window.aiService.generateStrategy(goal);
+                const elapsed = Date.now() - startTime;
+                
+                resultEl.innerHTML = `
+                    <h4>AI Strategy Result (${elapsed}ms):</h4>
+                    <div class="status ${result.source === 'ai' ? 'success' : 'warning'}">
+                        Source: ${result.source}
+                    </div>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="status error">Strategy Generation Error: ${error.message}</div>`;
+            }
+        }
+
+        // Performance test
+        async function runPerformanceTest() {
+            const resultEl = document.getElementById('performanceResult');
+            resultEl.innerHTML = '<div class="loading">Running performance tests...</div>';
+            resultEl.style.display = 'block';
+            
+            const testGoal = "I want to generate $8000/month in rental income within 24 months. I have $60k to start.";
+            const results = [];
+            
+            // Test rule-based
+            try {
+                const parser = new GoalParser();
+                const generator = new StrategyGenerator();
+                
+                const start = Date.now();
+                const parsed = parser.parse(testGoal);
+                const strategy = generator.generateStrategy(parsed);
+                const ruleTime = Date.now() - start;
+                
+                results.push({
+                    method: 'Rule-Based',
+                    time: ruleTime + 'ms',
+                    status: 'success'
+                });
+            } catch (error) {
+                results.push({
+                    method: 'Rule-Based',
+                    time: 'N/A',
+                    status: 'error',
+                    error: error.message
+                });
+            }
+            
+            // Test AI (if enabled)
+            if (window.AIConfig.features.aiStrategyGeneration) {
+                try {
+                    const start = Date.now();
+                    const result = await window.aiService.generateStrategy(testGoal);
+                    const aiTime = Date.now() - start;
+                    
+                    results.push({
+                        method: 'AI-Powered',
+                        time: aiTime + 'ms',
+                        status: 'success',
+                        source: result.source
+                    });
+                } catch (error) {
+                    results.push({
+                        method: 'AI-Powered',
+                        time: 'N/A',
+                        status: 'error',
+                        error: error.message
+                    });
+                }
+            } else {
+                results.push({
+                    method: 'AI-Powered',
+                    time: 'N/A',
+                    status: 'disabled'
+                });
+            }
+            
+            // Display results
+            let html = '<h4>Performance Test Results:</h4><table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr><th>Method</th><th>Time</th><th>Status</th><th>Notes</th></tr>';
+            
+            results.forEach(result => {
+                const statusClass = result.status === 'success' ? 'success' : 
+                                  result.status === 'error' ? 'error' : 'warning';
+                html += `<tr>
+                    <td>${result.method}</td>
+                    <td>${result.time}</td>
+                    <td><span class="status ${statusClass}">${result.status}</span></td>
+                    <td>${result.error || result.source || ''}</td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            resultEl.innerHTML = html;
+        }
+
+        // API Key management
+        function checkApiKeyStatus() {
+            const hasKey = localStorage.getItem('anthropicApiKey') !== null;
+            const statusEl = document.getElementById('apiKeyStatus');
+            
+            if (hasKey) {
+                statusEl.className = 'status success';
+                statusEl.textContent = 'API key configured in local storage';
+            } else {
+                statusEl.className = 'status warning';
+                statusEl.textContent = 'API key not configured - AI features will use server key or fallback';
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('anthropicApiKey', key);
+                window.aiService.apiKey = key;
+                checkApiKeyStatus();
+                alert('API key saved to local storage (development only)');
+            }
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('anthropicApiKey');
+            window.aiService.apiKey = null;
+            document.getElementById('apiKeyInput').value = '';
+            checkApiKeyStatus();
+        }
+    </script>
+</body>
+</html>

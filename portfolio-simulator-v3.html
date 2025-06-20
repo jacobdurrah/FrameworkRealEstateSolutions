@@ -1177,6 +1177,12 @@
             <button class="btn btn-primary" onclick="generateStrategy()" style="font-size: 1.1rem; padding: 1rem 2rem;">
                 <i class="fas fa-rocket"></i> Generate Strategy
             </button>
+            <div id="aiStatusBadge" style="display: none; margin-top: 0.5rem; font-size: 0.9rem; color: var(--primary-color);">
+                <i class="fas fa-robot"></i> <span id="aiStatusText">AI Enhanced</span>
+            </div>
+            <div id="aiLoadingMessage" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 8px;">
+                <i class="fas fa-spinner fa-spin"></i> <span id="aiLoadingText">Processing with AI...</span>
+            </div>
         </div>
         
         <div id="parsedGoalDisplay" style="margin-top: 1rem;">
@@ -1680,6 +1686,11 @@
     
     <!-- Modern Table Enhancement -->
     <script src="js/timeline-table-modern.js"></script>
+    
+    <!-- AI Enhancement Scripts -->
+    <script src="js/ai-config.js"></script>
+    <script src="js/services/ai-service.js"></script>
+    <script src="js/ai-goal-parser.js"></script>
     
     <!-- Test Suite (only loads in test mode) -->
     <script>

@@ -36,12 +36,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load example queries
     loadExampleQueries();
     
+    // Check AI status
+    checkAIStatus();
+    
     // Log initialization
     console.log('Portfolio Simulator V3 initialized');
     console.log('V2 functions available:', {
         renderTimelineTable: typeof renderTimelineTable === 'function',
         recalculateAll: typeof recalculateAll === 'function',
         addTimelineRow: typeof addTimelineRow === 'function'
+    });
+    console.log('AI features:', {
+        aiService: typeof window.aiService !== 'undefined',
+        aiConfig: typeof window.AIConfig !== 'undefined',
+        aiEnabled: window.AIConfig ? window.AIConfig.shouldEnableAI() : false
     });
 });
 
@@ -1097,6 +1105,37 @@ async function loadStateFromUrl() {
 
 // Add shareSimulation to global scope
 window.shareSimulation = shareSimulation;
+
+/**
+ * Check AI status and update UI
+ */
+function checkAIStatus() {
+    if (window.AIConfig && window.AIConfig.shouldEnableAI()) {
+        // Show AI badge
+        const badge = document.getElementById('aiStatusBadge');
+        if (badge) {
+            badge.style.display = 'block';
+            
+            // Update badge text based on features
+            const features = window.AIConfig.features;
+            let statusText = 'AI Enhanced';
+            
+            if (features.aiStrategyGeneration && features.aiGoalParsing) {
+                statusText = 'AI Powered';
+            } else if (features.aiStrategyGeneration) {
+                statusText = 'AI Strategy Generation';
+            } else if (features.aiGoalParsing) {
+                statusText = 'AI Goal Understanding';
+            }
+            
+            document.getElementById('aiStatusText').textContent = statusText;
+        }
+        
+        console.log('AI features enabled for this session');
+    } else {
+        console.log('Using rule-based system (AI disabled)');
+    }
+}
 
 // Check for shared state on page load
 document.addEventListener('DOMContentLoaded', () => {
