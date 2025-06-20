@@ -1,0 +1,78 @@
+name: Presubmit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linter
+      run: npm run lint
+      continue-on-error: true  # Don't fail build on lint errors initially
+    
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+    
+    - name: Run core functionality tests
+      run: npm run test:core
+    
+    - name: Run property matching tests
+      run: npm run test:property
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+    
+    - name: Check for test failures
+      if: failure()
+      run: echo "Tests failed. Please check the test results."
+
+  validate-code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check for console.log statements
+      run: |
+        if grep -r "console\.log" --include="*.js" js/ --exclude="*test*" --exclude="*debug*"; then
+          echo "Warning: console.log statements found in production code"
+        fi
+    
+    - name: Check for TODO comments
+      run: |
+        if grep -r "TODO\|FIXME" --include="*.js" js/; then
+          echo "Warning: TODO/FIXME comments found"
+        fi
+    
+    - name: Validate file structure
+      run: |
+        # Check that test files are not in root
+        if ls test-*.js 2>/dev/null || ls test-*.html 2>/dev/null; then
+          echo "Error: Test files found in root directory"
+          exit 1
+        fi
