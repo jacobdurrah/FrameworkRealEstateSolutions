@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Enhanced Portfolio Simulator V4 - Framework Real Estate Solutions</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/portfolio-simulator.css">
+    
+    <style>
+        /* AI-Enhanced Styles */
+        .ai-enhanced-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .ai-badge-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .ai-input-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .ai-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .ai-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .ai-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .ai-generate-btn {
+            position: absolute;
+            right: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ai-generate-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        
+        .ai-generate-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .ai-examples {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .example-goal {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .example-goal:hover {
+            color: #5a67d8;
+        }
+        
+        .ai-loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .ai-loading.active {
+            display: block;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .feature-comparison {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #cbd5e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background: #667eea;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Framework Real Estate Solutions</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="properties.html">Properties</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="portfolio-simulator-v4-ai.html">AI Simulator</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5 pt-5">
+        <!-- AI-Enhanced Header -->
+        <div class="ai-enhanced-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2">AI-Enhanced Portfolio Simulator</h1>
+                    <p class="mb-0">Experience the power of AI-driven real estate investment strategies</p>
+                </div>
+                <div class="ai-badge-large">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Powered</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Comparison -->
+        <div class="feature-comparison">
+            <h4>AI Features</h4>
+            <div class="feature-toggle">
+                <div class="toggle-switch active" id="aiToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span>Use AI-Enhanced Strategy Generation</span>
+            </div>
+            <p class="text-muted mb-0">
+                When enabled, our AI analyzes your goals to create comprehensive multi-phase strategies with risk assessment, market analysis, and financing recommendations.
+            </p>
+        </div>
+
+        <!-- AI Input Section -->
+        <div class="ai-input-container">
+            <label for="goalInput" class="form-label fw-bold">
+                <i class="fas fa-bullseye"></i> What's your real estate investment goal?
+            </label>
+            <div class="ai-input-wrapper">
+                <input type="text" 
+                       id="goalInput" 
+                       class="ai-input" 
+                       placeholder="Example: I want to make $5000/month from rental properties in Detroit"
+                       autocomplete="off">
+                <button class="ai-generate-btn" id="generateBtn">
+                    <i class="fas fa-magic"></i> Generate Strategy
+                </button>
+            </div>
+            <div class="ai-examples">
+                Try these examples: 
+                <span class="example-goal" onclick="setExampleGoal(1)">Start with $100k and build passive income</span>, 
+                <span class="example-goal" onclick="setExampleGoal(2)">Buy 3 rentals in Detroit under $50k each</span>, 
+                <span class="example-goal" onclick="setExampleGoal(3)">BRRRR strategy with $50k starting capital</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="ai-loading" id="loadingContainer">
+            <div class="loading-spinner"></div>
+            <p class="mt-3">AI is analyzing your goal and creating a comprehensive strategy...</p>
+        </div>
+
+        <!-- AI Strategy Display Container -->
+        <div id="aiStrategyContainer"></div>
+
+        <!-- Traditional Timeline Table (Hidden by default) -->
+        <div id="traditionalTimeline" style="display: none;">
+            <h3>Investment Timeline</h3>
+            <div class="table-responsive">
+                <table class="table table-hover" id="timelineTable">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Event Type</th>
+                            <th>Description</th>
+                            <th>Cash Flow</th>
+                            <th>Total Investment</th>
+                            <th>Monthly Income</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timelineTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="mt-5" style="display: none;">
+            <h3>Portfolio Performance</h3>
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- AI Configuration -->
+    <script src="js/ai-config.js"></script>
+    
+    <!-- Enhanced AI Service -->
+    <script src="js/services/ai-service-v2.js"></script>
+    
+    <!-- AI Strategy Display Component -->
+    <script src="js/components/ai-strategy-display.js"></script>
+    
+    <!-- Page Logic -->
+    <script>
+        // Example goals
+        const exampleGoals = {
+            1: "I want to start with $100k, buy rental properties, and build $5000/month passive income within 2 years",
+            2: "I want to buy 3 rental properties in Detroit for under $50k each and generate positive cash flow",
+            3: "I have $50k to start a BRRRR strategy, aiming to own 5 properties within 18 months"
+        };
+
+        function setExampleGoal(id) {
+            document.getElementById('goalInput').value = exampleGoals[id];
+            document.getElementById('goalInput').focus();
+        }
+
+        // AI Toggle
+        document.getElementById('aiToggle').addEventListener('click', function() {
+            this.classList.toggle('active');
+            const isAIEnabled = this.classList.contains('active');
+            window.aiServiceV2.config.enableAI = isAIEnabled;
+            console.log('AI Features:', isAIEnabled ? 'Enabled' : 'Disabled');
+        });
+
+        // Generate Strategy
+        document.getElementById('generateBtn').addEventListener('click', generateStrategy);
+        document.getElementById('goalInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateStrategy();
+            }
+        });
+
+        // Listen for regenerate events
+        document.addEventListener('regenerateStrategy', function(e) {
+            const goal = e.detail.goal;
+            document.getElementById('goalInput').value = goal;
+            generateStrategy();
+        });
+
+        async function generateStrategy() {
+            const goal = document.getElementById('goalInput').value.trim();
+            if (!goal) {
+                alert('Please enter your investment goal');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingContainer').classList.add('active');
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('aiStrategyContainer').style.display = 'none';
+            document.getElementById('traditionalTimeline').style.display = 'none';
+
+            try {
+                // Generate comprehensive strategy
+                const strategy = await window.aiServiceV2.generateStrategy(goal, {
+                    mode: 'comprehensive',
+                    context: {
+                        userProfile: {
+                            experience: 'intermediate',
+                            riskTolerance: 'moderate'
+                        }
+                    }
+                });
+
+                console.log('Generated strategy:', strategy);
+
+                // Display the strategy
+                if (window.aiStrategyDisplay) {
+                    window.aiStrategyDisplay.displayStrategy(strategy, goal);
+                    document.getElementById('aiStrategyContainer').style.display = 'block';
+                }
+
+                // Also generate timeline for traditional view
+                if (strategy.success && strategy.data.phases) {
+                    generateTimeline(strategy.data);
+                }
+
+            } catch (error) {
+                console.error('Strategy generation error:', error);
+                alert('Failed to generate strategy. Please try again.');
+            } finally {
+                // Hide loading
+                document.getElementById('loadingContainer').classList.remove('active');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function generateTimeline(strategyData) {
+            // Convert AI strategy to timeline events
+            const events = [];
+            let currentMonth = 0;
+            let totalInvestment = 0;
+            let monthlyIncome = 0;
+
+            strategyData.phases.forEach(phase => {
+                const startMonth = currentMonth;
+                const endMonth = startMonth + (phase.duration || 3);
+
+                // Add phase start event
+                events.push({
+                    month: startMonth,
+                    type: 'Phase Start',
+                    description: phase.displayName || phase.focus,
+                    cashFlow: -(phase.expectedCost || 0),
+                    totalInvestment: totalInvestment + (phase.expectedCost || 0),
+                    monthlyIncome: monthlyIncome
+                });
+
+                // Update totals
+                totalInvestment += (phase.expectedCost || 0);
+                if (phase.expectedRevenue) {
+                    monthlyIncome += phase.expectedRevenue / 12; // Rough estimate
+                }
+
+                // Add phase end event if revenue expected
+                if (phase.expectedRevenue) {
+                    events.push({
+                        month: endMonth,
+                        type: 'Revenue',
+                        description: `${phase.displayName} revenue`,
+                        cashFlow: phase.expectedRevenue,
+                        totalInvestment: totalInvestment,
+                        monthlyIncome: monthlyIncome
+                    });
+                }
+
+                currentMonth = endMonth;
+            });
+
+            // Display timeline
+            displayTimeline(events);
+        }
+
+        function displayTimeline(events) {
+            const tbody = document.getElementById('timelineTableBody');
+            tbody.innerHTML = '';
+
+            events.forEach(event => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${event.month}</td>
+                    <td>${event.type}</td>
+                    <td>${event.description}</td>
+                    <td class="${event.cashFlow < 0 ? 'text-danger' : 'text-success'}">
+                        $${Math.abs(event.cashFlow).toLocaleString()}
+                    </td>
+                    <td>$${event.totalInvestment.toLocaleString()}</td>
+                    <td>$${Math.round(event.monthlyIncome).toLocaleString()}</td>
+                `;
+            });
+
+            document.getElementById('traditionalTimeline').style.display = 'block';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set focus on input
+            document.getElementById('goalInput').focus();
+            
+            // Show AI status
+            console.log('AI Service Status:', window.aiServiceV2.getStatus());
+        });
+    </script>
+</body>
+</html>

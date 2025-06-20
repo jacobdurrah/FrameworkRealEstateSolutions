@@ -19,7 +19,7 @@ const tests = [
     {
         name: 'Remote Health Check',
         protocol: 'https',
-        hostname: 'framework-exnyx95yu-jacob-durrahs-projects.vercel.app',
+        hostname: 'framework-hgn314s0p-jacob-durrahs-projects.vercel.app',
         path: '/api/ai/health',
         method: 'GET'
     },
@@ -38,7 +38,7 @@ const tests = [
     {
         name: 'Remote Strategy Generator',
         protocol: 'https',
-        hostname: 'framework-exnyx95yu-jacob-durrahs-projects.vercel.app',
+        hostname: 'framework-hgn314s0p-jacob-durrahs-projects.vercel.app',
         path: '/api/ai/strategy-generator',
         method: 'POST',
         payload: {

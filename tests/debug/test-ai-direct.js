@@ -9,7 +9,7 @@ const payload = JSON.stringify({
 });
 
 const options = {
-    hostname: 'framework-kyoaumbey-jacob-durrahs-projects.vercel.app',
+    hostname: 'framework-hgn314s0p-jacob-durrahs-projects.vercel.app',
     path: '/api/ai/strategy-generator',
     method: 'POST',
     headers: {
