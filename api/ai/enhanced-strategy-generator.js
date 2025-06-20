@@ -75,8 +75,11 @@ Format your response as a JSON object with this structure:
 }`;
 
 class EnhancedStrategyGenerator {
-    constructor() {
+    constructor(apiKey) {
         this.client = new ClaudeClient();
+        if (apiKey) {
+            this.client.initialize(apiKey);
+        }
     }
 
     async generateStrategy(goal, mode = 'comprehensive', context = {}) {
@@ -311,7 +314,17 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Goal is required' });
         }
 
-        const generator = new EnhancedStrategyGenerator();
+        // Get API key from environment
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+            console.error('[API] No Anthropic API key found in environment');
+            return res.status(500).json({
+                error: 'Service configuration error',
+                message: 'AI service is not properly configured'
+            });
+        }
+
+        const generator = new EnhancedStrategyGenerator(apiKey);
         const result = await generator.generateStrategy(goal, mode, context);
 
         return res.status(200).json(result);
