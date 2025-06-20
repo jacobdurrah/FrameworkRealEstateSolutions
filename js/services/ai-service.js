@@ -49,7 +49,7 @@ class AIService {
         if (window.location.hostname === 'localhost') {
             return 'http://localhost:3000/api/ai';
         } else if (window.location.hostname === 'frameworkrealestatesolutions.com') {
-            return 'https://framework-kyoaumbey-jacob-durrahs-projects.vercel.app/api/ai';
+            return 'https://framework-exnyx95yu-jacob-durrahs-projects.vercel.app/api/ai';
         } else {
             return '/api/ai';
         }

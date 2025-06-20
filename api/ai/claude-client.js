@@ -122,6 +122,55 @@ Format your response as a structured JSON object with the following schema:
     }
 
     /**
+     * Explain an existing strategy
+     */
+    async explainStrategy(strategy, context) {
+        const systemPrompt = `You are an expert real estate investment advisor. Explain the given strategy in detail, including:
+1. Why each decision was made
+2. How the timeline was determined
+3. Risk factors and mitigation
+4. Expected outcomes and variations
+5. Key assumptions and dependencies
+
+Be thorough but clear, using simple language that a beginner investor can understand.`;
+
+        const messages = [
+            {
+                role: 'user',
+                content: `Please explain this real estate investment strategy:\n\n${JSON.stringify(strategy, null, 2)}\n\nContext: ${JSON.stringify(context, null, 2)}`
+            }
+        ];
+
+        try {
+            const response = await this.sendMessage(messages, systemPrompt);
+            return {
+                explanation: response.content[0].text,
+                keyPoints: this.extractKeyPoints(response.content[0].text)
+            };
+        } catch (error) {
+            console.error('Error explaining strategy:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Extract key points from explanation
+     */
+    extractKeyPoints(explanation) {
+        // Simple extraction - in production, this could use AI
+        const points = [];
+        const lines = explanation.split('\n');
+        
+        lines.forEach(line => {
+            if (line.match(/^\d+\.|^-|^•/) && line.length > 20) {
+                points.push(line.replace(/^\d+\.|^-|^•/, '').trim());
+            }
+        });
+        
+        return points.slice(0, 5); // Top 5 points
+    }
+
+    /**
      * Parse complex goals using AI
      */
     async parseGoal(naturalLanguageGoal) {
@@ -217,20 +266,35 @@ Be thorough in extracting all mentioned constraints and preferences.`;
      */
     async makeRequest(payload, retryCount = 0) {
         try {
+            console.log(`Making request to Claude API (attempt ${retryCount + 1})`);
+            console.log('Headers:', JSON.stringify(this.headers, null, 2));
+            console.log('Payload size:', JSON.stringify(payload).length);
+            
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: this.headers,
                 body: JSON.stringify(payload)
             });
 
+            console.log(`Response status: ${response.status}`);
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`Claude API error: ${error.error?.message || response.statusText}`);
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: await response.text() };
+                }
+                console.error('Claude API error response:', errorData);
+                throw new Error(`Claude API error: ${errorData.error?.message || errorData.message || response.statusText}`);
             }
 
             const data = await response.json();
+            console.log('Claude API response received successfully');
             return data;
         } catch (error) {
+            console.error(`Request error (attempt ${retryCount + 1}):`, error);
+            
             if (retryCount < this.maxRetries) {
                 console.warn(`Request failed, retrying (${retryCount + 1}/${this.maxRetries})...`);
                 await this.sleep(this.retryDelay * Math.pow(2, retryCount));

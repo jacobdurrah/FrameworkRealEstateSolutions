@@ -39,7 +39,15 @@ export default async function handler(req, res) {
         }
 
         // Initialize client with API key
-        claudeClient.initialize(apiKey);
+        try {
+            claudeClient.initialize(apiKey);
+        } catch (error) {
+            console.error('Failed to initialize Claude client:', error);
+            return res.status(500).json({ 
+                error: 'Service initialization failed',
+                message: 'Unable to initialize AI service'
+            });
+        }
 
         // Parse request body
         const { goal, context, mode = 'strategy' } = req.body;
@@ -69,7 +77,7 @@ export default async function handler(req, res) {
                 
             case 'explain':
                 // Explain an existing strategy
-                result = await explainStrategy(goal, context);
+                result = await claudeClient.explainStrategy(goal, context);
                 break;
                 
             default:
@@ -112,76 +120,3 @@ export default async function handler(req, res) {
     }
 };
 
-/**
- * Explain an existing strategy
- */
-async function explainStrategy(strategy, context) {
-    const systemPrompt = `You are an expert real estate investment advisor. Explain the given strategy in detail, including:
-1. Why each decision was made
-2. How the timeline was determined
-3. Risk factors and mitigation
-4. Expected outcomes and variations
-5. Key assumptions and dependencies
-
-Be thorough but clear, using simple language that a beginner investor can understand.`;
-
-    const messages = [
-        {
-            role: 'user',
-            content: `Please explain this real estate investment strategy:\n\n${JSON.stringify(strategy, null, 2)}\n\nContext: ${JSON.stringify(context, null, 2)}`
-        }
-    ];
-
-    const response = await claudeClient.sendMessage(messages, systemPrompt);
-    return {
-        explanation: response.content[0].text,
-        keyPoints: extractKeyPoints(response.content[0].text)
-    };
-}
-
-/**
- * Extract key points from explanation
- */
-function extractKeyPoints(explanation) {
-    // Simple extraction - in production, this could use AI
-    const points = [];
-    const lines = explanation.split('\n');
-    
-    lines.forEach(line => {
-        if (line.match(/^\d+\.|^-|^•/) && line.length > 20) {
-            points.push(line.replace(/^\d+\.|^-|^•/, '').trim());
-        }
-    });
-    
-    return points.slice(0, 5); // Top 5 points
-}
-
-// For local testing
-if (require.main === module) {
-    const testGoal = "I want to build a $10,000/month rental portfolio in 3 years with $50,000";
-    
-    // Mock request/response for testing
-    const mockReq = {
-        method: 'POST',
-        body: {
-            goal: testGoal,
-            mode: 'parse'
-        },
-        headers: {
-            'x-anthropic-api-key': process.env.ANTHROPIC_API_KEY
-        }
-    };
-    
-    const mockRes = {
-        status: (code) => ({
-            json: (data) => {
-                console.log(`Status ${code}:`, JSON.stringify(data, null, 2));
-            },
-            end: () => {}
-        }),
-        setHeader: () => {}
-    };
-    
-    // Run test
-    module.exports(mockReq, mockRes);
-}
