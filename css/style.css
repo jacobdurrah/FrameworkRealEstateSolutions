@@ -790,3 +790,18 @@ p {
 .feature-card {
     animation: fadeIn 0.8s ease-out;
 }
+
+/* Badge styles */
+.badge {
+    display: inline-block;
+    background: var(--accent-gold);
+    color: var(--pure-white);
+    font-size: 0.65em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
