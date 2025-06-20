@@ -300,12 +300,5 @@ Be thorough in extracting all mentioned constraints and preferences.`;
     }
 }
 
-// Export for Node.js
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ClaudeClient;
-}
-
-// Export for browser
-if (typeof window !== 'undefined') {
-    window.ClaudeClient = ClaudeClient;
-}
+// Export as ES module
+export default ClaudeClient;

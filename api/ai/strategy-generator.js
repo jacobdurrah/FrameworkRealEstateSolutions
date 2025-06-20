@@ -3,13 +3,13 @@
  * Handles strategy generation requests using Claude
  */
 
-const ClaudeClient = require('./claude-client');
+import ClaudeClient from './claude-client.js';
 
 // Initialize Claude client
 const claudeClient = new ClaudeClient();
 
 // Vercel serverless function handler
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
