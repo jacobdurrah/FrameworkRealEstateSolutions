@@ -35,23 +35,25 @@
          * Setup the table enhancement
          */
         setup() {
-            // Find elements
-            this.container = document.querySelector('.timeline-table-container');
-            this.scrollWrapper = document.querySelector('.timeline-table-scroll-wrapper');
+            // Find table first
             this.table = document.getElementById('timelineTable');
             
-            if (!this.container || !this.scrollWrapper || !this.table) {
-                console.warn('Timeline table elements not found');
+            if (!this.table) {
+                console.warn('Timeline table not found');
                 return;
             }
             
-            // Add modern table class
-            this.table.classList.add('timeline-table');
+            // Check if already wrapped
+            this.container = document.querySelector('.timeline-table-container');
+            this.scrollWrapper = document.querySelector('.timeline-table-scroll-wrapper');
             
-            // Wrap table if not already wrapped
-            if (!this.container.contains(this.scrollWrapper)) {
+            // If not wrapped, wrap the table
+            if (!this.container || !this.scrollWrapper) {
                 this.wrapTable();
             }
+            
+            // Add modern table class
+            this.table.classList.add('timeline-table')
             
             // Add scroll indicators
             this.addScrollIndicators();
@@ -128,6 +130,10 @@
          * Check scroll position and update indicators
          */
         checkScrollPosition() {
+            if (!this.scrollWrapper || !this.container) {
+                return;
+            }
+            
             const scrollLeft = this.scrollWrapper.scrollLeft;
             const scrollWidth = this.scrollWrapper.scrollWidth;
             const clientWidth = this.scrollWrapper.clientWidth;
@@ -145,6 +151,10 @@
          * Update scrolled state for header shadow
          */
         updateScrolledState() {
+            if (!this.scrollWrapper || !this.container) {
+                return;
+            }
+            
             const scrollTop = this.scrollWrapper.scrollTop || window.pageYOffset;
             this.container.classList.toggle('scrolled', scrollTop > 0);
         }
