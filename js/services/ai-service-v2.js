@@ -7,7 +7,7 @@ class AIServiceV2 {
     constructor() {
         this.apiUrl = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000/api/ai'
-            : 'https://framework-974s8usrr-jacob-durrahs-projects.vercel.app/api/ai';
+            : 'https://framework-api-eta.vercel.app/api/ai';
         
         this.cache = new Map();
         this.pendingRequests = new Map();
