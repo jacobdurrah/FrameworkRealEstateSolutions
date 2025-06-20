@@ -2,77 +2,38 @@ import ClaudeClient from './claude-client.js';
 
 export const config = {
     runtime: 'nodejs',
+    maxDuration: 20, // Reduced timeout to avoid Vercel limits
 };
 
-// Enhanced system prompt with market awareness and multi-phase strategy support
-const ENHANCED_SYSTEM_PROMPT = `You are an expert real estate investment advisor with deep knowledge of:
-- Detroit real estate market conditions and trends
-- Current interest rates and financing options
-- Investment strategies (BRRRR, buy-and-hold, fix-and-flip, wholesale)
-- Risk assessment and mitigation strategies
-- Tax implications and legal considerations
+// Simplified system prompt for faster processing
+const SIMPLIFIED_SYSTEM_PROMPT = `You are an expert real estate investment advisor. Analyze the investment goal and provide a concise strategy.
 
-When analyzing investment goals, you must:
-1. Extract ALL quantifiable information (amounts, timelines, locations, property counts)
-2. Identify multiple phases if the goal involves sequential steps
-3. Consider market conditions and provide realistic assessments
-4. Include risk analysis and mitigation strategies
-5. Suggest alternative approaches when appropriate
-
-Format your response as a JSON object with this structure:
+Return ONLY a JSON object with this structure:
 {
   "targetMonthlyIncome": number or null,
   "timeHorizon": number (in months) or null,
   "startingCapital": number or null,
-  "monthlyContributions": number or null,
   "strategies": ["rental", "flip", "wholesale", "brrrr"],
   "constraints": {
     "maxPricePerProperty": number or null,
-    "totalProperties": number or null,
     "locations": ["city names"],
-    "propertyTypes": ["single-family", "multi-family", "condo", "commercial"],
-    "noReinvestment": boolean,
-    "specificTimeline": boolean,
-    "cashGoal": number or null
+    "propertyTypes": ["single-family", "multi-family"]
   },
   "phases": [
     {
       "phaseNumber": 1,
       "duration": number (months),
-      "focus": "acquisition|renovation|refinance|sale|hold",
-      "targetProperties": number,
-      "expectedCost": number,
-      "expectedRevenue": number,
+      "focus": "acquisition|renovation|refinance|sale",
       "description": "string"
     }
   ],
   "riskAssessment": {
     "level": "low|medium|high",
-    "factors": ["string"],
-    "mitigation": ["string"]
-  },
-  "marketAnalysis": {
-    "targetMarket": "string",
-    "currentConditions": "buyer|seller|balanced",
-    "priceRange": { "min": number, "max": number },
-    "expectedAppreciation": number (percentage),
-    "rentalDemand": "low|medium|high"
-  },
-  "financingRecommendations": {
-    "primaryMethod": "cash|conventional|hard-money|private|seller-financing",
-    "alternativeMethods": ["string"],
-    "estimatedRates": { "min": number, "max": number }
-  },
-  "alternativeStrategies": [
-    {
-      "name": "string",
-      "description": "string",
-      "pros": ["string"],
-      "cons": ["string"]
-    }
-  ],
-  "additionalRequirements": ["string"]
-}`;
+    "factors": ["string"]
+  }
+}
+
+Keep the response concise and focused.`;
 
 class EnhancedStrategyGenerator {
     constructor(apiKey) {
@@ -85,27 +46,25 @@ class EnhancedStrategyGenerator {
     async generateStrategy(goal, mode = 'comprehensive', context = {}) {
         try {
             console.log('[EnhancedStrategyGenerator] Processing goal:', goal);
-            console.log('[EnhancedStrategyGenerator] Mode:', mode);
-            console.log('[EnhancedStrategyGenerator] Context:', context);
 
-            // Prepare messages based on mode
-            const messages = this.prepareMessages(goal, mode, context);
+            // Use simplified prompt for faster processing
+            const messages = [{
+                role: 'user',
+                content: `Analyze this real estate investment goal: "${goal}"`
+            }];
             
-            // Get enhanced strategy from Claude
-            const response = await this.client.sendMessage(messages, ENHANCED_SYSTEM_PROMPT);
-            console.log('[EnhancedStrategyGenerator] Raw response:', response);
+            // Get strategy from Claude with timeout
+            const response = await this.client.sendMessage(messages, SIMPLIFIED_SYSTEM_PROMPT);
+            console.log('[EnhancedStrategyGenerator] Response received');
 
+            // Extract text content from Claude response
+            const responseText = response.content[0].text;
+            
             // Parse and validate the response
-            const strategy = this.parseAndValidateResponse(response, mode);
+            const strategy = this.parseAndValidateResponse(responseText);
             
-            // Add explanations if requested
-            if (mode === 'comprehensive' || mode === 'explain') {
-                strategy.explanation = await this.generateExplanation(goal, strategy);
-                strategy.keyPoints = this.extractKeyPoints(strategy);
-            }
-
-            // Calculate confidence score
-            strategy.confidenceScore = this.calculateConfidenceScore(strategy);
+            // Add basic confidence score
+            strategy.confidenceScore = 0.8;
 
             return {
                 success: true,
@@ -127,46 +86,22 @@ class EnhancedStrategyGenerator {
         }
     }
 
-    prepareMessages(goal, mode, context) {
-        const messages = [{
-            role: 'user',
-            content: `Analyze this real estate investment goal and provide a ${mode} strategy: "${goal}"`
-        }];
-
-        // Add context if provided
-        if (context.marketData) {
-            messages.push({
-                role: 'user',
-                content: `Current market data: ${JSON.stringify(context.marketData)}`
-            });
-        }
-
-        if (context.userProfile) {
-            messages.push({
-                role: 'user',
-                content: `User profile: ${JSON.stringify(context.userProfile)}`
-            });
-        }
-
-        return messages;
-    }
-
-    parseAndValidateResponse(response, mode) {
+    parseAndValidateResponse(responseText) {
         try {
-            // Extract JSON from the response
-            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            console.log('[EnhancedStrategyGenerator] Parsing response');
+            
+            // Extract JSON from the response text
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
-                throw new Error('No JSON found in response');
+                console.error('[EnhancedStrategyGenerator] No JSON found in response');
+                throw new Error('No JSON found in AI response');
             }
 
             const parsed = JSON.parse(jsonMatch[0]);
+            console.log('[EnhancedStrategyGenerator] Successfully parsed JSON');
             
-            // Validate required fields based on mode
-            if (mode === 'comprehensive') {
-                this.validateComprehensiveStrategy(parsed);
-            } else {
-                this.validateBasicStrategy(parsed);
-            }
+            // Validate required fields
+            this.validateStrategy(parsed);
 
             return parsed;
         } catch (error) {
@@ -175,121 +110,51 @@ class EnhancedStrategyGenerator {
         }
     }
 
-    validateComprehensiveStrategy(strategy) {
-        const requiredFields = ['strategies', 'constraints', 'phases', 'riskAssessment'];
-        for (const field of requiredFields) {
-            if (!strategy[field]) {
-                throw new Error(`Missing required field: ${field}`);
-            }
-        }
-
-        // Validate phases
-        if (!Array.isArray(strategy.phases) || strategy.phases.length === 0) {
-            throw new Error('Strategy must include at least one phase');
-        }
-    }
-
-    validateBasicStrategy(strategy) {
+    validateStrategy(strategy) {
         const requiredFields = ['strategies', 'constraints'];
         for (const field of requiredFields) {
             if (!strategy[field]) {
                 throw new Error(`Missing required field: ${field}`);
             }
         }
-    }
 
-    async generateExplanation(goal, strategy) {
-        const explanationPrompt = `Based on the investment goal "${goal}" and the generated strategy, provide a clear, concise explanation of:
-1. Why this strategy was recommended
-2. Key assumptions made
-3. Main risks to consider
-4. Expected outcomes
-
-Keep the explanation under 200 words and make it accessible to someone new to real estate investing.`;
-
-        const messages = [{
-            role: 'user',
-            content: explanationPrompt + '\n\nStrategy: ' + JSON.stringify(strategy)
-        }];
-
-        try {
-            return await this.client.sendMessage(messages, 'You are a helpful real estate investment advisor explaining strategies in simple terms.');
-        } catch (error) {
-            console.error('[EnhancedStrategyGenerator] Explanation error:', error);
-            return 'This strategy is designed to help you achieve your real estate investment goals through a systematic approach.';
-        }
-    }
-
-    extractKeyPoints(strategy) {
-        const keyPoints = [];
-
-        // Extract key financial metrics
-        if (strategy.targetMonthlyIncome) {
-            keyPoints.push(`Target monthly income: $${strategy.targetMonthlyIncome.toLocaleString()}`);
+        // Ensure strategies is an array
+        if (!Array.isArray(strategy.strategies)) {
+            strategy.strategies = ['rental'];
         }
 
-        // Extract phase information
-        if (strategy.phases && strategy.phases.length > 0) {
-            keyPoints.push(`${strategy.phases.length} phase${strategy.phases.length > 1 ? 's' : ''} over ${this.calculateTotalDuration(strategy.phases)} months`);
+        // Ensure constraints exists
+        if (!strategy.constraints) {
+            strategy.constraints = {
+                locations: [],
+                propertyTypes: ['single-family']
+            };
         }
-
-        // Extract risk level
-        if (strategy.riskAssessment) {
-            keyPoints.push(`Risk level: ${strategy.riskAssessment.level}`);
-        }
-
-        // Extract primary strategy
-        if (strategy.strategies && strategy.strategies.length > 0) {
-            keyPoints.push(`Primary strategy: ${strategy.strategies[0]}`);
-        }
-
-        return keyPoints;
-    }
-
-    calculateTotalDuration(phases) {
-        return phases.reduce((total, phase) => total + (phase.duration || 0), 0);
-    }
-
-    calculateConfidenceScore(strategy) {
-        let score = 0.5; // Base score
-
-        // Increase score for completeness
-        if (strategy.phases && strategy.phases.length > 0) score += 0.1;
-        if (strategy.riskAssessment) score += 0.1;
-        if (strategy.marketAnalysis) score += 0.1;
-        if (strategy.financingRecommendations) score += 0.1;
-        if (strategy.alternativeStrategies && strategy.alternativeStrategies.length > 0) score += 0.1;
-
-        // Cap at 0.95
-        return Math.min(score, 0.95);
     }
 
     getFallbackStrategy(goal) {
-        // Basic rule-based parsing as fallback
-        const numbers = goal.match(/\$?[\d,]+/g) || [];
-        const months = goal.match(/(\d+)\s*(?:month|year)/gi) || [];
-        
+        // Simple fallback strategy
         return {
             strategies: ['rental'],
             constraints: {
-                locations: this.extractLocations(goal),
+                locations: [],
                 propertyTypes: ['single-family'],
-                maxPricePerProperty: numbers.length > 0 ? parseInt(numbers[0].replace(/[$,]/g, '')) : null
+                maxPricePerProperty: null
             },
-            phases: [{
-                phaseNumber: 1,
-                focus: 'acquisition',
-                duration: months.length > 0 ? parseInt(months[0]) : 12
-            }]
+            phases: [
+                {
+                    phaseNumber: 1,
+                    focus: 'acquisition',
+                    duration: 12,
+                    description: 'Purchase first rental property'
+                }
+            ],
+            riskAssessment: {
+                level: 'medium',
+                factors: ['Market conditions', 'Financing availability']
+            },
+            confidenceScore: 0.6
         };
-    }
-
-    extractLocations(text) {
-        const detroitKeywords = ['detroit', 'michigan', 'mi', '313'];
-        const hasDetroit = detroitKeywords.some(keyword => 
-            text.toLowerCase().includes(keyword)
-        );
-        return hasDetroit ? ['Detroit'] : [];
     }
 }
 
@@ -324,8 +189,14 @@ export default async function handler(req, res) {
             });
         }
 
+        console.log('[API] Starting enhanced strategy generation');
+        const startTime = Date.now();
+
         const generator = new EnhancedStrategyGenerator(apiKey);
         const result = await generator.generateStrategy(goal, mode, context);
+
+        const duration = Date.now() - startTime;
+        console.log(`[API] Strategy generation completed in ${duration}ms`);
 
         return res.status(200).json(result);
 

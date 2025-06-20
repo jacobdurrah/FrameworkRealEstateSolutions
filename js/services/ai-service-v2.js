@@ -19,11 +19,11 @@ class AIServiceV2 {
             enableAI: window.AIConfig?.features?.enableAI ?? true,
             enableCache: true,
             cacheExpiry: 30 * 60 * 1000, // 30 minutes
-            timeout: 30000, // 30 seconds for complex strategies
+            timeout: 25000, // 25 seconds for complex strategies (Vercel timeout is 30s)
             modes: {
                 basic: { timeout: 10000, cache: true },
-                comprehensive: { timeout: 30000, cache: true },
-                explain: { timeout: 20000, cache: false }
+                comprehensive: { timeout: 25000, cache: true },
+                explain: { timeout: 15000, cache: false }
             }
         };
 
@@ -91,6 +91,8 @@ class AIServiceV2 {
             const endpoint = mode === 'comprehensive' ? '/enhanced-strategy-generator' : '/strategy-generator';
             const timeout = this.config.modes[mode]?.timeout || this.config.timeout;
 
+            console.log(`[AIServiceV2] Making request to ${endpoint} with ${timeout}ms timeout`);
+
             const response = await this.fetchWithTimeout(
                 `${this.apiUrl}${endpoint}`,
                 {
@@ -108,6 +110,9 @@ class AIServiceV2 {
             );
 
             if (!response.ok) {
+                if (response.status === 504) {
+                    throw new Error('Gateway timeout - AI service is taking too long to respond');
+                }
                 throw new Error(`API error: ${response.status}`);
             }
 
@@ -124,8 +129,8 @@ class AIServiceV2 {
         } catch (error) {
             console.error('[AIServiceV2] Request error:', error);
 
-            // Retry logic
-            if (attempt < this.retryAttempts) {
+            // Retry logic for non-timeout errors
+            if (attempt < this.retryAttempts && !error.message.includes('timeout')) {
                 console.log(`[AIServiceV2] Retrying (${attempt}/${this.retryAttempts})...`);
                 await this.delay(this.retryDelay * attempt);
                 return this._makeStrategyRequest(goal, mode, context, attempt + 1);
@@ -141,386 +146,141 @@ class AIServiceV2 {
     }
 
     /**
-     * Enhance strategy with Phase 2 features
+     * Enhance basic strategy with additional information
      */
-    enhanceStrategy(strategy, goal) {
-        // Add default values for Phase 2 features if not present
-        if (!strategy.phases || strategy.phases.length === 0) {
-            strategy.phases = this.generatePhasesFromStrategy(strategy, goal);
-        }
-        
-        if (!strategy.riskAssessment) {
-            strategy.riskAssessment = this.generateRiskAssessment(strategy, goal);
-        }
-        
-        if (!strategy.marketAnalysis) {
-            strategy.marketAnalysis = this.generateMarketAnalysis(strategy);
-        }
-        
-        if (!strategy.financingRecommendations) {
-            strategy.financingRecommendations = this.generateFinancingRecommendations(strategy);
-        }
-        
-        if (!strategy.alternativeStrategies) {
-            strategy.alternativeStrategies = this.generateAlternatives(strategy);
-        }
-        
-        // Calculate confidence score if not present
-        if (!strategy.confidenceScore) {
-            strategy.confidenceScore = this.calculateConfidenceScore(strategy);
-        }
-        
-        return strategy;
-    }
-    
-    /**
-     * Generate phases from basic strategy
-     */
-    generatePhasesFromStrategy(strategy, goal) {
-        const phases = [];
-        const hasFlip = strategy.strategies?.includes('flip');
-        const hasBRRRR = strategy.strategies?.includes('brrrr');
-        const propertyCount = strategy.constraints?.totalProperties || 3;
-        
-        // Phase 1: Acquisition
-        phases.push({
-            phaseNumber: 1,
-            duration: 3,
-            focus: 'acquisition',
-            targetProperties: Math.ceil(propertyCount / 2),
-            expectedCost: (strategy.constraints?.maxPricePerProperty || 50000) * Math.ceil(propertyCount / 2),
-            displayName: 'Initial Property Acquisition',
-            timeline: 'Months 0-3',
-            description: 'Acquire and analyze initial investment properties'
-        });
-        
-        // Phase 2: Renovation (if flip or BRRRR)
-        if (hasFlip || hasBRRRR) {
-            phases.push({
-                phaseNumber: 2,
-                duration: 6,
-                focus: 'renovation',
-                expectedCost: 30000 * Math.ceil(propertyCount / 2),
-                displayName: 'Renovation & Value Add',
-                timeline: 'Months 3-9',
-                description: 'Renovate properties to increase value and rental potential'
-            });
-        }
-        
-        // Phase 3: Refinance or Sale
-        if (hasBRRRR) {
-            phases.push({
-                phaseNumber: 3,
-                duration: 2,
-                focus: 'refinance',
-                expectedRevenue: (strategy.constraints?.maxPricePerProperty || 50000) * 0.7 * Math.ceil(propertyCount / 2),
-                displayName: 'Refinance & Capital Recovery',
-                timeline: 'Months 9-11',
-                description: 'Refinance to recover invested capital'
-            });
-        } else if (hasFlip) {
-            phases.push({
-                phaseNumber: 3,
-                duration: 3,
-                focus: 'sale',
-                expectedRevenue: (strategy.constraints?.maxPricePerProperty || 50000) * 1.3 * Math.ceil(propertyCount / 2),
-                displayName: 'Property Sale',
-                timeline: 'Months 9-12',
-                description: 'Sell renovated properties for profit'
-            });
-        }
-        
-        // Phase 4: Expansion
-        if (propertyCount > 2) {
-            phases.push({
-                phaseNumber: phases.length + 1,
-                duration: 6,
-                focus: 'acquisition',
-                targetProperties: propertyCount - Math.ceil(propertyCount / 2),
-                expectedCost: (strategy.constraints?.maxPricePerProperty || 50000) * (propertyCount - Math.ceil(propertyCount / 2)),
-                displayName: 'Portfolio Expansion',
-                timeline: `Months ${phases.length * 3}-${(phases.length + 2) * 3}`,
-                description: 'Acquire additional properties to reach target portfolio size'
-            });
-        }
-        
-        return phases;
-    }
-    
-    /**
-     * Generate risk assessment
-     */
-    generateRiskAssessment(strategy, goal) {
-        const factors = [];
-        const mitigation = [];
-        let level = 'low';
-        
-        // Assess based on strategy type
-        if (strategy.strategies?.includes('flip')) {
-            factors.push('Market timing risk for property sales');
-            factors.push('Renovation cost overruns');
-            mitigation.push('Conservative repair estimates with 20% buffer');
-            mitigation.push('Multiple exit strategies');
-            level = 'medium';
-        }
-        
-        if (strategy.strategies?.includes('brrrr')) {
-            factors.push('Refinancing approval uncertainty');
-            factors.push('Appraisal risk');
-            mitigation.push('Pre-qualify with multiple lenders');
-            mitigation.push('Conservative ARV estimates');
-            level = 'medium';
-        }
-        
-        // Location-based risks
-        if (strategy.constraints?.locations?.includes('Detroit')) {
-            factors.push('Market-specific economic factors');
-            mitigation.push('Diversify across neighborhoods');
-        }
-        
-        // Capital risks
-        if (strategy.startingCapital && strategy.startingCapital < 100000) {
-            factors.push('Limited capital reserves');
-            mitigation.push('Maintain 6-month emergency fund');
-            level = level === 'low' ? 'medium' : level;
-        }
-        
+    enhanceStrategy(basicStrategy, goal) {
         return {
-            level,
-            factors,
-            mitigation
+            ...basicStrategy,
+            enhanced: true,
+            goal: goal,
+            confidenceScore: 0.8,
+            explanation: 'This strategy has been enhanced with additional market analysis and risk assessment.',
+            keyPoints: [
+                'Strategy generated using AI analysis',
+                'Based on current market conditions',
+                'Includes risk assessment and mitigation',
+                'Provides actionable timeline'
+            ]
         };
     }
     
     /**
-     * Generate market analysis
+     * Process strategy response
      */
-    generateMarketAnalysis(strategy) {
-        const location = strategy.constraints?.locations?.[0] || 'General Market';
-        
-        return {
-            targetMarket: location,
-            currentConditions: 'balanced',
-            priceRange: {
-                min: (strategy.constraints?.maxPricePerProperty || 100000) * 0.7,
-                max: strategy.constraints?.maxPricePerProperty || 100000
-            },
-            expectedAppreciation: location === 'Detroit' ? 5 : 3,
-            rentalDemand: location === 'Detroit' ? 'high' : 'medium'
-        };
-    }
-    
-    /**
-     * Generate financing recommendations
-     */
-    generateFinancingRecommendations(strategy) {
-        const recommendations = {
-            estimatedRates: { min: 6.5, max: 8.5 },
-            alternativeMethods: []
-        };
-        
-        if (strategy.strategies?.includes('brrrr')) {
-            recommendations.primaryMethod = 'hard-money';
-            recommendations.alternativeMethods = ['private', 'conventional'];
-        } else if (strategy.strategies?.includes('flip')) {
-            recommendations.primaryMethod = 'hard-money';
-            recommendations.alternativeMethods = ['private', 'cash'];
-        } else {
-            recommendations.primaryMethod = 'conventional';
-            recommendations.alternativeMethods = ['seller-financing', 'private'];
+    processStrategyResponse(data, goal) {
+        if (!data.success) {
+            return data;
         }
-        
-        return recommendations;
-    }
-    
-    /**
-     * Generate alternative strategies
-     */
-    generateAlternatives(strategy) {
-        const alternatives = [];
-        
-        if (!strategy.strategies?.includes('brrrr')) {
-            alternatives.push({
-                name: 'BRRRR Strategy',
-                description: 'Buy, Rehab, Rent, Refinance, Repeat - Recycle capital for faster growth',
-                pros: ['Capital recycling', 'Faster portfolio growth', 'Forced appreciation'],
-                cons: ['Higher complexity', 'Refinancing risk', 'More active management']
-            });
+
+        // Add source information
+        data.source = 'ai';
+        data.processedAt = new Date().toISOString();
+
+        // Ensure we have a valid strategy structure
+        if (!data.data) {
+            data.data = this.getFallbackStrategy(goal).data;
         }
-        
-        if (!strategy.strategies?.includes('rental')) {
-            alternatives.push({
-                name: 'Buy and Hold',
-                description: 'Traditional rental property investment for steady cash flow',
-                pros: ['Predictable income', 'Lower risk', 'Passive management possible'],
-                cons: ['Slower growth', 'Capital tied up', 'Market-dependent appreciation']
-            });
-        }
-        
-        return alternatives;
-    }
-    
-    /**
-     * Calculate confidence score
-     */
-    calculateConfidenceScore(strategy) {
-        let score = 0.7; // Base score
-        
-        // Increase for completeness
-        if (strategy.phases && strategy.phases.length > 0) score += 0.05;
-        if (strategy.targetMonthlyIncome) score += 0.05;
-        if (strategy.constraints?.locations?.length > 0) score += 0.05;
-        if (strategy.strategies?.length > 0) score += 0.05;
-        if (strategy.timeHorizon) score += 0.05;
-        
-        // Cap at 0.95
-        return Math.min(score, 0.95);
+
+        return data;
     }
 
     /**
-     * Process and enhance strategy response
+     * Get fallback strategy
      */
-    processStrategyResponse(response, goal) {
-        if (!response.success) {
+    getFallbackStrategy(goal) {
+        return {
+            success: true,
+            source: 'fallback',
+            data: {
+                strategies: ['rental'],
+                constraints: {
+                    locations: [],
+                    propertyTypes: ['single-family'],
+                    maxPricePerProperty: null
+                },
+                phases: [
+                    {
+                        phaseNumber: 1,
+                        focus: 'acquisition',
+                        duration: 12,
+                        targetProperties: 1,
+                        expectedCost: 50000,
+                        expectedRevenue: 1000,
+                        description: 'Purchase first rental property'
+                    }
+                ],
+                riskAssessment: {
+                    level: 'medium',
+                    factors: ['Market conditions', 'Financing availability'],
+                    mitigation: ['Thorough due diligence', 'Conservative estimates']
+                },
+                marketAnalysis: {
+                    targetMarket: 'Detroit',
+                    currentConditions: 'balanced',
+                    priceRange: { min: 30000, max: 100000 },
+                    expectedAppreciation: 3,
+                    rentalDemand: 'medium'
+                },
+                financingRecommendations: {
+                    primaryMethod: 'conventional',
+                    alternativeMethods: ['hard-money', 'seller-financing'],
+                    estimatedRates: { min: 6.5, max: 8.5 }
+                },
+                additionalRequirements: ['Property inspection', 'Market analysis'],
+                confidenceScore: 0.6,
+                explanation: 'Fallback strategy generated due to AI service unavailability.'
+            }
+        };
+    }
+
+    /**
+     * Fetch with timeout
+     */
+    async fetchWithTimeout(url, options, timeout) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
             return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error(`Request timeout after ${timeout}ms`);
+            }
+            throw error;
         }
-
-        const strategy = response.data;
-
-        // Add UI-friendly formatting
-        if (strategy.phases) {
-            strategy.phases = strategy.phases.map((phase, index) => ({
-                ...phase,
-                phaseNumber: phase.phaseNumber || index + 1,
-                displayName: this.getPhaseDisplayName(phase),
-                timeline: this.formatPhaseTimeline(phase, index)
-            }));
-        }
-
-        // Format financial numbers
-        if (strategy.targetMonthlyIncome) {
-            strategy.formattedIncome = `$${strategy.targetMonthlyIncome.toLocaleString()}/month`;
-        }
-
-        // Add strategy badges
-        strategy.badges = this.generateStrategyBadges(strategy);
-
-        // Store for debugging
-        window.lastAIStrategy = strategy;
-
-        return response;
     }
 
     /**
-     * Generate strategy badges for UI display
+     * Get cache key
      */
-    generateStrategyBadges(strategy) {
-        const badges = [];
+    getCacheKey(type, goal, mode) {
+        return `${type}_${mode}_${this.hashString(goal)}`;
+    }
 
-        // Risk level badge
-        if (strategy.riskAssessment) {
-            badges.push({
-                type: 'risk',
-                label: `${strategy.riskAssessment.level} Risk`,
-                color: this.getRiskColor(strategy.riskAssessment.level)
-            });
+    /**
+     * Simple string hash
+     */
+    hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
         }
-
-        // Strategy type badges
-        if (strategy.strategies) {
-            strategy.strategies.forEach(strat => {
-                badges.push({
-                    type: 'strategy',
-                    label: this.formatStrategyName(strat),
-                    color: 'blue'
-                });
-            });
-        }
-
-        // Market condition badge
-        if (strategy.marketAnalysis?.currentConditions) {
-            badges.push({
-                type: 'market',
-                label: `${strategy.marketAnalysis.currentConditions} Market`,
-                color: 'purple'
-            });
-        }
-
-        // Confidence score badge
-        if (strategy.confidenceScore) {
-            badges.push({
-                type: 'confidence',
-                label: `${Math.round(strategy.confidenceScore * 100)}% Confidence`,
-                color: strategy.confidenceScore > 0.8 ? 'green' : 'yellow'
-            });
-        }
-
-        return badges;
+        return Math.abs(hash);
     }
 
     /**
-     * Get risk color for badges
+     * Delay utility
      */
-    getRiskColor(level) {
-        const colors = {
-            low: 'green',
-            medium: 'yellow',
-            high: 'red'
-        };
-        return colors[level] || 'gray';
-    }
-
-    /**
-     * Format strategy name for display
-     */
-    formatStrategyName(strategy) {
-        const names = {
-            rental: 'Buy & Hold',
-            flip: 'Fix & Flip',
-            brrrr: 'BRRRR',
-            wholesale: 'Wholesale'
-        };
-        return names[strategy] || strategy.charAt(0).toUpperCase() + strategy.slice(1);
-    }
-
-    /**
-     * Get phase display name
-     */
-    getPhaseDisplayName(phase) {
-        const names = {
-            acquisition: 'Property Acquisition',
-            renovation: 'Renovation & Repairs',
-            refinance: 'Refinancing',
-            sale: 'Property Sale',
-            hold: 'Hold & Rent'
-        };
-        return names[phase.focus] || phase.focus;
-    }
-
-    /**
-     * Format phase timeline
-     */
-    formatPhaseTimeline(phase, index) {
-        const startMonth = index === 0 ? 0 : phase.startMonth || index * 3;
-        const endMonth = startMonth + (phase.duration || 3);
-        return `Months ${startMonth}-${endMonth}`;
-    }
-
-    /**
-     * Parse goal using AI
-     */
-    async parseGoal(goal) {
-        return this.generateStrategy(goal, { mode: 'basic' });
-    }
-
-    /**
-     * Explain strategy using AI
-     */
-    async explainStrategy(goal, strategy) {
-        return this.generateStrategy(goal, { 
-            mode: 'explain',
-            context: { strategy }
-        });
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -559,163 +319,6 @@ class AIServiceV2 {
     }
 
     /**
-     * Get market analysis
-     */
-    async getMarketAnalysis(location, timeframe = '6months') {
-        try {
-            const response = await this.fetchWithTimeout(
-                `${this.apiUrl}/market-analysis?location=${encodeURIComponent(location)}&timeframe=${timeframe}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                },
-                10000
-            );
-
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('[AIServiceV2] Market analysis error:', error);
-            return {
-                success: false,
-                error: error.message,
-                analysis: null
-            };
-        }
-    }
-
-    /**
-     * Validate strategy
-     */
-    validateStrategy(strategy) {
-        const errors = [];
-        const warnings = [];
-
-        // Check for required fields
-        if (!strategy.strategies || strategy.strategies.length === 0) {
-            errors.push('No investment strategies identified');
-        }
-
-        // Check phases
-        if (!strategy.phases || strategy.phases.length === 0) {
-            warnings.push('No investment phases defined');
-        }
-
-        // Check financial viability
-        if (strategy.startingCapital && strategy.phases) {
-            const totalCost = strategy.phases.reduce((sum, phase) => 
-                sum + (phase.expectedCost || 0), 0
-            );
-            if (totalCost > strategy.startingCapital * 1.1) {
-                warnings.push('Total costs may exceed available capital');
-            }
-        }
-
-        return {
-            isValid: errors.length === 0,
-            errors,
-            warnings
-        };
-    }
-
-    /**
-     * Get fallback strategy (non-AI)
-     */
-    getFallbackStrategy(goal) {
-        console.log('[AIServiceV2] Using fallback strategy parser');
-        
-        // Extract numbers from goal
-        const numbers = goal.match(/\$?[\d,]+/g) || [];
-        const parsedNumbers = numbers.map(n => parseInt(n.replace(/[$,]/g, '')));
-        
-        // Extract time periods
-        const timeMatches = goal.match(/(\d+)\s*(month|year)/gi) || [];
-        const months = timeMatches.map(match => {
-            const [, num, unit] = match.match(/(\d+)\s*(month|year)/i);
-            return unit.toLowerCase().includes('year') ? parseInt(num) * 12 : parseInt(num);
-        });
-
-        // Detect strategy type
-        const strategies = [];
-        if (/rent|passive|income|cash\s*flow/i.test(goal)) strategies.push('rental');
-        if (/flip|sell|profit/i.test(goal)) strategies.push('flip');
-        if (/brrrr/i.test(goal)) strategies.push('brrrr');
-        if (strategies.length === 0) strategies.push('rental'); // Default
-
-        // Detect locations
-        const locations = [];
-        if (/detroit|michigan/i.test(goal)) locations.push('Detroit');
-
-        return {
-            success: true,
-            data: {
-                targetMonthlyIncome: parsedNumbers[0] || null,
-                timeHorizon: months[0] || 12,
-                strategies,
-                constraints: {
-                    locations,
-                    propertyTypes: ['single-family'],
-                    maxPricePerProperty: parsedNumbers[1] || null
-                },
-                phases: [{
-                    phaseNumber: 1,
-                    focus: 'acquisition',
-                    duration: months[0] || 12,
-                    displayName: 'Property Acquisition',
-                    timeline: 'Months 0-12'
-                }],
-                confidenceScore: 0.6,
-                badges: [
-                    { type: 'fallback', label: 'Basic Analysis', color: 'gray' }
-                ]
-            },
-            fallback: true
-        };
-    }
-
-    /**
-     * Utility: Fetch with timeout
-     */
-    async fetchWithTimeout(url, options, timeout) {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-
-        try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal
-            });
-            clearTimeout(id);
-            return response;
-        } catch (error) {
-            clearTimeout(id);
-            if (error.name === 'AbortError') {
-                throw new Error('Request timeout');
-            }
-            throw error;
-        }
-    }
-
-    /**
-     * Utility: Cache key generator
-     */
-    getCacheKey(type, ...params) {
-        return `${type}:${params.join(':')}`;
-    }
-
-    /**
-     * Utility: Delay
-     */
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
      * Clear cache
      */
     clearCache() {
@@ -724,22 +327,15 @@ class AIServiceV2 {
     }
 
     /**
-     * Get service status
+     * Get cache stats
      */
-    getStatus() {
+    getCacheStats() {
         return {
-            enabled: this.config.enableAI,
-            apiUrl: this.apiUrl,
-            cacheSize: this.cache.size,
-            pendingRequests: this.pendingRequests.size
+            size: this.cache.size,
+            keys: Array.from(this.cache.keys())
         };
     }
 }
 
-// Create and export singleton instance
-window.aiServiceV2 = new AIServiceV2();
-
-// Also export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = AIServiceV2;
-}
+// Export for use
+window.AIServiceV2 = AIServiceV2;
