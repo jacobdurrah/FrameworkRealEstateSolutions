@@ -7,7 +7,7 @@ class AIServiceV2 {
     constructor() {
         this.apiUrl = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000/api/ai'
-            : 'https://framework-hgn314s0p-jacob-durrahs-projects.vercel.app/api/ai';
+            : 'https://framework-974s8usrr-jacob-durrahs-projects.vercel.app/api/ai';
         
         this.cache = new Map();
         this.pendingRequests = new Map();
@@ -87,8 +87,8 @@ class AIServiceV2 {
      */
     async _makeStrategyRequest(goal, mode, context, attempt = 1) {
         try {
-            // Use existing endpoint with enhanced client-side processing
-            const endpoint = '/strategy-generator';
+            // Use enhanced endpoint for comprehensive mode, fallback for others
+            const endpoint = mode === 'comprehensive' ? '/enhanced-strategy-generator' : '/strategy-generator';
             const timeout = this.config.modes[mode]?.timeout || this.config.timeout;
 
             const response = await this.fetchWithTimeout(
@@ -113,8 +113,8 @@ class AIServiceV2 {
 
             const data = await response.json();
             
-            // Enhance the response with additional features for comprehensive mode
-            if (mode === 'comprehensive' && data.success) {
+            // Only enhance if using the basic endpoint
+            if (endpoint === '/strategy-generator' && mode === 'comprehensive' && data.success) {
                 data.data = this.enhanceStrategy(data.data, goal);
             }
             
