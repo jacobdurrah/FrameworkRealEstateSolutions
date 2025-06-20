@@ -1,0 +1,501 @@
+/**
+ * Modern Timeline Table Design
+ * Following Apple HIG and Material Design principles
+ * Mobile-first responsive approach with frozen columns
+ */
+
+/* CSS Variables for the modern theme */
+:root {
+  /* Modern color palette */
+  --table-bg: #ffffff;
+  --table-header-bg: #f5f7fa;
+  --table-header-text: #4a5568;
+  --table-border: #e2e8f0;
+  --table-row-hover: #f7fafc;
+  --table-row-stripe: #fafbfc;
+  --table-focus: #3182ce;
+  --table-text: #2d3748;
+  --table-text-secondary: #718096;
+  --table-success: #38a169;
+  --table-danger: #e53e3e;
+  --table-input-bg: #ffffff;
+  --table-input-border: #cbd5e0;
+  --table-disabled-bg: #f7fafc;
+  --table-disabled-text: #a0aec0;
+  --table-shadow: rgba(0, 0, 0, 0.1);
+  --table-sticky-shadow: rgba(0, 0, 0, 0.12);
+  
+  /* Spacing */
+  --table-padding-x: 16px;
+  --table-padding-y: 12px;
+  --table-header-padding-y: 14px;
+  --table-row-height: 48px;
+  --table-header-height: 52px;
+  
+  /* Typography */
+  --table-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --table-font-size: 14px;
+  --table-font-weight: 400;
+  --table-header-font-weight: 600;
+}
+
+/* Container setup */
+.timeline-table-container {
+  position: relative;
+  width: 100%;
+  background: var(--table-bg);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px var(--table-shadow);
+  overflow: hidden;
+}
+
+/* Scroll wrapper */
+.timeline-table-scroll-wrapper {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Main table styles */
+.timeline-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--table-font-family);
+  font-size: var(--table-font-size);
+  font-weight: var(--table-font-weight);
+  color: var(--table-text);
+  background: var(--table-bg);
+}
+
+/* Table header */
+.timeline-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--table-header-bg);
+}
+
+.timeline-table thead th {
+  position: relative;
+  height: var(--table-header-height);
+  padding: var(--table-header-padding-y) var(--table-padding-x);
+  font-weight: var(--table-header-font-weight);
+  color: var(--table-header-text);
+  text-align: left;
+  white-space: nowrap;
+  background: var(--table-header-bg);
+  border-bottom: 1px solid var(--table-border);
+  transition: background-color 0.2s ease;
+}
+
+/* Header bottom shadow when scrolled */
+.timeline-table thead::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to bottom, var(--table-sticky-shadow), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.timeline-table-container.scrolled thead::after {
+  opacity: 1;
+}
+
+/* Numeric columns right-aligned */
+.timeline-table th.numeric,
+.timeline-table td.numeric {
+  text-align: right;
+}
+
+/* Table body */
+.timeline-table tbody tr {
+  height: var(--table-row-height);
+  background: var(--table-bg);
+  transition: background-color 0.15s ease;
+}
+
+.timeline-table tbody tr:nth-child(even) {
+  background: var(--table-row-stripe);
+}
+
+.timeline-table tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+.timeline-table tbody td {
+  padding: var(--table-padding-y) var(--table-padding-x);
+  border-bottom: 1px solid var(--table-border);
+  vertical-align: middle;
+}
+
+/* Column-specific styles */
+/* Month column - Always frozen */
+.timeline-table th:first-child,
+.timeline-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  background: inherit;
+  box-shadow: 1px 0 0 var(--table-border);
+}
+
+/* Action column - Frozen on tablet+ */
+.timeline-table th:nth-child(2),
+.timeline-table td:nth-child(2) {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+/* Property column */
+.timeline-table th:nth-child(3),
+.timeline-table td:nth-child(3) {
+  width: 35%;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+/* Financial columns */
+.timeline-table th:nth-child(4), /* Price */
+.timeline-table td:nth-child(4),
+.timeline-table th:nth-child(6), /* Down $ */
+.timeline-table td:nth-child(6),
+.timeline-table th:nth-child(7), /* Loan */
+.timeline-table td:nth-child(7),
+.timeline-table th:nth-child(10), /* Payment */
+.timeline-table td:nth-child(10),
+.timeline-table th:nth-child(11), /* Rent */
+.timeline-table td:nth-child(11),
+.timeline-table th:nth-child(12), /* Expenses */
+.timeline-table td:nth-child(12) {
+  width: 100px;
+  min-width: 100px;
+  text-align: right;
+}
+
+/* Percentage columns */
+.timeline-table th:nth-child(5), /* Down % */
+.timeline-table td:nth-child(5),
+.timeline-table th:nth-child(8), /* Rate % */
+.timeline-table td:nth-child(8) {
+  width: 80px;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Term column */
+.timeline-table th:nth-child(9),
+.timeline-table td:nth-child(9) {
+  width: 70px;
+  min-width: 70px;
+  text-align: center;
+}
+
+/* Actions column */
+.timeline-table th:last-child,
+.timeline-table td:last-child {
+  width: 80px;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Input styles */
+.timeline-table input[type="text"],
+.timeline-table input[type="number"],
+.timeline-table select {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--table-text);
+  background: var(--table-input-bg);
+  border: 1px solid var(--table-input-border);
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.15s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.timeline-table input[type="number"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-table input:hover:not(:disabled),
+.timeline-table select:hover:not(:disabled) {
+  border-color: var(--table-text-secondary);
+}
+
+.timeline-table input:focus,
+.timeline-table select:focus {
+  border-color: var(--table-focus);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.timeline-table input:disabled,
+.timeline-table select:disabled {
+  background: var(--table-disabled-bg);
+  color: var(--table-disabled-text);
+  cursor: not-allowed;
+}
+
+/* Select dropdown custom arrow */
+.timeline-table select {
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='14' height='8' viewBox='0 0 14 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M1 1L7 7L13 1' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+/* Property cell special handling */
+.property-cell {
+  position: relative;
+}
+
+.property-cell input {
+  padding-right: 40px;
+}
+
+.property-with-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.property-with-link input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Zillow link styling */
+.zillow-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #006AFF;
+  background: rgba(0, 106, 255, 0.08);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.zillow-link:hover {
+  background: rgba(0, 106, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Currency display */
+.timeline-table .currency {
+  font-variant-numeric: tabular-nums;
+  color: var(--table-success);
+  font-weight: 500;
+}
+
+/* Delete button */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  color: var(--table-danger);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(229, 62, 62, 0.08);
+  border-color: rgba(229, 62, 62, 0.2);
+}
+
+.btn-danger:active {
+  transform: scale(0.95);
+}
+
+/* Scroll indicators */
+.scroll-indicator {
+  position: absolute;
+  top: var(--table-header-height);
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 6;
+}
+
+.scroll-indicator-left {
+  left: 0;
+  background: linear-gradient(to right, var(--table-bg), transparent);
+  box-shadow: 0 0 10px var(--table-shadow);
+}
+
+.scroll-indicator-right {
+  right: 0;
+  background: linear-gradient(to left, var(--table-bg), transparent);
+  box-shadow: 0 0 10px var(--table-shadow);
+}
+
+.timeline-table-container.can-scroll-left .scroll-indicator-left,
+.timeline-table-container.can-scroll-right .scroll-indicator-right {
+  opacity: 1;
+}
+
+/* Responsive - Tablet */
+@media (min-width: 768px) and (max-width: 1199px) {
+  /* Freeze action column on tablet */
+  .timeline-table th:nth-child(2),
+  .timeline-table td:nth-child(2) {
+    position: sticky;
+    left: 80px;
+    z-index: 5;
+    background: inherit;
+    box-shadow: 1px 0 0 var(--table-border);
+  }
+  
+  /* Adjust font size */
+  .timeline-table {
+    font-size: 13px;
+  }
+  
+  /* Reduce padding */
+  .timeline-table th,
+  .timeline-table td {
+    padding: 10px 12px;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 767px) {
+  /* Mobile adjustments */
+  .timeline-table {
+    min-width: 800px;
+    font-size: 13px;
+  }
+  
+  /* Only freeze month column */
+  .timeline-table th:nth-child(2),
+  .timeline-table td:nth-child(2) {
+    position: static;
+  }
+  
+  /* Reduce padding */
+  .timeline-table th,
+  .timeline-table td {
+    padding: 8px 12px;
+  }
+  
+  /* Smaller inputs */
+  .timeline-table input,
+  .timeline-table select {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  
+  /* Hide expenses column on mobile */
+  .timeline-table th:nth-child(12),
+  .timeline-table td:nth-child(12) {
+    display: none;
+  }
+}
+
+/* Add/Remove row buttons */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--table-bg);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.table-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--table-text);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  background: var(--table-focus);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #2c5aa0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-row-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin-top: 1px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--table-text-secondary);
+  background: var(--table-row-stripe);
+  border: 2px dashed var(--table-border);
+  border-radius: 0 0 8px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.add-row-btn:hover {
+  color: var(--table-focus);
+  background: var(--table-row-hover);
+  border-color: var(--table-focus);
+}
+
+/* Print styles */
+@media print {
+  .timeline-table-container {
+    box-shadow: none;
+  }
+  
+  .scroll-indicator {
+    display: none;
+  }
+  
+  .timeline-table {
+    font-size: 10pt;
+  }
+}
